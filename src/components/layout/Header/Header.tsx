@@ -19,11 +19,10 @@ import { getUser, logout } from '../../../utils/auth';
 
 interface HeaderProps {
     onMenuClick: () => void;
-    sidebarOpen: boolean;
     drawerWidth: number;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen, drawerWidth }) => {
+const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
     const user = getUser();
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -66,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen, drawerWidth }
                 </IconButton>
 
                 <Typography variant="h6" fontWeight={600} sx={{ flexGrow: 1 }} noWrap>
-                    Admin Panel
+                    {user?.role === 'ADMIN' ? 'Admin Panel' : user?.role === 'LECTURER' ? 'Lecturer Panel' : 'TrackSpace'}
                 </Typography>
 
                 {/* User avatar */}

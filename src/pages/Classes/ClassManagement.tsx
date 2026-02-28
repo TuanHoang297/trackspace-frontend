@@ -31,14 +31,23 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
+import PeopleIcon from '@mui/icons-material/People';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { toast } from 'react-toastify';
 import classService from '../../api/services/classService';
 import adminService from '../../api/services/adminService';
-import type { ClassResponse, CreateClassRequest, UpdateClassRequest, UserResponse } from '../../api/types/types';
+import type {
+    ClassResponse,
+    CreateClassRequest,
+    UpdateClassRequest,
+    UserResponse,
+    StudentInClassResponse,
+} from '../../api/types/types';
 
 const ClassManagement: React.FC = () => {
     const [classes, setClasses] = useState<ClassResponse[]>([]);
     const [lecturers, setLecturers] = useState<UserResponse[]>([]);
+    const [allUsers, setAllUsers] = useState<UserResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +75,13 @@ const ClassManagement: React.FC = () => {
     const [deleteTarget, setDeleteTarget] = useState<ClassResponse | null>(null);
     const [deleting, setDeleting] = useState(false);
 
+    // ===== STUDENT MANAGEMENT DIALOG =====
+    const [studentTarget, setStudentTarget] = useState<ClassResponse | null>(null);
+    const [students, setStudents] = useState<StudentInClassResponse[]>([]);
+    const [loadingStudents, setLoadingStudents] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
+    const [addingStudent, setAddingStudent] = useState(false);
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -74,7 +90,9 @@ const ClassManagement: React.FC = () => {
                 adminService.getUsers(),
             ]);
             setClasses(classesRes.data.data);
-            setLecturers(usersRes.data.data.filter((u) => u.role === 'LECTURER'));
+            const users = usersRes.data.data;
+            setAllUsers(users);
+            setLecturers(users.filter((u) => u.role === 'LECTURER'));
             setError('');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Không thể tải dữ liệu');
@@ -170,6 +188,58 @@ const ClassManagement: React.FC = () => {
             setDeleting(false);
         }
     };
+
+    // ===== STUDENT MANAGEMENT =====
+    const openStudentDialog = async (cls: ClassResponse) => {
+        setStudentTarget(cls);
+        setLoadingStudents(true);
+        try {
+            const res = await classService.getStudents(cls.id);
+            setStudents(res.data.data);
+        } catch {
+            setStudents([]);
+        } finally {
+            setLoadingStudents(false);
+        }
+    };
+
+    const handleAddStudent = async () => {
+        if (!studentTarget || !selectedUserId) return;
+        try {
+            setAddingStudent(true);
+            await classService.addStudent(studentTarget.id, selectedUserId as number);
+            toast.success('Thêm sinh viên vào lớp thành công!');
+            setSelectedUserId('');
+            // Refresh students list
+            const res = await classService.getStudents(studentTarget.id);
+            setStudents(res.data.data);
+            fetchData(); // refresh class totalStudents count
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Thêm sinh viên thất bại');
+        } finally {
+            setAddingStudent(false);
+        }
+    };
+
+    const handleRemoveStudent = async (student: StudentInClassResponse) => {
+        if (!studentTarget) return;
+        try {
+            await classService.removeStudent(studentTarget.id, student.studentId);
+            toast.success(`Đã xóa ${student.fullName} khỏi lớp`);
+            const res = await classService.getStudents(studentTarget.id);
+            setStudents(res.data.data);
+            fetchData();
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Xóa sinh viên thất bại');
+        }
+    };
+
+    // Get users that can be added as students (not already enrolled)
+    const availableStudents = allUsers.filter(
+        (u) =>
+            (u.role === 'TEAMMEMBER' || u.role === 'TEAMLEADER') &&
+            !students.some((s) => s.studentId === u.userId)
+    );
 
     return (
         <Box>
@@ -277,6 +347,8 @@ const ClassManagement: React.FC = () => {
                                                 size="small"
                                                 color="primary"
                                                 variant="outlined"
+                                                sx={{ cursor: 'pointer' }}
+                                                onClick={() => openStudentDialog(cls)}
                                             />
                                         </TableCell>
                                         <TableCell align="center">
@@ -289,6 +361,15 @@ const ClassManagement: React.FC = () => {
                                         </TableCell>
                                         <TableCell align="center">
                                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                                                <Tooltip title="Quản lý sinh viên">
+                                                    <IconButton
+                                                        size="small"
+                                                        color="success"
+                                                        onClick={() => openStudentDialog(cls)}
+                                                    >
+                                                        <PeopleIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
                                                 <Tooltip title="Gán giảng viên">
                                                     <IconButton
                                                         size="small"
@@ -327,179 +408,195 @@ const ClassManagement: React.FC = () => {
             </Card>
 
             {/* ================ CREATE DIALOG ================ */}
-            <Dialog
-                open={openCreate}
-                onClose={() => setOpenCreate(false)}
-                maxWidth="sm"
-                fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}
-            >
+            <Dialog open={openCreate} onClose={() => setOpenCreate(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
                 <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Tạo lớp học mới</DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
-                        <TextField
-                            label="Tên lớp"
-                            fullWidth
-                            value={newClass.className}
+                        <TextField label="Tên lớp" fullWidth value={newClass.className}
                             onChange={(e) => setNewClass({ ...newClass, className: e.target.value })}
                             placeholder="Ví dụ: Software Engineering"
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
-                        <TextField
-                            label="Mã lớp"
-                            fullWidth
-                            value={newClass.classCode}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                        <TextField label="Mã lớp" fullWidth value={newClass.classCode}
                             onChange={(e) => setNewClass({ ...newClass, classCode: e.target.value })}
                             placeholder="Ví dụ: SE1801"
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
-                        <TextField
-                            label="Học kỳ"
-                            fullWidth
-                            value={newClass.semester}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                        <TextField label="Học kỳ" fullWidth value={newClass.semester}
                             onChange={(e) => setNewClass({ ...newClass, semester: e.target.value })}
                             placeholder="Ví dụ: Spring 2026"
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button onClick={() => setOpenCreate(false)} sx={{ textTransform: 'none', borderRadius: 2 }}>
-                        Hủy
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleCreate}
-                        disabled={creating}
-                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}
-                    >
+                    <Button onClick={() => setOpenCreate(false)} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
+                    <Button variant="contained" onClick={handleCreate} disabled={creating}
+                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
                         {creating ? 'Đang tạo...' : 'Tạo lớp'}
                     </Button>
                 </DialogActions>
             </Dialog>
 
             {/* ================ EDIT DIALOG ================ */}
-            <Dialog
-                open={!!editTarget}
-                onClose={() => setEditTarget(null)}
-                maxWidth="sm"
-                fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}
-            >
-                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-                    Sửa lớp: {editTarget?.classCode}
-                </DialogTitle>
+            <Dialog open={!!editTarget} onClose={() => setEditTarget(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Sửa lớp: {editTarget?.classCode}</DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
-                        <TextField
-                            label="Tên lớp"
-                            fullWidth
-                            value={editData.className || ''}
+                        <TextField label="Tên lớp" fullWidth value={editData.className || ''}
                             onChange={(e) => setEditData({ ...editData, className: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
-                        <TextField
-                            label="Học kỳ"
-                            fullWidth
-                            value={editData.semester || ''}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                        <TextField label="Học kỳ" fullWidth value={editData.semester || ''}
                             onChange={(e) => setEditData({ ...editData, semester: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button onClick={() => setEditTarget(null)} sx={{ textTransform: 'none', borderRadius: 2 }}>
-                        Hủy
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleEdit}
-                        disabled={editing}
-                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}
-                    >
+                    <Button onClick={() => setEditTarget(null)} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
+                    <Button variant="contained" onClick={handleEdit} disabled={editing}
+                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
                         {editing ? 'Đang lưu...' : 'Lưu thay đổi'}
                     </Button>
                 </DialogActions>
             </Dialog>
 
             {/* ================ ASSIGN LECTURER DIALOG ================ */}
-            <Dialog
-                open={!!assignTarget}
-                onClose={() => setAssignTarget(null)}
-                maxWidth="sm"
-                fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}
-            >
-                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-                    Gán giảng viên: {assignTarget?.className}
-                </DialogTitle>
+            <Dialog open={!!assignTarget} onClose={() => setAssignTarget(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Gán giảng viên: {assignTarget?.className}</DialogTitle>
                 <DialogContent>
                     <FormControl fullWidth sx={{ mt: 1 }}>
                         <InputLabel>Chọn giảng viên</InputLabel>
-                        <Select
-                            value={selectedLecturer}
-                            label="Chọn giảng viên"
-                            onChange={(e) => setSelectedLecturer(e.target.value as number)}
-                            sx={{ borderRadius: 2 }}
-                        >
+                        <Select value={selectedLecturer} label="Chọn giảng viên"
+                            onChange={(e) => setSelectedLecturer(e.target.value as number)} sx={{ borderRadius: 2 }}>
                             {lecturers.map((l) => (
-                                <MenuItem key={l.userId} value={l.userId}>
-                                    {l.fullName} ({l.email})
-                                </MenuItem>
+                                <MenuItem key={l.userId} value={l.userId}>{l.fullName} ({l.email})</MenuItem>
                             ))}
-                            {lecturers.length === 0 && (
-                                <MenuItem disabled>Chưa có giảng viên nào</MenuItem>
-                            )}
+                            {lecturers.length === 0 && <MenuItem disabled>Chưa có giảng viên nào</MenuItem>}
                         </Select>
                     </FormControl>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button onClick={() => setAssignTarget(null)} sx={{ textTransform: 'none', borderRadius: 2 }}>
-                        Hủy
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleAssign}
-                        disabled={assigning || !selectedLecturer}
-                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}
-                    >
+                    <Button onClick={() => setAssignTarget(null)} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
+                    <Button variant="contained" onClick={handleAssign} disabled={assigning || !selectedLecturer}
+                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
                         {assigning ? 'Đang gán...' : 'Gán giảng viên'}
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* ================ DELETE DIALOG ================ */}
+            {/* ================ STUDENT MANAGEMENT DIALOG ================ */}
             <Dialog
-                open={!!deleteTarget}
-                onClose={() => setDeleteTarget(null)}
-                maxWidth="xs"
+                open={!!studentTarget}
+                onClose={() => setStudentTarget(null)}
+                maxWidth="md"
                 fullWidth
                 PaperProps={{ sx: { borderRadius: 3 } }}
             >
+                <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                        <PeopleIcon sx={{ verticalAlign: 'middle', mr: 1, color: 'primary.main' }} />
+                        Sinh viên — {studentTarget?.className} ({studentTarget?.classCode})
+                    </Box>
+                    <Chip label={`${students.length} SV`} color="primary" size="small" />
+                </DialogTitle>
+                <DialogContent>
+                    {/* Add Student Section */}
+                    <Box sx={{ display: 'flex', gap: 1.5, mb: 3, mt: 1, alignItems: 'center' }}>
+                        <FormControl sx={{ flex: 1 }} size="small">
+                            <InputLabel>Chọn sinh viên để thêm</InputLabel>
+                            <Select
+                                value={selectedUserId}
+                                label="Chọn sinh viên để thêm"
+                                onChange={(e) => setSelectedUserId(e.target.value as number)}
+                                sx={{ borderRadius: 2 }}
+                            >
+                                {availableStudents.map((u) => (
+                                    <MenuItem key={u.userId} value={u.userId}>
+                                        {u.fullName} — {u.email}
+                                    </MenuItem>
+                                ))}
+                                {availableStudents.length === 0 && (
+                                    <MenuItem disabled>Không còn sinh viên để thêm</MenuItem>
+                                )}
+                            </Select>
+                        </FormControl>
+                        <Button
+                            variant="contained"
+                            startIcon={<PersonAddIcon />}
+                            onClick={handleAddStudent}
+                            disabled={addingStudent || !selectedUserId}
+                            sx={{ textTransform: 'none', borderRadius: 2, whiteSpace: 'nowrap', py: 1 }}
+                        >
+                            {addingStudent ? 'Đang thêm...' : 'Thêm SV'}
+                        </Button>
+                    </Box>
+
+                    {/* Students Table */}
+                    {loadingStudents ? (
+                        <Box>{[1, 2, 3].map((i) => <Skeleton key={i} height={50} sx={{ mb: 1 }} />)}</Box>
+                    ) : (
+                        <TableContainer>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow sx={{ bgcolor: '#f8f9fa' }}>
+                                        <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
+                                        <TableCell sx={{ fontWeight: 700 }}>Họ tên</TableCell>
+                                        <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+                                        <TableCell sx={{ fontWeight: 700 }}>Ngày tham gia</TableCell>
+                                        <TableCell sx={{ fontWeight: 700 }} align="center">Xóa</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {students.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                                                Chưa có sinh viên nào trong lớp. Chọn sinh viên và nhấn "Thêm SV" để bắt đầu.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        students.map((s, i) => (
+                                            <TableRow key={s.enrollmentId} hover>
+                                                <TableCell sx={{ color: 'text.secondary' }}>{i + 1}</TableCell>
+                                                <TableCell sx={{ fontWeight: 500 }}>{s.fullName}</TableCell>
+                                                <TableCell sx={{ color: 'text.secondary' }}>{s.email}</TableCell>
+                                                <TableCell sx={{ color: 'text.secondary' }}>
+                                                    {new Date(s.enrolledAt).toLocaleDateString('vi-VN')}
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <Tooltip title="Xóa khỏi lớp">
+                                                        <IconButton size="small" color="error" onClick={() => handleRemoveStudent(s)}>
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button onClick={() => setStudentTarget(null)} sx={{ textTransform: 'none', borderRadius: 2 }}>
+                        Đóng
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* ================ DELETE DIALOG ================ */}
+            <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
                 <DialogTitle sx={{ fontWeight: 700 }}>Xác nhận xóa</DialogTitle>
                 <DialogContent>
                     <Typography>
                         Bạn có chắc chắn muốn xóa lớp{' '}
-                        <strong>
-                            {deleteTarget?.className} ({deleteTarget?.classCode})
-                        </strong>
-                        ?
+                        <strong>{deleteTarget?.className} ({deleteTarget?.classCode})</strong>?
                     </Typography>
                     <Alert severity="warning" sx={{ mt: 2, borderRadius: 2 }}>
                         Hành động này không thể hoàn tác.
                     </Alert>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button onClick={() => setDeleteTarget(null)} sx={{ textTransform: 'none', borderRadius: 2 }}>
-                        Hủy
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={handleDelete}
-                        disabled={deleting}
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                    >
+                    <Button onClick={() => setDeleteTarget(null)} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
+                    <Button variant="contained" color="error" onClick={handleDelete} disabled={deleting}
+                        sx={{ textTransform: 'none', borderRadius: 2 }}>
                         {deleting ? 'Đang xóa...' : 'Xóa lớp'}
                     </Button>
                 </DialogActions>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Drawer,
@@ -19,6 +19,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import ClassIcon from '@mui/icons-material/School';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import MenuIcon from '@mui/icons-material/Menu';
+import { getUser } from '../../../utils/auth';
 
 const DRAWER_WIDTH = 260;
 const DRAWER_COLLAPSED = 72;
@@ -28,17 +29,41 @@ interface SidebarProps {
     onToggle: () => void;
 }
 
-const navItems = [
+interface NavItem {
+    label: string;
+    icon: React.ReactNode;
+    path: string;
+}
+
+const adminNavItems: NavItem[] = [
     { label: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
-    { label: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users' },
+    { label: 'Quản lý tài khoản', icon: <PeopleIcon />, path: '/admin/users' },
     { label: 'Quản lý lớp học', icon: <ClassIcon />, path: '/admin/classes' },
 ];
+
+const lecturerNavItems: NavItem[] = [
+    { label: 'Dashboard', icon: <DashboardIcon />, path: '/lecturer/dashboard' },
+    { label: 'Lớp học của tôi', icon: <ClassIcon />, path: '/lecturer/classes' },
+];
+
+const getNavItems = (role?: string): NavItem[] => {
+    switch (role) {
+        case 'ADMIN':
+            return adminNavItems;
+        case 'LECTURER':
+            return lecturerNavItems;
+        default:
+            return [];
+    }
+};
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const user = getUser();
+    const navItems = getNavItems(user?.role);
 
     const drawerContent = (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -83,10 +108,29 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
 
             <Divider />
 
+            {/* Role badge */}
+            {open && (
+                <Box sx={{ px: 2, py: 1 }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: 'text.disabled',
+                            textTransform: 'uppercase',
+                            letterSpacing: 1.2,
+                            fontSize: '0.65rem',
+                            fontWeight: 600,
+                        }}
+                    >
+                        {user?.role === 'ADMIN' ? 'Admin Panel' : 'Lecturer Panel'}
+                    </Typography>
+                </Box>
+            )}
+
             {/* Nav items */}
-            <List sx={{ flex: 1, px: 1, pt: 1 }}>
+            <List sx={{ flex: 1, px: 1, pt: 0.5 }}>
                 {navItems.map((item) => {
-                    const isActive = location.pathname === item.path;
+                    const isActive = location.pathname === item.path ||
+                        (item.path !== '/lecturer/dashboard' && item.path !== '/admin/dashboard' && location.pathname.startsWith(item.path));
                     return (
                         <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
                             <ListItemButton

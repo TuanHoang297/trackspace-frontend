@@ -13,7 +13,6 @@ const AppLayout: React.FC = () => {
             <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
             <Header
                 onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-                sidebarOpen={sidebarOpen}
                 drawerWidth={drawerWidth}
             />
             <Box

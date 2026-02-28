@@ -10,8 +10,10 @@ import OAuth2RedirectPage from './pages/Auth/OAuth2RedirectPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout/AppLayout';
 import AdminDashboard from './pages/Dashboard/AdminDashboard';
+import LecturerDashboard from './pages/Dashboard/LecturerDashboard';
 import UserManagement from './pages/Users/UserManagement';
 import ClassManagement from './pages/Classes/ClassManagement';
+import ClassDetail from './pages/Classes/ClassDetail';
 
 function App() {
     return (
@@ -56,17 +58,20 @@ function App() {
                         <Route path="/admin/users" element={<UserManagement />} />
                         <Route path="/admin/classes" element={<ClassManagement />} />
                     </Route>
+                    {/* Lecturer routes */}
+                    <Route
+                        element={
+                            <ProtectedRoute allowedRoles={['LECTURER']}>
+                                <AppLayout />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route path="/lecturer/dashboard" element={<LecturerDashboard />} />
+                        <Route path="/lecturer/classes" element={<LecturerDashboard />} />
+                        <Route path="/lecturer/classes/:classId" element={<ClassDetail />} />
+                    </Route>
 
                     {/* Placeholder routes for other roles */}
-                    <Route
-                        path="/lecturer/dashboard"
-                        element={
-                            <div style={{ padding: '2rem', textAlign: 'center' }}>
-                                <h1>Lecturer Dashboard</h1>
-                                <p>Coming soon...</p>
-                            </div>
-                        }
-                    />
                     <Route
                         path="/student/dashboard"
                         element={
