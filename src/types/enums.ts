@@ -1,7 +1,8 @@
 export enum UserRole {
     ADMIN = 'ADMIN',
     LECTURER = 'LECTURER',
-    STUDENT = 'STUDENT',
+    TEAMLEADER = 'TEAMLEADER',
+    TEAMMEMBER = 'TEAMMEMBER',
 }
 
 export enum IssueStatus {
