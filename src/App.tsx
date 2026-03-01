@@ -13,7 +13,10 @@ import AdminDashboard from './pages/Dashboard/AdminDashboard';
 import LecturerDashboard from './pages/Dashboard/LecturerDashboard';
 import UserManagement from './pages/Users/UserManagement';
 import ClassManagement from './pages/Classes/ClassManagement';
-import ClassDetail from './pages/Classes/ClassDetail';
+import ClassDetail from './pages/Classes/ClassDetail/index';
+import GroupManagement from './pages/Groups/GroupManagement';
+import ProjectManagement from './pages/Projects/ProjectManagement';
+import ProjectInfo from './pages/Projects/ProjectInfo';
 
 function App() {
     return (
@@ -69,6 +72,9 @@ function App() {
                         <Route path="/lecturer/dashboard" element={<LecturerDashboard />} />
                         <Route path="/lecturer/classes" element={<LecturerDashboard />} />
                         <Route path="/lecturer/classes/:classId" element={<ClassDetail />} />
+                        <Route path="/lecturer/classes/:classId/groups" element={<GroupManagement />} />
+                        <Route path="/lecturer/classes/:classId/projects" element={<ProjectManagement />} />
+                        <Route path="/lecturer/projects/:projectId/info" element={<ProjectInfo />} />
                     </Route>
 
                     {/* Placeholder routes for other roles */}

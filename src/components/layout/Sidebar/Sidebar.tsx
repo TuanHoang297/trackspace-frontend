@@ -42,7 +42,6 @@ const adminNavItems: NavItem[] = [
 ];
 
 const lecturerNavItems: NavItem[] = [
-    { label: 'Dashboard', icon: <DashboardIcon />, path: '/lecturer/dashboard' },
     { label: 'Lớp học của tôi', icon: <ClassIcon />, path: '/lecturer/classes' },
 ];
 
