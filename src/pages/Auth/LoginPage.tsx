@@ -8,6 +8,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import GoogleIcon from '@mui/icons-material/Google';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import { API_BASE_URL } from '../../config/env';
 
 /* ── Tokens ── */
 const BG = '#0B1120';
@@ -80,7 +81,7 @@ const LoginPage: React.FC = () => {
     if (!validate()) return;
     setLoading(true); setApiErr('');
     try {
-      const res = await fetch('http://localhost:8080/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -102,8 +103,9 @@ const LoginPage: React.FC = () => {
   };
 
   const handleGoogle = () => {
+    const baseUrl = API_BASE_URL.replace('/api', '');
     const uri = encodeURIComponent(window.location.origin + '/oauth2/redirect');
-    window.location.href = `http://localhost:8080/oauth2/authorize/google?redirect_uri=${uri}`;
+    window.location.href = `${baseUrl}/oauth2/authorize/google?redirect_uri=${uri}`;
   };
 
   React.useEffect(() => {
