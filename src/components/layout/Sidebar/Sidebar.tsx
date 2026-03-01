@@ -24,8 +24,6 @@ const GRAD = 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)';
 const TEXT = '#1E293B';
 const DIM = '#94A3B8';
 const HOVER = '#F1F5F9';
-const ACTIVE = 'rgba(59,130,246,0.08)';
-const ACTIVE_TEXT = '#2563EB';
 
 interface SidebarProps { open: boolean; onToggle: () => void; }
 interface NavItem { label: string; icon: React.ReactNode; path: string; }
@@ -131,23 +129,25 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                                 borderRadius: '10px', minHeight: 44,
                                 justifyContent: open ? 'flex-start' : 'center',
                                 px: open ? 1.5 : 0, py: 0.75,
-                                bgcolor: isActive ? ACTIVE : 'transparent',
-                                color: isActive ? ACTIVE_TEXT : DIM,
+                                background: isActive
+                                    ? 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)'
+                                    : 'transparent',
+                                boxShadow: isActive ? '0 4px 12px rgba(99,102,241,0.35)' : 'none',
+                                color: isActive ? '#FFFFFF' : DIM,
                                 transition: 'all 0.15s ease',
-                                '&:hover': { bgcolor: isActive ? ACTIVE : HOVER, color: TEXT },
-                                position: 'relative',
-                                '&::before': isActive ? {
-                                    content: '""', position: 'absolute',
-                                    left: 0, top: '20%', bottom: '20%',
-                                    width: 3, borderRadius: '0 3px 3px 0',
-                                    background: GRAD,
-                                } : {},
+                                '&:hover': {
+                                    background: isActive
+                                        ? 'linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #7C3AED 100%)'
+                                        : HOVER,
+                                    color: isActive ? '#FFFFFF' : TEXT,
+                                    boxShadow: isActive ? '0 6px 16px rgba(99,102,241,0.45)' : 'none',
+                                },
                             }}
                         >
                             <ListItemIcon sx={{
                                 minWidth: 0, mr: open ? 1.5 : 0,
                                 justifyContent: 'center',
-                                color: isActive ? ACCENT : DIM,
+                                color: 'inherit',
                                 transition: 'color 0.15s ease',
                             }}>
                                 {item.icon}
@@ -156,9 +156,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                                 <ListItemText
                                     primary={item.label}
                                     primaryTypographyProps={{
-                                        fontWeight: isActive ? 600 : 400,
+                                        fontWeight: isActive ? 700 : 400,
                                         fontSize: '0.84rem',
-                                        color: isActive ? ACTIVE_TEXT : TEXT,
+                                        color: 'inherit',
                                     }}
                                 />
                             )}

@@ -89,9 +89,12 @@ const ProjectLayout: React.FC = () => {
                                 <Chip
                                     label={project.groupName}
                                     size="small"
-                                    variant="outlined"
-                                    color="primary"
-                                    sx={{ fontWeight: 600 }}
+                                    sx={{
+                                        fontWeight: 600,
+                                        background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+                                        color: '#fff',
+                                        border: 'none',
+                                    }}
                                 />
                             )}
                         </Box>
@@ -118,7 +121,7 @@ const ProjectLayout: React.FC = () => {
                     {/* User Avatar */}
                     <Tooltip title={currentUser?.fullName || ''}>
                         <IconButton onClick={e => setAnchorEl(e.currentTarget)} size="small" sx={{ ml: 1 }}>
-                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 13, fontWeight: 700 }}>
+                            <Avatar sx={{ width: 32, height: 32, background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', fontSize: 13, fontWeight: 700 }}>
                                 {initials}
                             </Avatar>
                         </IconButton>

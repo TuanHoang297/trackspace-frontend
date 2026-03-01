@@ -58,27 +58,20 @@ const ProjectSidebar: React.FC = () => {
                             sx={{
                                 width: 44,
                                 height: 44,
-                                borderRadius: '10px',
-                                color: isActive ? '#3B82F6' : '#94A3B8',
-                                bgcolor: isActive ? 'rgba(59,130,246,0.08)' : 'transparent',
-                                border: isActive ? '1px solid rgba(59,130,246,0.2)' : '1px solid transparent',
+                                borderRadius: '12px',
+                                color: isActive ? '#FFFFFF' : '#94A3B8',
+                                background: isActive
+                                    ? 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)'
+                                    : 'transparent',
+                                boxShadow: isActive ? '0 4px 12px rgba(99,102,241,0.4)' : 'none',
+                                border: 'none',
                                 transition: 'all 0.18s ease',
-                                position: 'relative',
                                 '&:hover': {
-                                    bgcolor: isActive ? 'rgba(59,130,246,0.12)' : '#F1F5F9',
-                                    color: isActive ? '#3B82F6' : '#1E293B',
+                                    background: isActive
+                                        ? 'linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #7C3AED 100%)'
+                                        : '#F1F5F9',
+                                    color: isActive ? '#FFFFFF' : '#1E293B',
                                 },
-                                // Active left bar indicator
-                                '&::before': isActive ? {
-                                    content: '""',
-                                    position: 'absolute',
-                                    left: -10,
-                                    top: '20%',
-                                    bottom: '20%',
-                                    width: 3,
-                                    borderRadius: '0 3px 3px 0',
-                                    background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
-                                } : {},
                             }}
                         >
                             {item.icon}

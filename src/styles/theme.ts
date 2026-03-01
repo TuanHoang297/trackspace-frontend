@@ -148,5 +148,30 @@ export const theme = createTheme({
                 },
             },
         },
+        MuiTabs: {
+            styleOverrides: {
+                indicator: {
+                    background: 'linear-gradient(90deg, #3B82F6, #8B5CF6)',
+                    height: 3,
+                    borderRadius: '3px 3px 0 0',
+                },
+            },
+        },
+        MuiTab: {
+            styleOverrides: {
+                root: {
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    '&.Mui-selected': {
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                    },
+                },
+            },
+        },
     },
 });
