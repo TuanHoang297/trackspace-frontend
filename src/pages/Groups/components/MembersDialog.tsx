@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, Box, Typography, Chip, IconButton, Tooltip,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    Table, TableBody, TableCell, TableHead, TableRow,
     Skeleton, FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
 import GroupsIcon from '@mui/icons-material/Groups';
