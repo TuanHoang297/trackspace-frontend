@@ -123,7 +123,7 @@ const ProjectInfo: React.FC = () => {
                             <ArrowBackIcon />
                         </IconButton>
                         <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a237e' }}>
+                            <Typography variant="h4" sx={{ fontWeight: 800, color: '#1E293B' }}>
                                 Thông tin chi tiết: {project.projectName}
                             </Typography>
                             <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>

@@ -10,11 +10,11 @@ import SubdirectoryArrowRightIcon from '@mui/icons-material/SubdirectoryArrowRig
 import type { JiraIssueResponse, IssueType } from '../../../types/jira.types';
 
 const TYPE_CONFIG: Record<IssueType, { icon: React.ReactElement; color: string }> = {
-    EPIC: { icon: <AccountTreeIcon fontSize="small" />, color: '#6554C0' },
-    STORY: { icon: <AutoStoriesIcon fontSize="small" />, color: '#36B37E' },
-    TASK: { icon: <TaskAltIcon fontSize="small" />, color: '#0065FF' },
-    BUG: { icon: <BugReportIcon fontSize="small" />, color: '#FF5630' },
-    SUBTASK: { icon: <SubdirectoryArrowRightIcon fontSize="small" />, color: '#6B778C' },
+    EPIC: { icon: <AccountTreeIcon fontSize="small" />, color: '#8B5CF6' },
+    STORY: { icon: <AutoStoriesIcon fontSize="small" />, color: '#10B981' },
+    TASK: { icon: <TaskAltIcon fontSize="small" />, color: '#3B82F6' },
+    BUG: { icon: <BugReportIcon fontSize="small" />, color: '#EF4444' },
+    SUBTASK: { icon: <SubdirectoryArrowRightIcon fontSize="small" />, color: '#64748B' },
 };
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -50,7 +50,7 @@ const IssueCard: React.FC<Props> = ({ issue, onClick }) => {
                 transition: 'all 0.15s ease',
                 '&:hover': {
                     borderColor: 'primary.main',
-                    boxShadow: '0 2px 8px rgba(0,101,255,0.12)',
+                    boxShadow: '0 2px 8px rgba(59,130,246,0.12)',
                     transform: 'translateY(-1px)',
                 },
             }}
@@ -96,11 +96,11 @@ const IssueCard: React.FC<Props> = ({ issue, onClick }) => {
                                 fontSize: '0.65rem',
                                 fontWeight: 700,
                                 bgcolor: issue.status === 'Done' ? '#E3FCEF'
-                                    : issue.status === 'In Progress' ? '#DEEBFF'
+                                    : issue.status === 'In Progress' ? '#EFF6FF'
                                         : '#DFE1E6',
-                                color: issue.status === 'Done' ? '#006644'
-                                    : issue.status === 'In Progress' ? '#0052CC'
-                                        : '#42526E',
+                                color: issue.status === 'Done' ? '#059669'
+                                    : issue.status === 'In Progress' ? '#3B82F6'
+                                        : '#64748B',
                             }}
                         />
                         {/* Priority chip */}

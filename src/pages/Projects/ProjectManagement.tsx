@@ -180,7 +180,7 @@ const ProjectManagement: React.FC = () => {
                         <ArrowBackIcon />
                     </IconButton>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a237e' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 800, color: '#1E293B' }}>
                             Quản lý Projects — {classInfo?.className}
                         </Typography>
                         <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -203,7 +203,7 @@ const ProjectManagement: React.FC = () => {
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ bgcolor: '#f8f9fa' }}>
+                            <TableRow sx={{ bgcolor: '#F8FAFC' }}>
                                 <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
                                 <TableCell sx={{ fontWeight: 700 }}>Tên Project</TableCell>
                                 <TableCell sx={{ fontWeight: 700 }}>Nhóm phụ trách</TableCell>
@@ -293,7 +293,7 @@ const ProjectManagement: React.FC = () => {
                                                 <Tooltip title="Jira Board">
                                                     <IconButton
                                                         size="small"
-                                                        sx={{ color: '#0052CC' }}
+                                                        sx={{ color: '#3B82F6' }}
                                                         onClick={() => navigate(`/projects/${p.id}`)}
                                                     >
                                                         <ViewKanbanIcon fontSize="small" />

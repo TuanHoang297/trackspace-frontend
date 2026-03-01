@@ -46,10 +46,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
                 width: { md: `calc(100% - ${drawerWidth}px)` },
                 ml: { md: `${drawerWidth}px` },
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                borderBottom: '1px solid',
-                borderColor: 'rgba(0,0,0,0.06)',
-                bgcolor: 'rgba(245, 246, 250, 0.8)',
-                backdropFilter: 'blur(12px)',
+                borderBottom: '1px solid #E2E8F0',
+                bgcolor: 'rgba(248,250,252,0.85)',
+                backdropFilter: 'blur(16px)',
             }}
         >
             <Toolbar sx={{ minHeight: '64px !important' }}>
@@ -69,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
                     sx={{
                         display: 'flex', alignItems: 'center', gap: 1.5,
                         cursor: 'pointer', py: 0.5, px: 1.5, borderRadius: 3,
-                        '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                        '&:hover': { bgcolor: '#F1F5F9' },
                         transition: 'background 0.2s ease',
                     }}
                 >
@@ -84,9 +83,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
                     <Avatar
                         sx={{
                             width: 38, height: 38,
-                            background: 'linear-gradient(135deg, #4F6BF6, #7B8FFF)',
+                            background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
                             fontSize: 14, fontWeight: 800,
-                            boxShadow: '0 2px 8px rgba(79, 107, 246, 0.3)',
+                            boxShadow: '0 2px 8px rgba(59,130,246,0.3)',
                         }}
                     >
                         {initials}

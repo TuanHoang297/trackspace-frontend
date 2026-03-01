@@ -3,14 +3,14 @@ import { createTheme } from '@mui/material/styles';
 export const theme = createTheme({
     palette: {
         primary: {
-            main: '#4F6BF6',
-            light: '#7B8FFF',
-            dark: '#3A51D4',
+            main: '#3B82F6',
+            light: '#93C5FD',
+            dark: '#2563EB',
         },
         secondary: {
-            main: '#7C3AED',
-            light: '#A78BFA',
-            dark: '#5B21B6',
+            main: '#8B5CF6',
+            light: '#C4B5FD',
+            dark: '#7C3AED',
         },
         success: {
             main: '#10B981',
@@ -28,13 +28,14 @@ export const theme = createTheme({
             dark: '#DC2626',
         },
         background: {
-            default: '#F5F6FA',
+            default: '#F8FAFC',
             paper: '#FFFFFF',
         },
         text: {
             primary: '#1E293B',
             secondary: '#64748B',
         },
+        divider: '#E2E8F0',
     },
     typography: {
         fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -60,9 +61,14 @@ export const theme = createTheme({
                     padding: '8px 20px',
                 },
                 containedPrimary: {
-                    boxShadow: '0 2px 8px rgba(79,107,246,0.3)',
+                    background: 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)',
+                    boxShadow: '0 2px 8px rgba(59,130,246,0.3)',
                     '&:hover': {
-                        boxShadow: '0 4px 14px rgba(79,107,246,0.4)',
+                        background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #7C3AED 100%)',
+                        boxShadow: '0 4px 14px rgba(99,102,241,0.4)',
+                    },
+                    '&:disabled': {
+                        background: '#E2E8F0',
                     },
                 },
             },
@@ -70,9 +76,9 @@ export const theme = createTheme({
         MuiCard: {
             styleOverrides: {
                 root: {
-                    borderRadius: 8,
+                    borderRadius: 12,
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
-                    border: '1px solid rgba(0,0,0,0.05)',
+                    border: '1px solid #E2E8F0',
                     transition: 'box-shadow 0.2s ease, transform 0.2s ease',
                 },
             },
@@ -89,6 +95,56 @@ export const theme = createTheme({
             styleOverrides: {
                 root: {
                     backgroundImage: 'none',
+                },
+            },
+        },
+        MuiTableHead: {
+            styleOverrides: {
+                root: {
+                    '& .MuiTableCell-root': {
+                        backgroundColor: '#F8FAFC',
+                        color: '#64748B',
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        borderBottom: '1px solid #E2E8F0',
+                    },
+                },
+            },
+        },
+        MuiTableRow: {
+            styleOverrides: {
+                root: {
+                    '&:hover': {
+                        backgroundColor: '#F8FAFC',
+                    },
+                    '&:last-child td': {
+                        borderBottom: 0,
+                    },
+                },
+            },
+        },
+        MuiOutlinedInput: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 10,
+                    '& fieldset': {
+                        borderColor: '#E2E8F0',
+                    },
+                    '&:hover fieldset': {
+                        borderColor: '#93C5FD',
+                    },
+                },
+            },
+        },
+        MuiAppBar: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: 'rgba(248,250,252,0.9)',
+                    backdropFilter: 'blur(16px)',
+                    borderBottom: '1px solid #E2E8F0',
+                    boxShadow: 'none',
                 },
             },
         },

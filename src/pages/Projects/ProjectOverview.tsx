@@ -105,19 +105,22 @@ const ProjectOverview: React.FC = () => {
             {/* Project Header */}
             <Paper elevation={0} sx={{
                 p: 3, borderRadius: 3, mb: 3,
-                background: 'linear-gradient(135deg, #1B2A4A 0%, #2D3E5F 100%)',
-                color: '#fff',
+                bgcolor: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                borderLeft: '4px solid',
+                borderLeftColor: '#3B82F6',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
             }}>
-                <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                <Typography variant="h4" fontWeight={800} sx={{ mb: 1, color: '#1E293B' }}>
                     {project?.projectName}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                     <Chip icon={<GroupsIcon />} label={project?.groupName} size="small"
-                        sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 600 }} />
+                        sx={{ bgcolor: 'rgba(59,130,246,0.08)', color: '#3B82F6', fontWeight: 600 }} />
                     <Chip icon={<CalendarTodayIcon />}
                         label={`Tạo ${new Date(project?.createdAt || '').toLocaleDateString('vi-VN')}`}
                         size="small"
-                        sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff' }} />
+                        sx={{ bgcolor: '#F1F5F9', color: '#64748B' }} />
                     {project?.hasProjectInfo && (
                         <Chip label="Đã có Project Info" size="small" color="success" />
                     )}
@@ -128,9 +131,9 @@ const ProjectOverview: React.FC = () => {
             {isJiraConnected && (
                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 3 }}>
                     {[
-                        { label: 'Sprints', value: jiraConn?.totalSprints || 0, color: '#0052CC' },
-                        { label: 'Issues', value: jiraConn?.totalIssues || 0, color: '#36B37E' },
-                        { label: 'Project Key', value: jiraConn?.projectKey || '—', color: '#6554C0' },
+                        { label: 'Sprints', value: jiraConn?.totalSprints || 0, color: '#3B82F6' },
+                        { label: 'Issues', value: jiraConn?.totalIssues || 0, color: '#10B981' },
+                        { label: 'Project Key', value: jiraConn?.projectKey || '—', color: '#8B5CF6' },
                     ].map(stat => (
                         <Paper key={stat.label} elevation={0} sx={{
                             p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider', textAlign: 'center',
@@ -155,7 +158,7 @@ const ProjectOverview: React.FC = () => {
                     description={isJiraConnected
                         ? `${jiraConn?.totalSprints} sprints • ${jiraConn?.totalIssues} issues`
                         : 'Kết nối Jira để quản lý sprints và issues'}
-                    color="#0052CC"
+                    color="#3B82F6"
                     onClick={() => navigate(`/projects/${pid}/jira`)}
                     status={isJiraConnected ? 'connected' : 'not-connected'}
                 />
@@ -179,7 +182,7 @@ const ProjectOverview: React.FC = () => {
                     icon={<ViewKanbanIcon />}
                     label="SRS Document"
                     description="Tạo tài liệu SRS tự động bằng AI"
-                    color="#6554C0"
+                    color="#8B5CF6"
                     onClick={() => navigate(`/projects/${pid}/srs`)}
                     status="coming-soon"
                 />

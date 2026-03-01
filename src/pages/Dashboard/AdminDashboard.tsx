@@ -143,7 +143,7 @@ const AdminDashboard: React.FC = () => {
                         value={users.length}
                         icon={<PeopleIcon sx={{ fontSize: 28 }} />}
                         color="#1976d2"
-                        gradient="linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)"
+                        gradient="linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)"
                     />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>

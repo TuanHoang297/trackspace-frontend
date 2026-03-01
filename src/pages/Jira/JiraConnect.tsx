@@ -73,9 +73,9 @@ const JiraConnect: React.FC = () => {
             <Box sx={{ textAlign: 'center', mb: 4 }}>
                 <Box sx={{
                     width: 64, height: 64, mx: 'auto', mb: 2,
-                    borderRadius: 3, bgcolor: '#0052CC', display: 'flex',
+                    borderRadius: 3, background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', display: 'flex',
                     alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 4px 20px rgba(0,82,204,0.3)',
+                    boxShadow: '0 4px 20px rgba(59,130,246,0.3)'
                 }}>
                     <CloudDoneIcon sx={{ color: '#fff', fontSize: 32 }} />
                 </Box>
@@ -144,8 +144,8 @@ const JiraConnect: React.FC = () => {
                     sx={{
                         mt: 3, py: 1.5, borderRadius: 2,
                         textTransform: 'none', fontWeight: 700, fontSize: '1rem',
-                        bgcolor: '#0052CC',
-                        '&:hover': { bgcolor: '#0747A6' },
+                        background: 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)',
+                        '&:hover': { background: 'linear-gradient(135deg, #2563EB, #4F46E5, #7C3AED)' },
                     }}
                 >
                     {loading ? (

@@ -57,16 +57,16 @@ const ProjectLayout: React.FC = () => {
     const classListPath = currentUser?.role === 'LECTURER' ? '/lecturer/classes' : '/student/dashboard';
 
     return (
-        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F7F8FA' }}>
+        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F8FAFC' }}>
             <ProjectSidebar />
 
             <Box sx={{ flex: 1, ml: `${SIDEBAR_WIDTH}px`, display: 'flex', flexDirection: 'column' }}>
                 {/* Top Header Bar */}
                 <Box sx={{
                     px: 3, py: 1.5,
-                    bgcolor: '#fff',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
+                    bgcolor: 'rgba(248,250,252,0.85)',
+                    backdropFilter: 'blur(16px)',
+                    borderBottom: '1px solid #E2E8F0',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 2,

@@ -18,17 +18,17 @@ import { toast } from 'react-toastify';
 import type { JiraIssueResponse } from '../../../types/jira.types';
 
 const TYPE_ICONS: Record<string, React.ReactElement> = {
-    EPIC: <AccountTreeIcon sx={{ color: '#6554C0' }} />,
-    STORY: <AutoStoriesIcon sx={{ color: '#36B37E' }} />,
-    TASK: <TaskAltIcon sx={{ color: '#0065FF' }} />,
-    BUG: <BugReportIcon sx={{ color: '#FF5630' }} />,
+    EPIC: <AccountTreeIcon sx={{ color: '#8B5CF6' }} />,
+    STORY: <AutoStoriesIcon sx={{ color: '#10B981' }} />,
+    TASK: <TaskAltIcon sx={{ color: '#3B82F6' }} />,
+    BUG: <BugReportIcon sx={{ color: '#EF4444' }} />,
 };
 
 const STATUS_OPTIONS = ['To Do', 'In Progress', 'Done'];
 const PRIORITY_OPTIONS = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
     'To Do': { bg: '#DFE1E6', color: '#42526E' },
-    'In Progress': { bg: '#DEEBFF', color: '#0052CC' },
+    'In Progress': { bg: '#EFF6FF', color: '#3B82F6' },
     'Done': { bg: '#E3FCEF', color: '#006644' },
 };
 
@@ -328,7 +328,7 @@ const IssueDetailDialog: React.FC<Props> = ({
                             {jiraUsers.map(u => (
                                 <MenuItem key={u.accountId} value={u.accountId}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Avatar sx={{ width: 24, height: 24, fontSize: '0.7rem', bgcolor: '#0065FF' }}>
+                                        <Avatar sx={{ width: 24, height: 24, fontSize: '0.7rem', bgcolor: '#3B82F6' }}>
                                             {u.displayName?.charAt(0) || '?'}
                                         </Avatar>
                                         {u.displayName}
@@ -338,7 +338,7 @@ const IssueDetailDialog: React.FC<Props> = ({
                         </TextField>
                     ) : (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Avatar sx={{ width: 28, height: 28, fontSize: '0.75rem', bgcolor: '#0065FF' }}>
+                            <Avatar sx={{ width: 28, height: 28, fontSize: '0.75rem', bgcolor: '#3B82F6' }}>
                                 {issue.assigneeName?.charAt(0) || '?'}
                             </Avatar>
                             <Typography variant="body2" fontWeight={500}>

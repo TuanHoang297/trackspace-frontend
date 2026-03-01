@@ -183,7 +183,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ bgcolor: '#f8f9fa' }}>
+                            <TableRow sx={{ bgcolor: '#F8FAFC' }}>
                                 {['#', 'Tên nhóm', 'Project', 'Team Leader', 'Thành viên', 'Hành động'].map(h => (
                                     <TableCell key={h} sx={{ fontWeight: 700 }} align={['Thành viên', 'Hành động'].includes(h) ? 'center' : 'left'}>{h}</TableCell>
                                 ))}
@@ -207,13 +207,13 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                                     <Chip
                                                         label={proj.projectName}
                                                         size="small"
-                                                        color="info"
+                                                        color="primary"
                                                         variant="outlined"
                                                         icon={<ViewKanbanIcon sx={{ fontSize: '16px !important' }} />}
                                                         onClick={() => navigate(`/projects/${proj.id}`)}
                                                         sx={{
                                                             cursor: 'pointer', maxWidth: 280, fontWeight: 600,
-                                                            '&:hover': { bgcolor: '#E3F2FD', borderColor: '#1976d2' },
+                                                            '&:hover': { bgcolor: '#EFF6FF', borderColor: '#3B82F6' },
                                                             transition: 'all 0.15s ease',
                                                         }}
                                                     />
@@ -322,26 +322,29 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                 {/* Header */}
                 <Box sx={{
                     p: 3, pb: 2,
-                    background: 'linear-gradient(135deg, #1B2A4A 0%, #2D3E5F 100%)',
-                    color: '#fff',
+                    bgcolor: '#FFFFFF',
+                    borderBottom: '1px solid #E2E8F0',
+                    borderTop: '4px solid #3B82F6',
+                    borderRadius: '12px 12px 0 0',
                 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                <GroupsIcon />
-                                <Typography variant="h6" fontWeight={700}>{viewGroup?.groupName}</Typography>
+                                <GroupsIcon sx={{ color: '#3B82F6' }} />
+                                <Typography variant="h6" fontWeight={700} color="#1E293B">{viewGroup?.groupName}</Typography>
                                 <Chip label={`${members.length} thành viên`} size="small"
-                                    sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 600, height: 22 }} />
+                                    sx={{ bgcolor: 'rgba(59,130,246,0.08)', color: '#3B82F6', fontWeight: 600, height: 22 }} />
                             </Box>
                             {viewGroup?.description && (
-                                <Typography variant="body2" sx={{ opacity: 0.7 }}>{viewGroup.description}</Typography>
+                                <Typography variant="body2" color="text.secondary">{viewGroup.description}</Typography>
                             )}
                         </Box>
-                        <IconButton onClick={() => setViewGroup(null)} sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                        <IconButton onClick={() => setViewGroup(null)} sx={{ color: '#94A3B8' }}>
                             <DeleteIcon fontSize="small" />
                         </IconButton>
                     </Box>
                 </Box>
+
 
                 <DialogContent sx={{ p: 3 }}>
                     {/* Project Section */}
@@ -432,7 +435,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                     {/* Avatar */}
                                     <Box sx={{
                                         width: 40, height: 40, borderRadius: '50%',
-                                        bgcolor: m.isLeader ? '#FF9800' : '#1976d2',
+                                        bgcolor: m.isLeader ? '#F59E0B' : '#3B82F6',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0,
                                     }}>
@@ -506,7 +509,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                 </Button>
                             </Box>
                             <Divider sx={{ mb: 1 }} />
-                            <List sx={{ maxHeight: 350, overflow: 'auto', bgcolor: '#f8f9fa', borderRadius: 2 }}>
+                            <List sx={{ maxHeight: 350, overflow: 'auto', bgcolor: '#F8FAFC', borderRadius: 2 }}>
                                 {availableStudents.map(s => (
                                     <ListItem key={s.studentId} disablePadding>
                                         <ListItemButton onClick={() => toggleStudent(s.studentId)} sx={{ borderRadius: 1, mb: 0.5 }}>

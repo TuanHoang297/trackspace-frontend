@@ -20,8 +20,8 @@ const STAT_CONFIG = [
         label: 'Lớp học',
         key: 'classes',
         icon: <SchoolIcon sx={{ fontSize: 26 }} />,
-        gradient: 'linear-gradient(135deg, #4F6BF6 0%, #7B8FFF 100%)',
-        shadow: 'rgba(79, 107, 246, 0.25)',
+        gradient: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
+        shadow: 'rgba(59,130,246,0.25)',
     },
     {
         label: 'Tổng sinh viên',
@@ -211,7 +211,7 @@ const LecturerDashboard: React.FC = () => {
                                         <Box sx={{
                                             height: 4,
                                             background: cls.active
-                                                ? 'linear-gradient(90deg, #4F6BF6, #7B8FFF)'
+                                                ? 'linear-gradient(90deg, #3B82F6, #8B5CF6)'
                                                 : '#E2E8F0',
                                         }} />
 
@@ -219,7 +219,7 @@ const LecturerDashboard: React.FC = () => {
                                             {/* Row 1: className chip + Active chip */}
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                                                 <Chip label={cls.className} size="small" sx={{
-                                                    bgcolor: 'rgba(79,107,246,0.08)', color: '#4F6BF6',
+                                                    bgcolor: 'rgba(59,130,246,0.08)', color: '#3B82F6',
                                                     fontWeight: 600, fontSize: '0.7rem', height: 24,
                                                 }} />
                                                 <Chip label={cls.active ? 'Active' : 'Inactive'} size="small"

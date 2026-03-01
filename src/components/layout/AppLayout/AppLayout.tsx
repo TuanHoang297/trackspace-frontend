@@ -9,7 +9,7 @@ const AppLayout: React.FC = () => {
     const drawerWidth = sidebarOpen ? DRAWER_WIDTH : DRAWER_COLLAPSED;
 
     return (
-        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f5f7fa' }}>
+        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F8FAFC' }}>
             <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
             <Header
                 onMenuClick={() => setSidebarOpen(!sidebarOpen)}

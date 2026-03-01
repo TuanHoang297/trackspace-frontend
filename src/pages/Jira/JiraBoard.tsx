@@ -90,10 +90,10 @@ const JiraBoard: React.FC = () => {
             <Box sx={{ textAlign: 'center', mt: 8, px: 3 }}>
                 <Box sx={{
                     width: 80, height: 80, mx: 'auto', mb: 3,
-                    borderRadius: '50%', bgcolor: '#DEEBFF',
+                    borderRadius: '50%', bgcolor: '#EFF6FF',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                    <SyncIcon sx={{ fontSize: 40, color: '#0052CC' }} />
+                    <SyncIcon sx={{ fontSize: 40, color: '#3B82F6' }} />
                 </Box>
                 <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>Chưa kết nối Jira</Typography>
                 <Typography color="text.secondary" sx={{ mb: 3 }}>
@@ -103,7 +103,7 @@ const JiraBoard: React.FC = () => {
                     <Button
                         variant="contained" size="large"
                         onClick={() => navigate(`/projects/${pid}/jira/connect`)}
-                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, bgcolor: '#0052CC' }}
+                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, background: 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)' }}
                     >
                         Kết nối Jira ngay
                     </Button>

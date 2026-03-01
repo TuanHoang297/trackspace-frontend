@@ -115,7 +115,7 @@ const GroupManagement: React.FC = () => {
                         <ArrowBackIcon />
                     </IconButton>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h4" sx={{ fontWeight: 800, color: '#1a237e' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 800, color: '#1E293B' }}>
                             Quản lý Nhóm — {classInfo?.className}
                         </Typography>
                         <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
