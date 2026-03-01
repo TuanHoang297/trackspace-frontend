@@ -10,7 +10,6 @@ import {
     IconButton,
     Box,
     Typography,
-    Divider,
     useTheme,
     useMediaQuery,
 } from '@mui/material';
@@ -21,8 +20,16 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import MenuIcon from '@mui/icons-material/Menu';
 import { getUser } from '../../../utils/auth';
 
-const DRAWER_WIDTH = 260;
+const DRAWER_WIDTH = 264;
 const DRAWER_COLLAPSED = 72;
+
+/* ─── Colors ─── */
+const SIDEBAR_BG = '#1A1F36';
+const SIDEBAR_BG_LIGHT = '#252B48';
+const ACTIVE_BG = 'rgba(79, 107, 246, 0.15)';
+const ACTIVE_BORDER = '#4F6BF6';
+const TEXT_PRIMARY = '#E2E8F0';
+const TEXT_SECONDARY = 'rgba(148, 163, 184, 0.7)';
 
 interface SidebarProps {
     open: boolean;
@@ -45,14 +52,18 @@ const lecturerNavItems: NavItem[] = [
     { label: 'Lớp học của tôi', icon: <ClassIcon />, path: '/lecturer/classes' },
 ];
 
+const studentNavItems: NavItem[] = [
+    { label: 'Dashboard', icon: <DashboardIcon />, path: '/student/dashboard' },
+];
+
 const getNavItems = (role?: string): NavItem[] => {
     switch (role) {
-        case 'ADMIN':
-            return adminNavItems;
-        case 'LECTURER':
-            return lecturerNavItems;
-        default:
-            return [];
+        case 'ADMIN': return adminNavItems;
+        case 'LECTURER': return lecturerNavItems;
+        case 'TEAMLEADER':
+        case 'TEAMMEMBER':
+        case 'STUDENT': return studentNavItems;
+        default: return [];
     }
 };
 
@@ -65,68 +76,53 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
     const navItems = getNavItems(user?.role);
 
     const drawerContent = (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Box sx={{
+            display: 'flex', flexDirection: 'column', height: '100%',
+            bgcolor: SIDEBAR_BG, color: TEXT_PRIMARY,
+        }}>
             {/* Logo */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: open ? 'space-between' : 'center',
-                    px: 2,
-                    py: 2,
-                    minHeight: 64,
-                }}
-            >
+            <Box sx={{
+                display: 'flex', alignItems: 'center',
+                justifyContent: open ? 'space-between' : 'center',
+                px: 2, py: 2.5, minHeight: 68,
+            }}>
                 {open && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box
-                            sx={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: '10px',
-                                background: 'linear-gradient(135deg, #1976d2, #42a5f5)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#fff',
-                                fontWeight: 800,
-                                fontSize: 18,
-                            }}
-                        >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                            width: 38, height: 38, borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #4F6BF6 0%, #7B8FFF 100%)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#fff', fontWeight: 900, fontSize: 18,
+                            boxShadow: '0 4px 12px rgba(79, 107, 246, 0.4)',
+                        }}>
                             T
                         </Box>
-                        <Typography variant="h6" fontWeight={700} color="primary.main" noWrap>
+                        <Typography variant="h6" fontWeight={800} sx={{ color: '#fff', letterSpacing: '-0.02em' }} noWrap>
                             TrackSpace
                         </Typography>
                     </Box>
                 )}
-                <IconButton onClick={onToggle} size="small">
+                <IconButton onClick={onToggle} size="small" sx={{ color: TEXT_SECONDARY, '&:hover': { color: '#fff', bgcolor: SIDEBAR_BG_LIGHT } }}>
                     {open ? <ChevronLeftIcon /> : <MenuIcon />}
                 </IconButton>
             </Box>
 
-            <Divider />
-
-            {/* Role badge */}
+            {/* Section label */}
             {open && (
-                <Box sx={{ px: 2, py: 1 }}>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: 'text.disabled',
-                            textTransform: 'uppercase',
-                            letterSpacing: 1.2,
-                            fontSize: '0.65rem',
-                            fontWeight: 600,
-                        }}
-                    >
-                        {user?.role === 'ADMIN' ? 'Admin Panel' : 'Lecturer Panel'}
+                <Box sx={{ px: 2.5, pt: 1, pb: 1.5 }}>
+                    <Typography variant="caption" sx={{
+                        color: TEXT_SECONDARY, textTransform: 'uppercase',
+                        letterSpacing: 1.5, fontSize: '0.6rem', fontWeight: 700,
+                    }}>
+                        {user?.role === 'ADMIN' ? 'Quản lý hệ thống'
+                            : user?.role === 'LECTURER' ? 'Quản lý giảng dạy'
+                                : 'Sinh viên'}
                     </Typography>
                 </Box>
             )}
 
             {/* Nav items */}
-            <List sx={{ flex: 1, px: 1, pt: 0.5 }}>
+            <List sx={{ flex: 1, px: 1.5, pt: 0 }}>
                 {navItems.map((item) => {
                     const isActive = location.pathname === item.path ||
                         (item.path !== '/lecturer/dashboard' && item.path !== '/admin/dashboard' && location.pathname.startsWith(item.path));
@@ -138,45 +134,59 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                                     if (isMobile) onToggle();
                                 }}
                                 sx={{
-                                    borderRadius: 2,
+                                    borderRadius: '12px',
                                     minHeight: 48,
                                     justifyContent: open ? 'initial' : 'center',
                                     px: 2,
-                                    bgcolor: isActive ? 'primary.main' : 'transparent',
-                                    color: isActive ? '#fff' : 'text.primary',
+                                    bgcolor: isActive ? ACTIVE_BG : 'transparent',
+                                    borderLeft: isActive ? `3px solid ${ACTIVE_BORDER}` : '3px solid transparent',
+                                    color: isActive ? '#fff' : TEXT_SECONDARY,
                                     '&:hover': {
-                                        bgcolor: isActive ? 'primary.dark' : 'action.hover',
+                                        bgcolor: isActive ? ACTIVE_BG : SIDEBAR_BG_LIGHT,
+                                        color: '#fff',
                                     },
-                                    transition: 'all 0.2s ease',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 }}
                             >
-                                <ListItemIcon
-                                    sx={{
-                                        minWidth: 0,
-                                        mr: open ? 2 : 'auto',
-                                        justifyContent: 'center',
-                                        color: isActive ? '#fff' : 'primary.main',
-                                    }}
-                                >
+                                <ListItemIcon sx={{
+                                    minWidth: 0, mr: open ? 2 : 'auto',
+                                    justifyContent: 'center',
+                                    color: isActive ? ACTIVE_BORDER : TEXT_SECONDARY,
+                                    transition: 'color 0.2s ease',
+                                }}>
                                     {item.icon}
                                 </ListItemIcon>
-                                {open && <ListItemText primary={item.label} />}
+                                {open && (
+                                    <ListItemText
+                                        primary={item.label}
+                                        primaryTypographyProps={{
+                                            fontWeight: isActive ? 700 : 500,
+                                            fontSize: '0.875rem',
+                                        }}
+                                    />
+                                )}
                             </ListItemButton>
                         </ListItem>
                     );
                 })}
             </List>
 
-            {/* Bottom version */}
+            {/* Bottom */}
             {open && (
-                <Box sx={{ p: 2 }}>
-                    <Typography variant="caption" color="text.disabled">
+                <Box sx={{ p: 2.5, borderTop: `1px solid ${SIDEBAR_BG_LIGHT}` }}>
+                    <Typography variant="caption" sx={{ color: TEXT_SECONDARY, fontSize: '0.65rem' }}>
                         TrackSpace v1.0.0
                     </Typography>
                 </Box>
             )}
         </Box>
     );
+
+    const drawerPaperSx = {
+        bgcolor: SIDEBAR_BG,
+        border: 'none',
+        overflowX: 'hidden' as const,
+    };
 
     if (isMobile) {
         return (
@@ -185,12 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                 open={open}
                 onClose={onToggle}
                 ModalProps={{ keepMounted: true }}
-                sx={{
-                    '& .MuiDrawer-paper': {
-                        width: DRAWER_WIDTH,
-                        boxSizing: 'border-box',
-                    },
-                }}
+                sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, ...drawerPaperSx } }}
             >
                 {drawerContent}
             </Drawer>
@@ -203,14 +208,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
             sx={{
                 width: open ? DRAWER_WIDTH : DRAWER_COLLAPSED,
                 flexShrink: 0,
-                transition: 'width 0.2s ease',
+                transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 '& .MuiDrawer-paper': {
                     width: open ? DRAWER_WIDTH : DRAWER_COLLAPSED,
-                    boxSizing: 'border-box',
-                    overflowX: 'hidden',
-                    transition: 'width 0.2s ease',
-                    borderRight: '1px solid',
-                    borderColor: 'divider',
+                    transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    ...drawerPaperSx,
                 },
             }}
         >

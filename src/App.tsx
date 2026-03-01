@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
+import { Box, Typography } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -15,8 +16,12 @@ import UserManagement from './pages/Users/UserManagement';
 import ClassManagement from './pages/Classes/ClassManagement';
 import ClassDetail from './pages/Classes/ClassDetail/index';
 import GroupManagement from './pages/Groups/GroupManagement';
-import ProjectManagement from './pages/Projects/ProjectManagement';
 import ProjectInfo from './pages/Projects/ProjectInfo';
+import ProjectOverview from './pages/Projects/ProjectOverview';
+import ProjectLayout from './components/layout/ProjectLayout/ProjectLayout';
+import JiraBoard from './pages/Jira/JiraBoard';
+import JiraConnect from './pages/Jira/JiraConnect';
+import StudentDashboard from './pages/Student/StudentDashboard';
 
 function App() {
     return (
@@ -73,8 +78,49 @@ function App() {
                         <Route path="/lecturer/classes" element={<LecturerDashboard />} />
                         <Route path="/lecturer/classes/:classId" element={<ClassDetail />} />
                         <Route path="/lecturer/classes/:classId/groups" element={<GroupManagement />} />
-                        <Route path="/lecturer/classes/:classId/projects" element={<ProjectManagement />} />
                         <Route path="/lecturer/projects/:projectId/info" element={<ProjectInfo />} />
+                    </Route>
+
+                    {/* Student routes */}
+                    <Route
+                        element={
+                            <ProtectedRoute allowedRoles={['TEAMLEADER', 'TEAMMEMBER']}>
+                                <AppLayout />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route path="/student/dashboard" element={<StudentDashboard />} />
+                    </Route>
+
+                    {/* Project Workspace — all roles */}
+                    <Route
+                        element={
+                            <ProtectedRoute allowedRoles={['LECTURER', 'TEAMLEADER', 'TEAMMEMBER']}>
+                                <ProjectLayout />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route path="/projects/:projectId" element={<ProjectOverview />} />
+                        <Route path="/projects/:projectId/jira" element={<JiraBoard />} />
+                        <Route path="/projects/:projectId/jira/connect" element={<JiraConnect />} />
+                        <Route path="/projects/:projectId/github" element={
+                            <Box sx={{ p: 4, textAlign: 'center' }}>
+                                <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>GitHub Integration</Typography>
+                                <Typography color="text.secondary">Coming soon...</Typography>
+                            </Box>
+                        } />
+                        <Route path="/projects/:projectId/contribution" element={
+                            <Box sx={{ p: 4, textAlign: 'center' }}>
+                                <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>Contribution Analytics</Typography>
+                                <Typography color="text.secondary">Coming soon...</Typography>
+                            </Box>
+                        } />
+                        <Route path="/projects/:projectId/srs" element={
+                            <Box sx={{ p: 4, textAlign: 'center' }}>
+                                <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>SRS Document</Typography>
+                                <Typography color="text.secondary">Coming soon...</Typography>
+                            </Box>
+                        } />
                     </Route>
 
                     {/* Placeholder routes for other roles */}

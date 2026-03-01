@@ -13,10 +13,10 @@ export const useClassDetail = (classId: number) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const refresh = useCallback(async () => {
+    const fetchData = useCallback(async (showLoading: boolean) => {
         if (!classId) return;
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const [studRes, grpRes, prjRes] = await Promise.all([
                 classService.getStudents(classId),
                 groupService.getGroups(classId),
@@ -33,7 +33,11 @@ export const useClassDetail = (classId: number) => {
         }
     }, [classId]);
 
-    useEffect(() => { refresh(); }, [refresh]);
+    // Initial load — show skeleton
+    useEffect(() => { fetchData(true); }, [fetchData]);
+
+    // Refresh after actions — silent, no skeleton flash
+    const refresh = useCallback(() => fetchData(false), [fetchData]);
 
     return { students, groups, projects, loading, error, refresh };
 };

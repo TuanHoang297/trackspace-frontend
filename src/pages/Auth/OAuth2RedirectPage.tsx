@@ -13,7 +13,7 @@ const OAuth2RedirectPage: React.FC = () => {
     if (token) {
       // Store token
       localStorage.setItem('token', token);
-      
+
       // Fetch user info with the token
       fetch('http://localhost:8080/api/auth/me', {
         headers: {
@@ -24,7 +24,7 @@ const OAuth2RedirectPage: React.FC = () => {
         .then(data => {
           if (data.success) {
             localStorage.setItem('user', JSON.stringify(data.data));
-            
+
             // Redirect based on role
             switch (data.data.role) {
               case 'ADMIN':
@@ -33,8 +33,9 @@ const OAuth2RedirectPage: React.FC = () => {
               case 'LECTURER':
                 navigate('/lecturer/dashboard', { replace: true });
                 break;
-              case 'STUDENT':
+              case 'TEAMLEADER':
               case 'TEAMMEMBER':
+              case 'STUDENT':
                 navigate('/student/dashboard', { replace: true });
                 break;
               default:

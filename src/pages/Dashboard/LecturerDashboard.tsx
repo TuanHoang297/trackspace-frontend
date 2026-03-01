@@ -2,16 +2,49 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box, Grid, Card, CardContent, CardActionArea,
-    Typography, Chip, Skeleton, Alert, Avatar, Divider, LinearProgress,
+    Typography, Chip, Skeleton, Alert, Avatar, LinearProgress,
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import PeopleIcon from '@mui/icons-material/People';
 import GroupsIcon from '@mui/icons-material/Groups';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import PersonIcon from '@mui/icons-material/Person';
+import FolderIcon from '@mui/icons-material/Folder';
 import classService from '../../api/services/classService';
 import groupService from '../../api/services/groupService';
 import type { ClassResponse, GroupResponse } from '../../api/types/types';
+
+/* ─── Stat card config ─── */
+const STAT_CONFIG = [
+    {
+        label: 'Lớp học',
+        key: 'classes',
+        icon: <SchoolIcon sx={{ fontSize: 26 }} />,
+        gradient: 'linear-gradient(135deg, #4F6BF6 0%, #7B8FFF 100%)',
+        shadow: 'rgba(79, 107, 246, 0.25)',
+    },
+    {
+        label: 'Tổng sinh viên',
+        key: 'students',
+        icon: <PeopleIcon sx={{ fontSize: 26 }} />,
+        gradient: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+        shadow: 'rgba(16, 185, 129, 0.25)',
+    },
+    {
+        label: 'Nhóm dự án',
+        key: 'groups',
+        icon: <GroupsIcon sx={{ fontSize: 26 }} />,
+        gradient: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)',
+        shadow: 'rgba(124, 58, 237, 0.25)',
+    },
+    {
+        label: 'Lớp đang active',
+        key: 'active',
+        icon: <AssignmentTurnedInIcon sx={{ fontSize: 26 }} />,
+        gradient: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+        shadow: 'rgba(245, 158, 11, 0.25)',
+    },
+];
 
 const LecturerDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -26,8 +59,6 @@ const LecturerDashboard: React.FC = () => {
                 const res = await classService.getClasses();
                 const classList = res.data.data;
                 setClasses(classList);
-
-                // Fetch groups for all classes in parallel
                 const groupResults = await Promise.all(
                     classList.map(c => groupService.getGroups(c.id).then(r => r.data.data).catch(() => []))
                 );
@@ -44,36 +75,32 @@ const LecturerDashboard: React.FC = () => {
     const totalStudents = classes.reduce((sum, c) => sum + (c.totalStudents || 0), 0);
     const totalGroups = allGroups.length;
     const activeClasses = classes.filter(c => c.active).length;
-    const avgStudentsPerClass = classes.length > 0 ? Math.round(totalStudents / classes.length) : 0;
 
-    const stats = [
-        {
-            label: 'Lớp học', value: classes.length, icon: <SchoolIcon sx={{ fontSize: 28 }} />,
-            bg: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-        },
-        {
-            label: 'Tổng sinh viên', value: totalStudents, icon: <PeopleIcon sx={{ fontSize: 28 }} />,
-            bg: 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)',
-        },
-        {
-            label: 'Nhóm dự án', value: totalGroups, icon: <GroupsIcon sx={{ fontSize: 28 }} />,
-            bg: 'linear-gradient(135deg, #7b1fa2 0%, #ba68c8 100%)',
-        },
-        {
-            label: 'Lớp đang active', value: activeClasses, icon: <AssignmentTurnedInIcon sx={{ fontSize: 28 }} />,
-            bg: 'linear-gradient(135deg, #ed6c02 0%, #ffa726 100%)',
-        },
-    ];
+    const statValues: Record<string, number> = {
+        classes: classes.length,
+        students: totalStudents,
+        groups: totalGroups,
+        active: activeClasses,
+    };
 
+    /* ─── Loading skeleton ─── */
     if (loading) {
         return (
             <Box>
-                <Skeleton variant="text" width={300} height={50} />
-                <Skeleton variant="text" width={200} height={30} sx={{ mb: 3 }} />
-                <Grid container spacing={3}>
-                    {[1, 2, 3, 4].map((i) => (
+                <Skeleton variant="text" width={240} height={48} sx={{ mb: 0.5 }} />
+                <Skeleton variant="text" width={320} height={24} sx={{ mb: 4 }} />
+                <Grid container spacing={3} sx={{ mb: 5 }}>
+                    {[1, 2, 3, 4].map(i => (
                         <Grid item xs={12} sm={6} md={3} key={i}>
-                            <Skeleton variant="rounded" height={110} sx={{ borderRadius: 3 }} />
+                            <Skeleton variant="rounded" height={120} sx={{ borderRadius: 4 }} />
+                        </Grid>
+                    ))}
+                </Grid>
+                <Skeleton variant="text" width={200} height={32} sx={{ mb: 2 }} />
+                <Grid container spacing={3}>
+                    {[1, 2].map(i => (
+                        <Grid item xs={12} sm={6} md={4} key={i}>
+                            <Skeleton variant="rounded" height={220} sx={{ borderRadius: 4 }} />
                         </Grid>
                     ))}
                 </Grid>
@@ -83,30 +110,56 @@ const LecturerDashboard: React.FC = () => {
 
     return (
         <Box>
-            {/* Header */}
+            {/* ─── Header ─── */}
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" fontWeight={700} gutterBottom>
+                <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>
                     Dashboard
                 </Typography>
-                <Typography variant="body1" color="text.secondary">
+                <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
                     Tổng quan hoạt động giảng dạy của bạn
                 </Typography>
             </Box>
 
-            {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+            {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>{error}</Alert>}
 
-            {/* Stat Cards */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                {stats.map((s) => (
-                    <Grid item xs={12} sm={6} md={3} key={s.label}>
-                        <Card sx={{ borderRadius: 3, background: s.bg, color: '#fff' }}>
-                            <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 52, height: 52 }}>
-                                    {s.icon}
-                                </Avatar>
-                                <Box>
-                                    <Typography variant="body2" sx={{ opacity: 0.85 }}>{s.label}</Typography>
-                                    <Typography variant="h3" fontWeight={700}>{s.value}</Typography>
+            {/* ─── Stat Cards ─── */}
+            <Grid container spacing={3} sx={{ mb: 5 }}>
+                {STAT_CONFIG.map(s => (
+                    <Grid item xs={12} sm={6} md={3} key={s.key}>
+                        <Card sx={{
+                            borderRadius: 2,
+                            background: s.gradient,
+                            color: '#fff',
+                            border: 'none',
+                            boxShadow: `0 8px 24px ${s.shadow}`,
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                top: -30, right: -30,
+                                width: 100, height: 100,
+                                borderRadius: '50%',
+                                bgcolor: 'rgba(255,255,255,0.1)',
+                            },
+                        }}>
+                            <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Box>
+                                        <Typography variant="body2" sx={{ opacity: 0.85, fontWeight: 500, mb: 0.5 }}>
+                                            {s.label}
+                                        </Typography>
+                                        <Typography variant="h3" fontWeight={800}>
+                                            {statValues[s.key]}
+                                        </Typography>
+                                    </Box>
+                                    <Avatar sx={{
+                                        bgcolor: 'rgba(255,255,255,0.2)',
+                                        width: 52, height: 52,
+                                        backdropFilter: 'blur(10px)',
+                                    }}>
+                                        {s.icon}
+                                    </Avatar>
                                 </Box>
                             </CardContent>
                         </Card>
@@ -114,98 +167,120 @@ const LecturerDashboard: React.FC = () => {
                 ))}
             </Grid>
 
-            {/* Class Overview Rows */}
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                Tổng quan lớp học
-            </Typography>
+            {/* ─── Class Cards ─── */}
+            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="h6" fontWeight={700}>
+                    Lớp học của tôi
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    {classes.length} lớp
+                </Typography>
+            </Box>
+
             {classes.length === 0 ? (
-                <Card sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
+                <Card sx={{
+                    p: 5, textAlign: 'center', borderRadius: 4,
+                    border: '2px dashed', borderColor: 'divider',
+                    bgcolor: 'transparent', boxShadow: 'none',
+                }}>
+                    <SchoolIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
                     <Typography color="text.secondary">Bạn chưa được gán lớp học nào.</Typography>
                 </Card>
             ) : (
-                <Card sx={{ borderRadius: 3 }}>
-                    {classes.map((cls, idx) => {
+                <Grid container spacing={2.5}>
+                    {classes.map(cls => {
                         const classGroups = allGroups.filter(g => g.classId === cls.id);
                         const groupedStudents = classGroups.reduce((sum, g) => sum + g.totalMembers, 0);
-                        const ungrouped = cls.totalStudents - groupedStudents;
                         const pct = cls.totalStudents > 0 ? Math.round((groupedStudents / cls.totalStudents) * 100) : 0;
+
                         return (
-                            <Box key={cls.id}>
-                                {idx > 0 && <Divider />}
-                                <CardActionArea onClick={() => navigate(`/lecturer/classes/${cls.id}`)} sx={{ px: 3, py: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        {/* Class info */}
-                                        <Box sx={{ flex: 1 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                                <Chip label={cls.classCode} size="small" color="primary" variant="outlined" />
-                                                <Typography fontWeight={600}>{cls.className}</Typography>
-                                                <Chip
-                                                    label={cls.active ? 'Active' : 'Inactive'}
-                                                    size="small"
-                                                    color={cls.active ? 'success' : 'default'}
+                            <Grid item xs={12} sm={6} md={3} key={cls.id}>
+                                <Card sx={{
+                                    borderRadius: 2, height: '100%', maxWidth: 260,
+                                    '&:hover': {
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                                        transform: 'translateY(-2px)',
+                                    },
+                                    transition: 'all 0.2s ease',
+                                }}>
+                                    <CardActionArea
+                                        onClick={() => navigate(`/lecturer/classes/${cls.id}`)}
+                                        sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+                                    >
+                                        {/* Top gradient bar */}
+                                        <Box sx={{
+                                            height: 4,
+                                            background: cls.active
+                                                ? 'linear-gradient(90deg, #4F6BF6, #7B8FFF)'
+                                                : '#E2E8F0',
+                                        }} />
+
+                                        <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                            {/* Row 1: className chip + Active chip */}
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                                <Chip label={cls.className} size="small" sx={{
+                                                    bgcolor: 'rgba(79,107,246,0.08)', color: '#4F6BF6',
+                                                    fontWeight: 600, fontSize: '0.7rem', height: 24,
+                                                }} />
+                                                <Chip label={cls.active ? 'Active' : 'Inactive'} size="small"
+                                                    sx={{
+                                                        bgcolor: cls.active ? '#E8F5E9' : '#F5F5F5',
+                                                        color: cls.active ? '#2E7D32' : '#9E9E9E',
+                                                        fontWeight: 600, fontSize: '0.65rem', height: 22,
+                                                    }}
                                                 />
                                             </Box>
-                                            <Typography variant="caption" color="text.secondary">
-                                                Học kỳ: {cls.semester}
+
+                                            {/* Row 2: Class Code = BIG title */}
+                                            <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.3 }}>
+                                                {cls.classCode}
                                             </Typography>
-                                        </Box>
 
-                                        {/* Stats */}
-                                        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mr: 2 }}>
-                                            <Box sx={{ textAlign: 'center' }}>
-                                                <Typography variant="h6" fontWeight={700} color="primary">{cls.totalStudents}</Typography>
-                                                <Typography variant="caption" color="text.secondary">Sinh viên</Typography>
-                                            </Box>
-                                            <Box sx={{ textAlign: 'center' }}>
-                                                <Typography variant="h6" fontWeight={700} color="secondary.main">{classGroups.length}</Typography>
-                                                <Typography variant="caption" color="text.secondary">Nhóm</Typography>
-                                            </Box>
-                                            <Box sx={{ minWidth: 120 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                                    <Typography variant="caption" color="text.secondary">Đã vào nhóm</Typography>
-                                                    <Typography variant="caption" fontWeight={600}>{pct}%</Typography>
+                                            {/* Row 3: Semester */}
+                                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5 }}>
+                                                {cls.semester}
+                                            </Typography>
+
+                                            {/* Row 4: Stats */}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, mt: 'auto' }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                    <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                                    <Typography variant="body2" fontWeight={600}>{cls.totalStudents}</Typography>
                                                 </Box>
-                                                <LinearProgress
-                                                    variant="determinate"
-                                                    value={pct}
-                                                    sx={{ height: 6, borderRadius: 3 }}
-                                                    color={pct === 100 ? 'success' : pct > 50 ? 'primary' : 'warning'}
-                                                />
-                                                {ungrouped > 0 && (
-                                                    <Typography variant="caption" color="warning.main">
-                                                        {ungrouped} SV chưa có nhóm
-                                                    </Typography>
-                                                )}
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                    <FolderIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                                    <Typography variant="body2" fontWeight={600}>{classGroups.length}</Typography>
+                                                </Box>
                                             </Box>
-                                        </Box>
 
-                                        <ArrowForwardIcon color="action" fontSize="small" />
-                                    </Box>
-                                </CardActionArea>
-                            </Box>
+                                            {/* Row 5: Progress */}
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    Đã vào nhóm {pct}%
+                                                </Typography>
+                                                <Typography variant="caption" fontWeight={700}
+                                                    color={pct === 100 ? 'success.main' : 'primary.main'}>
+                                                    {pct}%
+                                                </Typography>
+                                            </Box>
+                                            <LinearProgress
+                                                variant="determinate" value={pct}
+                                                sx={{
+                                                    height: 5, borderRadius: 1,
+                                                    bgcolor: 'rgba(0,0,0,0.06)',
+                                                    '& .MuiLinearProgress-bar': {
+                                                        borderRadius: 1,
+                                                        bgcolor: pct === 100 ? 'success.main' : 'primary.main',
+                                                    },
+                                                }}
+                                            />
+                                        </CardContent>
+                                    </CardActionArea>
+                                </Card>
+                            </Grid>
                         );
                     })}
-                </Card>
-            )}
-
-            {/* Bottom summary */}
-            {classes.length > 0 && (
-                <Box sx={{ mt: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 3, display: 'flex', gap: 4 }}>
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">Trung bình SV/lớp</Typography>
-                        <Typography variant="h6" fontWeight={700}>{avgStudentsPerClass}</Typography>
-                    </Box>
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">Tổng nhóm dự án</Typography>
-                        <Typography variant="h6" fontWeight={700}>{totalGroups}</Typography>
-                    </Box>
-                    <Box>
-                        <Typography variant="body2" color="text.secondary">SV đã vào nhóm</Typography>
-                        <Typography variant="h6" fontWeight={700}>
-                            {allGroups.reduce((s, g) => s + g.totalMembers, 0)} / {totalStudents}
-                        </Typography>
-                    </Box>
-                </Box>
+                </Grid>
             )}
         </Box>
     );

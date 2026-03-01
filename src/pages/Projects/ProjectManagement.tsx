@@ -34,6 +34,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import { toast } from 'react-toastify';
 import projectService from '../../api/services/projectService';
 import classService from '../../api/services/classService';
@@ -287,6 +288,15 @@ const ProjectManagement: React.FC = () => {
                                                         onClick={() => navigate(`/lecturer/projects/${p.id}/info`)}
                                                     >
                                                         <InfoIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Jira Board">
+                                                    <IconButton
+                                                        size="small"
+                                                        sx={{ color: '#0052CC' }}
+                                                        onClick={() => navigate(`/projects/${p.id}`)}
+                                                    >
+                                                        <ViewKanbanIcon fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip title="Xóa Project">
