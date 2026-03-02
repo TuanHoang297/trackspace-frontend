@@ -45,15 +45,7 @@ function App() {
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
-                    <Route
-                        path="/register"
-                        element={
-                            <div style={{ padding: '2rem', textAlign: 'center' }}>
-                                <h1>Register Page</h1>
-                                <p>Coming soon...</p>
-                            </div>
-                        }
-                    />
+
 
                     {/* Admin routes */}
                     <Route
@@ -116,27 +108,15 @@ function App() {
                                 <Typography color="text.secondary">Coming soon...</Typography>
                             </Box>
                         } />
+                        <Route path="/projects/:projectId/settings" element={
+                            <Box sx={{ p: 4, textAlign: 'center' }}>
+                                <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>Cài đặt dự án</Typography>
+                                <Typography color="text.secondary">Coming soon...</Typography>
+                            </Box>
+                        } />
                     </Route>
 
-                    {/* Placeholder routes for other roles */}
-                    <Route
-                        path="/student/dashboard"
-                        element={
-                            <div style={{ padding: '2rem', textAlign: 'center' }}>
-                                <h1>Student Dashboard</h1>
-                                <p>Coming soon...</p>
-                            </div>
-                        }
-                    />
-                    <Route
-                        path="/dashboard"
-                        element={
-                            <div style={{ padding: '2rem', textAlign: 'center' }}>
-                                <h1>Dashboard</h1>
-                                <p>Coming soon...</p>
-                            </div>
-                        }
-                    />
+
                 </Routes>
             </Router>
         </ThemeProvider>
