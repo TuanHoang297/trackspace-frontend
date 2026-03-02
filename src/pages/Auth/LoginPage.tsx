@@ -84,7 +84,7 @@ const LoginPage: React.FC = () => {
         }));
         const r = data.data.role;
         if (r === 'ADMIN') navigate('/admin/dashboard');
-        else if (r === 'LECTURER') navigate('/lecturer/dashboard');
+        else if (r === 'LECTURER') navigate('/lecturer/classes');
         else navigate('/student/dashboard');
       } else setApiErr(data.message || 'Đăng nhập thất bại.');
     } catch { setApiErr('Không thể kết nối đến server.'); }

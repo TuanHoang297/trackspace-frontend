@@ -74,7 +74,6 @@ function App() {
                             </ProtectedRoute>
                         }
                     >
-                        <Route path="/lecturer/dashboard" element={<LecturerDashboard />} />
                         <Route path="/lecturer/classes" element={<LecturerDashboard />} />
                         <Route path="/lecturer/classes/:classId" element={<ClassDetail />} />
                         <Route path="/lecturer/classes/:classId/groups" element={<GroupManagement />} />
