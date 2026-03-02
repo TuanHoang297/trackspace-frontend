@@ -74,7 +74,7 @@ const ProjectLayout: React.FC = () => {
                     top: 0,
                     zIndex: 1100,
                 }}>
-                    <IconButton size="small" onClick={() => navigate(-1)} sx={{ mr: 0.5 }}>
+                    <IconButton size="small" onClick={() => navigate(classListPath)} sx={{ mr: 0.5 }}>
                         <ArrowBackIcon fontSize="small" />
                     </IconButton>
 

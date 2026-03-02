@@ -138,27 +138,7 @@ const ProjectOverview: React.FC = () => {
                 </Box>
             </Paper>
 
-            {/* Quick Stats */}
-            {isJiraConnected && (
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 3 }}>
-                    {[
-                        { label: 'Sprints', value: jiraConn?.totalSprints || 0, color: '#3B82F6' },
-                        { label: 'Issues', value: jiraConn?.totalIssues || 0, color: '#10B981' },
-                        { label: 'Project Key', value: jiraConn?.projectKey || '—', color: '#8B5CF6' },
-                    ].map(stat => (
-                        <Paper key={stat.label} elevation={0} sx={{
-                            p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider', textAlign: 'center',
-                        }}>
-                            <Typography variant="h4" fontWeight={800} sx={{ color: stat.color }}>
-                                {stat.value}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                                {stat.label}
-                            </Typography>
-                        </Paper>
-                    ))}
-                </Box>
-            )}
+
 
             {/* Quick Links */}
             <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>Truy cập nhanh</Typography>
