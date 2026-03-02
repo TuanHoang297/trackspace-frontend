@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Box, Button, Card, Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Chip, IconButton, Tooltip, Typography, Skeleton,
+    Box, Button, Card, Chip, IconButton, Tooltip, Typography, Skeleton,
     TextField, Dialog, DialogTitle, DialogContent, DialogActions,
     Checkbox, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
     Divider, Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StarIcon from '@mui/icons-material/Star';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
+
 import { toast } from 'react-toastify';
 import groupService from '../../../../api/services/groupService';
 import projectService from '../../../../api/services/projectService';
@@ -55,6 +54,8 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
     const [createProjGroup, setCreateProjGroup] = useState<GroupResponse | null>(null);
     const [newProjName, setNewProjName] = useState('');
     const [creatingProj, setCreatingProj] = useState(false);
+
+
 
     const handleCreate = async () => {
         if (!newGroup.groupName) { toast.error('Tên nhóm không được để trống'); return; }
@@ -179,89 +180,203 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                 </Button>
             </Box>
 
-            <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                                {['#', 'Tên nhóm', 'Project', 'Team Leader', 'Thành viên', 'Hành động'].map(h => (
-                                    <TableCell key={h} sx={{ fontWeight: 700 }} align={['Thành viên', 'Hành động'].includes(h) ? 'center' : 'left'}>{h}</TableCell>
-                                ))}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {groups.length === 0 ? (
-                                <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>Chưa có nhóm nào</TableCell></TableRow>
-                            ) : groups.map((g, i) => {
-                                const proj = projects.find(p => p.groupId === g.id);
-                                return (
-                                    <TableRow key={g.id} hover sx={{ cursor: 'pointer' }} onClick={() => openMembersDialog(g)}>
-                                        <TableCell sx={{ color: 'text.secondary' }}>{i + 1}</TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" fontWeight={600}>{g.groupName}</Typography>
-                                            {g.description && <Typography variant="caption" color="text.secondary">{g.description}</Typography>}
-                                        </TableCell>
-                                        <TableCell onClick={e => e.stopPropagation()}>
-                                            {proj ? (
-                                                <Tooltip title="Quản lý dự án" arrow>
-                                                    <Chip
-                                                        label={proj.projectName}
-                                                        size="small"
-                                                        color="primary"
-                                                        variant="outlined"
-                                                        icon={<ViewKanbanIcon sx={{ fontSize: '16px !important' }} />}
-                                                        onClick={() => navigate(`/projects/${proj.id}`)}
-                                                        sx={{
-                                                            cursor: 'pointer', maxWidth: 280, fontWeight: 600,
-                                                            '&:hover': { bgcolor: '#EFF6FF', borderColor: '#3B82F6' },
-                                                            transition: 'all 0.15s ease',
-                                                        }}
-                                                    />
-                                                </Tooltip>
-                                            ) : (
-                                                <Chip
-                                                    label="+ Tạo Project"
-                                                    size="small"
-                                                    variant="outlined"
-                                                    onClick={() => { setCreateProjGroup(g); setNewProjName(''); }}
-                                                    sx={{
-                                                        cursor: 'pointer', borderStyle: 'dashed',
-                                                        '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
-                                                    }}
-                                                />
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            {g.teamLeaderName ? (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                    <StarIcon fontSize="small" sx={{ color: '#ffa726' }} />
-                                                    <Typography variant="body2">{g.teamLeaderName}</Typography>
+            {groups.length === 0 ? (
+                <Card sx={{
+                    p: 6, textAlign: 'center', borderRadius: 4,
+                    border: '2px dashed', borderColor: 'divider',
+                    bgcolor: 'transparent', boxShadow: 'none',
+                }}>
+                    <GroupsIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                    <Typography color="text.secondary" fontWeight={500}>Chưa có nhóm nào</Typography>
+                    <Typography variant="caption" color="text.disabled">Bấm "Tạo nhóm" để bắt đầu</Typography>
+                </Card>
+            ) : (
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' },
+                    gap: 2,
+                }}>
+                    {groups.map((g, i) => {
+                        const proj = projects.find(p => p.groupId === g.id);
+                        const palettes = [
+                            { g1: '#3B82F6', g2: '#8B5CF6', bg: '#EEF2FF', light: 'rgba(59,130,246,0.08)' },
+                            { g1: '#10B981', g2: '#059669', bg: '#ECFDF5', light: 'rgba(16,185,129,0.08)' },
+                            { g1: '#F59E0B', g2: '#D97706', bg: '#FFFBEB', light: 'rgba(245,158,11,0.08)' },
+                            { g1: '#EF4444', g2: '#DC2626', bg: '#FEF2F2', light: 'rgba(239,68,68,0.08)' },
+                            { g1: '#8B5CF6', g2: '#7C3AED', bg: '#F5F3FF', light: 'rgba(139,92,246,0.08)' },
+                            { g1: '#EC4899', g2: '#DB2777', bg: '#FDF2F8', light: 'rgba(236,72,153,0.08)' },
+                        ];
+                        const pal = palettes[i % palettes.length];
+
+                        return (
+                            <Card
+                                key={g.id}
+                                sx={{
+                                    borderRadius: 3,
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
+                                    border: '1px solid',
+                                    borderColor: 'rgba(0,0,0,0.05)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    position: 'relative',
+                                    '&:hover': {
+                                        transform: 'translateY(-6px)',
+                                        boxShadow: `0 20px 40px -12px ${pal.g1}30`,
+                                        borderColor: `${pal.g1}40`,
+                                    },
+                                }}
+                                onClick={() => openMembersDialog(g)}
+                            >
+                                {/* ── Gradient Header ── */}
+                                <Box sx={{
+                                    background: `linear-gradient(135deg, ${pal.g1} 0%, ${pal.g2} 100%)`,
+                                    px: 2, pt: 2, pb: 2.5,
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    '&::before': {
+                                        content: '""', position: 'absolute',
+                                        top: -20, right: -20,
+                                        width: 80, height: 80,
+                                        borderRadius: '50%',
+                                        bgcolor: 'rgba(255,255,255,0.12)',
+                                    },
+                                    '&::after': {
+                                        content: '""', position: 'absolute',
+                                        bottom: -15, left: '50%',
+                                        width: 50, height: 50,
+                                        borderRadius: '50%',
+                                        bgcolor: 'rgba(255,255,255,0.08)',
+                                    },
+                                }}>
+                                    <Box sx={{ position: 'relative', zIndex: 1 }}>
+                                        <Box sx={{
+                                            width: 38, height: 38, borderRadius: 2,
+                                            bgcolor: 'rgba(255,255,255,0.2)',
+                                            backdropFilter: 'blur(10px)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        }}>
+                                            <GroupsIcon sx={{ fontSize: 20, color: '#fff' }} />
+                                        </Box>
+                                    </Box>
+
+                                    <Typography variant="h6" fontWeight={800} sx={{
+                                        color: '#fff', fontSize: '1rem', lineHeight: 1.2,
+                                        mt: 1.5, position: 'relative', zIndex: 1,
+                                    }}>
+                                        {g.groupName}
+                                    </Typography>
+                                    {g.description && (
+                                        <Typography variant="caption" noWrap display="block" sx={{
+                                            color: 'rgba(255,255,255,0.75)', mt: 0.3,
+                                            position: 'relative', zIndex: 1,
+                                        }}>
+                                            {g.description}
+                                        </Typography>
+                                    )}
+                                </Box>
+
+                                {/* ── Body ── */}
+                                <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: '#fff' }}>
+                                    {/* Project */}
+                                    <Box onClick={e => e.stopPropagation()}>
+                                        {proj ? (
+                                            <Box sx={{
+                                                p: 1.5, borderRadius: 2,
+                                                bgcolor: pal.light,
+                                                border: `1px solid ${pal.g1}18`,
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                                                    <ViewKanbanIcon sx={{ fontSize: 14, color: pal.g1 }} />
+                                                    <Typography variant="caption" fontWeight={700} sx={{ color: pal.g1, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.6rem' }}>
+                                                        Project
+                                                    </Typography>
                                                 </Box>
-                                            ) : <Typography variant="body2" color="text.disabled" fontStyle="italic">Chưa gán</Typography>}
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <Chip label={g.totalMembers} size="small" color="primary" variant="outlined" />
-                                        </TableCell>
-                                        <TableCell align="center" onClick={e => e.stopPropagation()}>
-                                            <Tooltip title="Sửa nhóm">
-                                                <IconButton size="small" color="primary"
-                                                    onClick={() => { setEditTarget(g); setEditName(g.groupName); setEditDesc(g.description || ''); }}>
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Xóa nhóm">
-                                                <IconButton size="small" color="error" onClick={() => setDeleteTarget(g)}>
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Card>
+                                                <Typography variant="body2" fontWeight={600} noWrap sx={{ color: '#1E293B', fontSize: '0.82rem' }}>
+                                                    {proj.projectName}
+                                                </Typography>
+                                            </Box>
+                                        ) : (
+                                            <Box
+                                                onClick={() => { setCreateProjGroup(g); setNewProjName(''); }}
+                                                sx={{
+                                                    p: 1.5, borderRadius: 2,
+                                                    border: '1.5px dashed',
+                                                    borderColor: '#CBD5E1',
+                                                    textAlign: 'center',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.15s ease',
+                                                    '&:hover': { borderColor: pal.g1, bgcolor: pal.light },
+                                                }}
+                                            >
+                                                <Typography variant="caption" fontWeight={600} sx={{ color: '#94A3B8' }}>
+                                                    + Gán Project
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </Box>
+
+                                    {/* Stats Row */}
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0, flex: 1 }}>
+                                            {g.teamLeaderName ? (
+                                                <>
+                                                    <StarIcon sx={{ fontSize: 14, color: '#F59E0B', flexShrink: 0 }} />
+                                                    <Typography variant="caption" fontWeight={600} noWrap sx={{ color: '#475569' }}>
+                                                        {g.teamLeaderName}
+                                                    </Typography>
+                                                </>
+                                            ) : (
+                                                <Typography variant="caption" color="text.disabled" fontStyle="italic">
+                                                    Chưa có leader
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                        <Chip
+                                            icon={<GroupsIcon sx={{ fontSize: '12px !important' }} />}
+                                            label={g.totalMembers}
+                                            size="small"
+                                            sx={{
+                                                fontWeight: 700, fontSize: '0.7rem', height: 22,
+                                                bgcolor: pal.light, color: pal.g1,
+                                                '& .MuiChip-icon': { color: pal.g1 },
+                                            }}
+                                        />
+                                    </Box>
+
+                                    {/* Workspace Button */}
+                                    {proj && (
+                                        <Box onClick={e => e.stopPropagation()} sx={{ mt: 'auto' }}>
+                                            <Button
+                                                fullWidth
+                                                size="small"
+                                                variant="contained"
+                                                startIcon={<ViewKanbanIcon sx={{ fontSize: '16px !important' }} />}
+                                                onClick={() => navigate(`/projects/${proj.id}`)}
+                                                sx={{
+                                                    textTransform: 'none',
+                                                    fontWeight: 700,
+                                                    fontSize: '0.78rem',
+                                                    borderRadius: 2,
+                                                    py: 0.8,
+                                                    background: `linear-gradient(135deg, ${pal.g1} 0%, ${pal.g2} 100%)`,
+                                                    boxShadow: `0 4px 12px ${pal.g1}35`,
+                                                    '&:hover': {
+                                                        boxShadow: `0 6px 20px ${pal.g1}50`,
+                                                    },
+                                                }}
+                                            >
+                                                Mở Workspace
+                                            </Button>
+                                        </Box>
+                                    )}
+                                </Box>
+                            </Card>
+                        );
+                    })}
+                </Box>
+            )}
 
             {/* Create Group Dialog */}
             <Dialog open={openCreate} onClose={() => setOpenCreate(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -565,6 +680,8 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                     </Button>
                 </DialogActions>
             </Dialog>
+
+
         </>
     );
 };

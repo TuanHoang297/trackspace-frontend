@@ -119,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onToggle }) => {
                 {navItems.map((item) => {
                     const isActive =
                         location.pathname === item.path ||
-                        (!['/', '/admin/dashboard', '/lecturer/dashboard', '/student/dashboard'].includes(item.path) &&
+                        (!['/', '/admin/dashboard', '/student/dashboard'].includes(item.path) &&
                             location.pathname.startsWith(item.path));
 
                     const btn = (
