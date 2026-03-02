@@ -20,6 +20,7 @@ import type { GroupResponse, GroupMemberResponse, CreateGroupRequest } from '../
 import type { StudentInClassResponse } from '../../../../types/class.types';
 import type { ProjectResponse } from '../../../../types/project.types';
 import ConfirmDialog from '../../../../components/common/ConfirmDialog/ConfirmDialog';
+import { useRole } from '../../../../hooks/useRole';
 
 interface Props {
     classId: number;
@@ -31,6 +32,8 @@ interface Props {
 
 const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRefresh }) => {
     const navigate = useNavigate();
+    const { isReadOnly } = useRole();
+    const readOnly = isReadOnly();
     const [openCreate, setOpenCreate] = useState(false);
     const [creating, setCreating] = useState(false);
     const [newGroup, setNewGroup] = useState<CreateGroupRequest>({ groupName: '', description: '' });
@@ -173,12 +176,14 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
 
     return (
         <>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenCreate(true)}
-                    sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
-                    Tạo nhóm
-                </Button>
-            </Box>
+            {!readOnly && (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenCreate(true)}
+                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+                        Tạo nhóm
+                    </Button>
+                </Box>
+            )}
 
             {groups.length === 0 ? (
                 <Card sx={{
@@ -297,7 +302,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                                     {proj.projectName}
                                                 </Typography>
                                             </Box>
-                                        ) : (
+                                        ) : !readOnly ? (
                                             <Box
                                                 onClick={() => { setCreateProjGroup(g); setNewProjName(''); }}
                                                 sx={{
@@ -313,6 +318,10 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                                 <Typography variant="caption" fontWeight={600} sx={{ color: '#94A3B8' }}>
                                                     + Gán Project
                                                 </Typography>
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ p: 1.5, borderRadius: 2, border: '1.5px dashed', borderColor: '#E2E8F0', textAlign: 'center' }}>
+                                                <Typography variant="caption" color="text.disabled" fontStyle="italic">Chưa có project</Typography>
                                             </Box>
                                         )}
                                     </Box>
@@ -484,12 +493,14 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                             </Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Button
-                                                size="small" variant="outlined"
-                                                onClick={() => { setCreateProjGroup(viewGroup); setNewProjName(proj.projectName); }}
-                                                sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}>
-                                                Đổi tên
-                                            </Button>
+                                            {!readOnly && (
+                                                <Button
+                                                    size="small" variant="outlined"
+                                                    onClick={() => { setCreateProjGroup(viewGroup); setNewProjName(proj.projectName); }}
+                                                    sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}>
+                                                    Đổi tên
+                                                </Button>
+                                            )}
                                             <Button
                                                 size="small" variant="contained"
                                                 startIcon={<ViewKanbanIcon />}
@@ -504,13 +515,15 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                         <Typography variant="body2" color="text.disabled" fontStyle="italic">
                                             Chưa có project — tạo để sử dụng Jira, GitHub, Contribution
                                         </Typography>
-                                        <Button
-                                            size="small" variant="contained"
-                                            startIcon={<AddIcon />}
-                                            onClick={() => { setCreateProjGroup(viewGroup); setNewProjName(''); }}
-                                            sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}>
-                                            Tạo Project
-                                        </Button>
+                                        {!readOnly && (
+                                            <Button
+                                                size="small" variant="contained"
+                                                startIcon={<AddIcon />}
+                                                onClick={() => { setCreateProjGroup(viewGroup); setNewProjName(''); }}
+                                                sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}>
+                                                Tạo Project
+                                            </Button>
+                                        )}
                                     </Box>
                                 )}
                             </Box>
@@ -584,21 +597,23 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                     />
 
                                     {/* Actions */}
-                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                        {!m.isLeader && (
-                                            <Tooltip title="Gán làm Team Leader">
-                                                <IconButton size="small" onClick={() => handleAssignLeader(m)}
-                                                    sx={{ color: '#FF9800' }}>
-                                                    <StarIcon fontSize="small" />
+                                    {!readOnly && (
+                                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                            {!m.isLeader && (
+                                                <Tooltip title="Gán làm Team Leader">
+                                                    <IconButton size="small" onClick={() => handleAssignLeader(m)}
+                                                        sx={{ color: '#FF9800' }}>
+                                                        <StarIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            <Tooltip title="Xóa khỏi nhóm">
+                                                <IconButton size="small" onClick={() => handleRemoveMember(m)} color="error">
+                                                    <DeleteIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
-                                        )}
-                                        <Tooltip title="Xóa khỏi nhóm">
-                                            <IconButton size="small" onClick={() => handleRemoveMember(m)} color="error">
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Box>
+                                        </Box>
+                                    )}
                                 </Box>
                             ))}
                         </Box>

@@ -40,11 +40,14 @@ import projectService from '../../api/services/projectService';
 import classService from '../../api/services/classService';
 import groupService from '../../api/services/groupService';
 import type { ProjectResponse, ClassResponse, GroupResponse } from '../../api/types/types';
+import { useRole } from '../../hooks/useRole';
 
 const ProjectManagement: React.FC = () => {
     const { classId } = useParams<{ classId: string }>();
     const navigate = useNavigate();
     const id = Number(classId);
+    const { isReadOnly } = useRole();
+    const readOnly = isReadOnly();
 
     const [classInfo, setClassInfo] = useState<ClassResponse | null>(null);
     const [projects, setProjects] = useState<ProjectResponse[]>([]);
@@ -187,14 +190,16 @@ const ProjectManagement: React.FC = () => {
                             Tổng số: {projects.length} project đang thực hiện
                         </Typography>
                     </Box>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => setOpenCreate(true)}
-                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, px: 3 }}
-                    >
-                        Tạo Project mới
-                    </Button>
+                    {!readOnly && (
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => setOpenCreate(true)}
+                            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, px: 3 }}
+                        >
+                            Tạo Project mới
+                        </Button>
+                    )}
                 </Box>
             </Box>
 
@@ -269,18 +274,20 @@ const ProjectManagement: React.FC = () => {
                                                 )}
                                             </TableCell>
                                             <TableCell align="center">
-                                                <Tooltip title="Sửa tên">
-                                                    <IconButton
-                                                        size="small"
-                                                        color="primary"
-                                                        onClick={() => {
-                                                            setEditTarget(p);
-                                                            setEditName(p.projectName);
-                                                        }}
-                                                    >
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                {!readOnly && (
+                                                    <Tooltip title="Sửa tên">
+                                                        <IconButton
+                                                            size="small"
+                                                            color="primary"
+                                                            onClick={() => {
+                                                                setEditTarget(p);
+                                                                setEditName(p.projectName);
+                                                            }}
+                                                        >
+                                                            <EditIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
                                                 <Tooltip title="Xem thông tin chi tiết">
                                                     <IconButton
                                                         size="small"
@@ -299,15 +306,17 @@ const ProjectManagement: React.FC = () => {
                                                         <ViewKanbanIcon fontSize="small" />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title="Xóa Project">
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => setDeleteTarget(p)}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                {!readOnly && (
+                                                    <Tooltip title="Xóa Project">
+                                                        <IconButton
+                                                            size="small"
+                                                            color="error"
+                                                            onClick={() => setDeleteTarget(p)}
+                                                        >
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     );

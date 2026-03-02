@@ -23,6 +23,7 @@ import githubService from '../../api/services/githubService';
 import type {
     GitHubConnectionResponse, GitHubCommitResponse, GitHubStatsResponse, GitHubBranchResponse,
 } from '../../types/github.types';
+import { useRole } from '../../hooks/useRole';
 
 type ViewMode = 'overview' | 'connect' | 'detail';
 type RepoType = 'FRONTEND' | 'BACKEND';
@@ -78,6 +79,8 @@ const ActivityChart: React.FC<{ commits: GitHubCommitResponse[]; color: string }
 const GitHubPage: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const pid = Number(projectId);
+    const { isReadOnly } = useRole();
+    const readOnly = isReadOnly();
 
     const [connections, setConnections] = useState<GitHubConnectionResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -125,7 +128,20 @@ const GitHubPage: React.FC = () => {
         return () => clearInterval(interval);
     }, [fetchConns, fetchData, view, selectedRepo, connections]);
 
-    const handleCardClick = (t: RepoType) => { setSelectedRepo(t); const c = getConn(t); if (c) { setView('detail'); fetchData(c.connectionId); } else { setUrl(''); setToken(''); setView('connect'); } };
+    const handleCardClick = (t: RepoType) => {
+        setSelectedRepo(t);
+        const c = getConn(t);
+        if (c) {
+            setView('detail');
+            fetchData(c.connectionId);
+        } else if (!readOnly) {
+            setUrl('');
+            setToken('');
+            setView('connect');
+        } else {
+            toast.info('Sinh viên cần kết nối repo này để theo dõi commits.');
+        }
+    };
     const handleBack = () => { setView('overview'); setSelectedRepo(null); setTab(0); setBranchFilter('all'); setAuthorFilter('all'); };
     const handleConnect = async () => {
         if (!url || !token || !selectedRepo) { toast.error('Nhập Repository URL và Token'); return; }
@@ -423,8 +439,10 @@ const GitHubPage: React.FC = () => {
                             <Typography variant="caption" color="text.secondary">{activeConn?.repositoryUrl?.replace('https://github.com/', '')} · {commits.length} commits · {branches.length} branches · {timeAgo(activeConn?.lastSyncAt || null)}</Typography>
                         </Box>
                     </Box>
-                    <Button size="small" variant="contained" disabled={syncing} startIcon={syncing ? <CircularProgress size={14} color="inherit" /> : <SyncIcon />} onClick={handleSync}
-                        sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#238636', '&:hover': { bgcolor: '#2EA043' } }}>{syncing ? 'Syncing...' : 'Sync'}</Button>
+                    {!readOnly && (
+                        <Button size="small" variant="contained" disabled={syncing} startIcon={syncing ? <CircularProgress size={14} color="inherit" /> : <SyncIcon />} onClick={handleSync}
+                            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#238636', '&:hover': { bgcolor: '#2EA043' } }}>{syncing ? 'Syncing...' : 'Sync'}</Button>
+                    )}
                 </Box>
 
 

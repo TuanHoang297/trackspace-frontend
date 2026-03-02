@@ -19,11 +19,14 @@ import SaveIcon from '@mui/icons-material/Save';
 import { toast } from 'react-toastify';
 import projectService from '../../api/services/projectService';
 import type { ProjectResponse, ProjectInfoResponse, ProjectInfoRequest } from '../../api/types/types';
+import { useRole } from '../../hooks/useRole';
 
 const ProjectInfo: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const id = Number(projectId);
+    const { isReadOnly } = useRole();
+    const readOnly = isReadOnly();
 
     const [project, setProject] = useState<ProjectResponse | null>(null);
     const [info, setInfo] = useState<ProjectInfoResponse | null>(null);
@@ -131,16 +134,18 @@ const ProjectInfo: React.FC = () => {
                             </Typography>
                         </Box>
                     </Box>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveIcon />}
-                        onClick={handleSave}
-                        disabled={saving}
-                        sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, textTransform: 'none' }}
-                    >
-                        {saving ? 'Đang lưu...' : 'Lưu thông tin'}
-                    </Button>
+                    {!readOnly && (
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<SaveIcon />}
+                            onClick={handleSave}
+                            disabled={saving}
+                            sx={{ px: 4, py: 1.2, borderRadius: 2, fontWeight: 600, textTransform: 'none' }}
+                        >
+                            {saving ? 'Đang lưu...' : 'Lưu thông tin'}
+                        </Button>
+                    )}
                 </Box>
             </Box>
 
@@ -150,7 +155,9 @@ const ProjectInfo: React.FC = () => {
                         Thông tin chi tiết Project
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                        Điền các thông tin cơ bản về project. Thông tin này sẽ được sử dụng để tạo tài liệu đặc tả yêu cầu (SRS) sau này.
+                        {readOnly
+                            ? 'Bạn đang xem thông tin project ở chế độ chỉ đọc.'
+                            : 'Điền các thông tin cơ bản về project. Thông tin này sẽ được sử dụng để tạo tài liệu đặc tả yêu cầu (SRS) sau này.'}
                     </Typography>
 
                     <Grid container spacing={4}>
@@ -162,6 +169,7 @@ const ProjectInfo: React.FC = () => {
                                 value={topic}
                                 onChange={(e) => setTopic(e.target.value)}
                                 placeholder="Ví dụ: Nền tảng học trực tuyến"
+                                disabled={readOnly}
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
                         </Grid>
@@ -176,6 +184,7 @@ const ProjectInfo: React.FC = () => {
                                 value={context}
                                 onChange={(e) => setContext(e.target.value)}
                                 placeholder="Tại sao lại làm dự án này? Hệ thống giải quyết mục tiêu kinh doanh/xã hội gì?"
+                                disabled={readOnly}
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
                         </Grid>
@@ -190,6 +199,7 @@ const ProjectInfo: React.FC = () => {
                                 value={problems}
                                 onChange={(e) => setProblems(e.target.value)}
                                 placeholder="Ghi rõ các vấn đề thực tiễn mà giải pháp này sẽ giải quyết..."
+                                disabled={readOnly}
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
                         </Grid>
@@ -208,6 +218,7 @@ const ProjectInfo: React.FC = () => {
                                 value={primaryActors}
                                 onChange={(e) => setPrimaryActors(e.target.value)}
                                 placeholder="Ví dụ: Admin, Giảng viên, Sinh viên, Khách hàng..."
+                                disabled={readOnly}
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
                         </Grid>
@@ -222,6 +233,7 @@ const ProjectInfo: React.FC = () => {
                                 value={functionalRequirements}
                                 onChange={(e) => setFunctionalRequirements(e.target.value)}
                                 placeholder="- Chức năng 1: Đăng nhập/Đăng ký&#10;- Chức năng 2: Quản lý khóa học&#10;- Chức năng 3: Thanh toán..."
+                                disabled={readOnly}
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
                         </Grid>

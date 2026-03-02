@@ -33,10 +33,9 @@ const JiraBoard: React.FC = () => {
     const role = user?.role || '';
     const isLeader = role === 'TEAMLEADER';
     const isMember = role === 'TEAMMEMBER';
-    const isLecturer = role === 'LECTURER';
-    const canManageConnection = isLeader || isLecturer;        // Connect/Disconnect/Sync Jira
-    const canCreateIssue = isLeader || isMember || isLecturer; // All team members can create
-    const canUpdateStatus = isLeader || isMember || isLecturer; // All can update status
+    const canManageConnection = isLeader;           // Only Team Leader can Connect/Sync/Disconnect
+    const canCreateIssue = isLeader || isMember;    // Only team members can create issues/sprints
+    const canUpdateStatus = isLeader || isMember;   // Only team members can update status
 
     // State
     const [syncing, setSyncing] = useState(false);

@@ -3,7 +3,6 @@ import {
     Box, Card, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Chip, IconButton, Tooltip, Typography, Button,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import AddIcon from '@mui/icons-material/Add';
@@ -15,6 +14,7 @@ import type { ProjectResponse } from '../../../../types/project.types';
 import type { GroupResponse } from '../../../../types/group.types';
 import ConfirmDialog from '../../../../components/common/ConfirmDialog/ConfirmDialog';
 import CreateProjectDialog from '../../../../pages/Classes/ClassDetail/components/CreateProjectDialog';
+import { useRole } from '../../../../hooks/useRole';
 
 interface Props {
     projects: ProjectResponse[];
@@ -24,6 +24,8 @@ interface Props {
 
 const ProjectsTab: React.FC<Props> = ({ projects, groups, onRefresh }) => {
     const navigate = useNavigate();
+    const { isReadOnly } = useRole();
+    const readOnly = isReadOnly();
     const [openCreate, setOpenCreate] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<ProjectResponse | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -45,13 +47,15 @@ const ProjectsTab: React.FC<Props> = ({ projects, groups, onRefresh }) => {
 
     return (
         <>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                <Button variant="contained" startIcon={<AddIcon />}
-                    onClick={() => setOpenCreate(true)}
-                    sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
-                    Tạo Project
-                </Button>
-            </Box>
+            {!readOnly && (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                    <Button variant="contained" startIcon={<AddIcon />}
+                        onClick={() => setOpenCreate(true)}
+                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+                        Tạo Project
+                    </Button>
+                </Box>
+            )}
 
             <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
@@ -94,23 +98,19 @@ const ProjectsTab: React.FC<Props> = ({ projects, groups, onRefresh }) => {
                                                 : <Chip label="Chưa có" size="small" variant="outlined" />}
                                         </TableCell>
                                         <TableCell align="center">
-                                            <Tooltip title="Sửa thông tin">
-                                                <IconButton size="small" color="primary"
-                                                    onClick={() => navigate(`/lecturer/projects/${p.id}/info`)}>
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
                                             <Tooltip title="Xem thông tin chi tiết">
                                                 <IconButton size="small" color="info"
                                                     onClick={() => navigate(`/lecturer/projects/${p.id}/info`)}>
                                                     <InfoIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
-                                            <Tooltip title="Xóa Project">
-                                                <IconButton size="small" color="error" onClick={() => setDeleteTarget(p)}>
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
+                                            {!readOnly && (
+                                                <Tooltip title="Xóa Project">
+                                                    <IconButton size="small" color="error" onClick={() => setDeleteTarget(p)}>
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 );

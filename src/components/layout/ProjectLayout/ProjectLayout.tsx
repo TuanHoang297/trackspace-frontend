@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useParams, useNavigate } from 'react-router-dom';
 import {
-    Box, Typography, IconButton, Breadcrumbs, Link, Chip, Skeleton,
+    Box, Typography, IconButton, Skeleton,
     Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Tooltip,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -15,7 +15,6 @@ import { getUser, logout } from '../../../utils/auth';
 const ProjectLayout: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
-    const location = useLocation();
     const pid = Number(projectId);
 
     const [project, setProject] = useState<ProjectResponse | null>(null);
@@ -40,18 +39,6 @@ const ProjectLayout: React.FC = () => {
         };
         if (pid) fetchProject();
     }, [pid]);
-
-    // Current section label
-    const getSectionLabel = () => {
-        const path = location.pathname;
-        if (path.includes('/jira/connect')) return 'Kết nối Jira';
-        if (path.includes('/jira')) return 'Sprint Board';
-        if (path.includes('/github')) return 'GitHub';
-        if (path.includes('/contribution')) return 'Contribution';
-        if (path.includes('/srs')) return 'SRS Document';
-        if (path.includes('/settings')) return 'Cài đặt';
-        return 'Tổng quan';
-    };
 
     // Breadcrumb "Lớp học" link should be role-aware
     const classListPath = currentUser?.role === 'LECTURER' ? '/lecturer/classes' : '/student/dashboard';
@@ -85,38 +72,10 @@ const ProjectLayout: React.FC = () => {
                             <Typography variant="h6" fontWeight={700} noWrap>
                                 {project?.projectName || 'Project'}
                             </Typography>
-                            {project?.groupName && (
-                                <Chip
-                                    label={project.groupName}
-                                    size="small"
-                                    sx={{
-                                        fontWeight: 600,
-                                        background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
-                                        color: '#fff',
-                                        border: 'none',
-                                    }}
-                                />
-                            )}
                         </Box>
                     )}
 
-                    <Breadcrumbs separator="›" sx={{ '& .MuiBreadcrumbs-separator': { mx: 0.5 } }}>
-                        <Link
-                            component="button" variant="caption" underline="hover" color="text.secondary"
-                            onClick={() => navigate(classListPath)}
-                        >
-                            {currentUser?.role === 'LECTURER' ? 'Lớp học' : 'Dashboard'}
-                        </Link>
-                        <Link
-                            component="button" variant="caption" underline="hover" color="text.secondary"
-                            onClick={() => navigate(`/projects/${pid}`)}
-                        >
-                            {project?.projectName || 'Project'}
-                        </Link>
-                        <Typography variant="caption" color="text.primary" fontWeight={600}>
-                            {getSectionLabel()}
-                        </Typography>
-                    </Breadcrumbs>
+
 
                     {/* User Avatar */}
                     <Tooltip title={currentUser?.fullName || ''}>
