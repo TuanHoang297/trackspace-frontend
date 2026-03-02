@@ -11,8 +11,10 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import projectService from '../../api/services/projectService';
 import jiraService from '../../api/services/jiraService';
+import githubService from '../../api/services/githubService';
 import type { ProjectResponse } from '../../types/project.types';
 import type { JiraConnectionResponse } from '../../types/jira.types';
+import type { GitHubConnectionResponse } from '../../types/github.types';
 
 interface QuickLinkProps {
     icon: React.ReactNode;
@@ -62,6 +64,7 @@ const ProjectOverview: React.FC = () => {
 
     const [project, setProject] = useState<ProjectResponse | null>(null);
     const [jiraConn, setJiraConn] = useState<JiraConnectionResponse | null>(null);
+    const [ghConn, setGhConn] = useState<GitHubConnectionResponse | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -76,6 +79,13 @@ const ProjectOverview: React.FC = () => {
                     setJiraConn(jiraRes.data.data);
                 } catch {
                     setJiraConn(null);
+                }
+
+                try {
+                    const ghRes = await githubService.getStatus(pid);
+                    setGhConn(ghRes.data.data);
+                } catch {
+                    setGhConn(null);
                 }
             } catch {
                 setProject(null);
@@ -99,6 +109,7 @@ const ProjectOverview: React.FC = () => {
     }
 
     const isJiraConnected = jiraConn?.connectionStatus === 'CONNECTED';
+    const isGhConnected = ghConn?.connectionStatus === 'CONNECTED';
 
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1000, mx: 'auto' }}>
@@ -165,10 +176,12 @@ const ProjectOverview: React.FC = () => {
                 <QuickLink
                     icon={<GitHubIcon />}
                     label="GitHub"
-                    description="Xem commits, contributors và code changes"
+                    description={isGhConnected
+                        ? `${ghConn?.totalCommits || 0} commits • ${ghConn?.branchName}`
+                        : 'Kết nối GitHub để xem commits và contributors'}
                     color="#24292E"
                     onClick={() => navigate(`/projects/${pid}/github`)}
-                    status="coming-soon"
+                    status={isGhConnected ? 'connected' : 'not-connected'}
                 />
                 <QuickLink
                     icon={<BarChartIcon />}
