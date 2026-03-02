@@ -112,6 +112,19 @@ const GitHubPage: React.FC = () => {
 
     useEffect(() => { (async () => { setLoading(true); await fetchConns(); setLoading(false); })(); }, [fetchConns]);
 
+    // Auto-poll every 60s so UI reflects webhook-triggered syncs without manual refresh
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            await fetchConns();
+            // If viewing detail, also refresh commits/stats
+            if (view === 'detail' && selectedRepo) {
+                const c = connections.find(x => x.repoLabel === selectedRepo && x.connectionStatus === 'CONNECTED');
+                if (c) await fetchData(c.connectionId);
+            }
+        }, 60000);
+        return () => clearInterval(interval);
+    }, [fetchConns, fetchData, view, selectedRepo, connections]);
+
     const handleCardClick = (t: RepoType) => { setSelectedRepo(t); const c = getConn(t); if (c) { setView('detail'); fetchData(c.connectionId); } else { setUrl(''); setToken(''); setView('connect'); } };
     const handleBack = () => { setView('overview'); setSelectedRepo(null); setTab(0); setBranchFilter('all'); setAuthorFilter('all'); };
     const handleConnect = async () => {
@@ -194,50 +207,148 @@ const GitHubPage: React.FC = () => {
     // ══════════════ OVERVIEW ══════════════
     if (view === 'overview') {
         return (
-            <Box sx={{ p: { xs: 2, md: 3 } }}>
+            <Box sx={{ p: { xs: 2, md: 4 } }}>
+                {/* Header */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-                    <Box sx={{ width: 48, height: 48, borderRadius: 3, bgcolor: '#24292F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <GitHubIcon sx={{ fontSize: 28, color: '#fff' }} />
+                    <Box sx={{
+                        width: 52, height: 52, borderRadius: 3,
+                        bgcolor: '#24292F', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 4px 16px rgba(36,41,47,0.3)',
+                    }}>
+                        <GitHubIcon sx={{ fontSize: 30, color: '#fff' }} />
                     </Box>
                     <Box>
                         <Typography variant="h5" fontWeight={800} color="#1E293B">GitHub Repositories</Typography>
-                        <Typography variant="body2" color="text.secondary">Select a repository to view details</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Chọn repository để xem commits &amp; thống kê đóng góp
+                        </Typography>
                     </Box>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+
+                {/* Cards grid */}
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    gap: 3,
+                    maxWidth: 860,
+                }}>
                     {(['FRONTEND', 'BACKEND'] as RepoType[]).map(type => {
-                        const c = getConn(type); const connected = !!c; const rcfg = REPO_CFG[type];
+                        const c = getConn(type);
+                        const connected = !!c;
+                        const rcfg = REPO_CFG[type];
+
                         return (
-                            <Box key={type} onClick={() => handleCardClick(type)}
+                            <Box
+                                key={type}
+                                onClick={() => handleCardClick(type)}
                                 sx={{
-                                    flex: 1, minWidth: 300, borderRadius: 3, overflow: 'hidden', cursor: 'pointer',
-                                    bgcolor: '#fff', border: connected ? `2px solid ${rcfg.color}20` : '2px dashed #E2E8F0',
-                                    transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                                    '&:hover': { transform: 'translateY(-3px)', boxShadow: `0 8px 25px ${rcfg.color}15`, borderColor: rcfg.color }
-                                }}>
-                                <Box sx={{ height: 4, bgcolor: connected ? rcfg.color : '#E2E8F0' }} />
+                                    borderRadius: 4, cursor: 'pointer',
+                                    bgcolor: '#fff',
+                                    border: connected ? `1.5px solid ${rcfg.color}30` : '1.5px dashed #CBD5E1',
+                                    boxShadow: connected
+                                        ? `0 4px 20px ${rcfg.color}15`
+                                        : '0 2px 8px rgba(0,0,0,0.05)',
+                                    overflow: 'hidden',
+                                    transition: 'all 0.22s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: `0 12px 36px ${rcfg.color}22`,
+                                        borderColor: rcfg.color,
+                                    },
+                                }}
+                            >
+                                {/* Top accent bar */}
+                                <Box sx={{
+                                    height: 5,
+                                    background: connected
+                                        ? `linear-gradient(90deg, ${rcfg.color}, ${rcfg.color}80)`
+                                        : '#E2E8F0',
+                                }} />
+
                                 <Box sx={{ p: 3 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                                        <Box sx={{ color: connected ? rcfg.color : '#94A3B8' }}>{rcfg.icon}</Box>
-                                        <Typography fontWeight={800} fontSize="1.05rem" color="#1E293B">{rcfg.label}</Typography>
-                                        {connected && <Chip icon={<CheckCircleIcon sx={{ fontSize: '12px !important', color: '#22C55E !important' }} />} label="Connected" size="small"
-                                            sx={{ ml: 'auto', height: 22, bgcolor: '#F0FDF4', color: '#16A34A', fontWeight: 600, fontSize: '0.65rem' }} />}
-                                    </Box>
-                                    {connected ? (
-                                        <>
-                                            <Typography fontWeight={600} fontSize="0.85rem" color={rcfg.color} fontFamily="'JetBrains Mono', monospace" noWrap sx={{ mb: 1.5 }}>
-                                                {c.repositoryUrl?.replace('https://github.com/', '')}
+                                    {/* Row 1: icon + label + badge */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
+                                        <Box sx={{
+                                            width: 44, height: 44, borderRadius: 2.5, flexShrink: 0,
+                                            background: connected
+                                                ? `linear-gradient(135deg, ${rcfg.color}, ${rcfg.color}BB)`
+                                                : 'linear-gradient(135deg, #CBD5E1, #E2E8F0)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            boxShadow: connected ? `0 4px 12px ${rcfg.color}35` : 'none',
+                                            '& svg': { fontSize: 24, color: connected ? '#fff' : '#94A3B8' },
+                                        }}>
+                                            {rcfg.icon}
+                                        </Box>
+                                        <Box sx={{ flex: 1 }}>
+                                            <Typography fontWeight={800} fontSize="1.1rem" color="#1E293B" lineHeight={1.2}>
+                                                {rcfg.label}
                                             </Typography>
-                                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                                                <Chip icon={<AccountTreeIcon sx={{ fontSize: '11px !important' }} />} label={c.branchName} size="small"
-                                                    sx={{ height: 20, bgcolor: `${rcfg.color}08`, color: rcfg.color, fontWeight: 600, fontSize: '0.65rem' }} />
-                                                <Typography variant="caption" color="text.secondary"><CommitIcon sx={{ fontSize: 12, verticalAlign: 'middle' }} /> {c.branchName}</Typography>
-                                                <Typography variant="caption" color="text.disabled">Last sync: {timeAgo(c.lastSyncAt)}</Typography>
+                                            <Typography variant="caption" color="text.disabled">
+                                                {rcfg.desc}
+                                            </Typography>
+                                        </Box>
+                                        {connected ? (
+                                            <Chip
+                                                icon={<CheckCircleIcon sx={{ fontSize: '12px !important', color: '#22C55E !important' }} />}
+                                                label="Connected"
+                                                size="small"
+                                                sx={{ height: 24, bgcolor: '#F0FDF4', color: '#16A34A', fontWeight: 700, fontSize: '0.65rem' }}
+                                            />
+                                        ) : (
+                                            <Chip label="Not connected" size="small"
+                                                sx={{ height: 24, bgcolor: '#F8FAFC', color: '#94A3B8', fontWeight: 600, fontSize: '0.65rem' }} />
+                                        )}
+                                    </Box>
+
+                                    {connected && c ? (
+                                        <>
+                                            {/* Repo URL */}
+                                            <Box sx={{
+                                                px: 2, py: 1.5, borderRadius: 2,
+                                                bgcolor: `${rcfg.color}08`,
+                                                border: `1px solid ${rcfg.color}18`,
+                                                mb: 2,
+                                            }}>
+                                                <Typography
+                                                    fontSize="0.78rem" fontWeight={600}
+                                                    fontFamily="'JetBrains Mono', 'Courier New', monospace"
+                                                    color={rcfg.color} noWrap
+                                                >
+                                                    {c.repositoryUrl?.replace('https://github.com/', '')}
+                                                </Typography>
+                                            </Box>
+
+                                            {/* Stats row */}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+                                                    <CommitIcon sx={{ fontSize: 14, color: rcfg.color }} />
+                                                    <Typography variant="caption" fontWeight={700} color={rcfg.color}>
+                                                        {c.totalCommits} commits
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+                                                    <AccountTreeIcon sx={{ fontSize: 13, color: '#64748B' }} />
+                                                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                                        {c.branchName}
+                                                    </Typography>
+                                                </Box>
+                                                <Typography variant="caption" color="text.disabled" sx={{ ml: 'auto' }}>
+                                                    Sync {timeAgo(c.lastSyncAt)}
+                                                </Typography>
                                             </Box>
                                         </>
                                     ) : (
-                                        <><Typography variant="body2" color="text.disabled" sx={{ mb: 1 }}>{rcfg.desc}</Typography>
-                                            <Typography variant="caption" color={rcfg.color} fontWeight={700}>+ Connect repository →</Typography></>
+                                        <Box sx={{
+                                            textAlign: 'center', py: 2.5,
+                                            border: '1px dashed #E2E8F0', borderRadius: 2,
+                                        }}>
+                                            <Typography variant="body2" color="text.disabled" sx={{ mb: 0.5 }}>
+                                                Chưa có repository nào được kết nối
+                                            </Typography>
+                                            <Typography variant="caption" fontWeight={700} color={rcfg.color}>
+                                                + Kết nối ngay →
+                                            </Typography>
+                                        </Box>
                                     )}
                                 </Box>
                             </Box>
@@ -247,6 +358,7 @@ const GitHubPage: React.FC = () => {
             </Box>
         );
     }
+
 
     // ══════════════ CONNECT ══════════════
     if (view === 'connect' && selectedRepo && cfgData) {
@@ -291,6 +403,22 @@ const GitHubPage: React.FC = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Typography fontWeight={800} color="#1E293B">{cfgData.label}</Typography>
                                 <Typography fontWeight={600} fontSize="0.8rem" color={accent} fontFamily="'JetBrains Mono', monospace">{repoName}</Typography>
+                                {/* Live dot */}
+                                <Tooltip title="Auto-sync mỗi 60s" arrow>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 0.5 }}>
+                                        <Box sx={{
+                                            width: 7, height: 7, borderRadius: '50%', bgcolor: '#22C55E',
+                                            boxShadow: '0 0 0 0 rgba(34,197,94,0.5)',
+                                            animation: 'pulse-dot 2s ease-in-out infinite',
+                                            '@keyframes pulse-dot': {
+                                                '0%': { boxShadow: '0 0 0 0 rgba(34,197,94,0.6)' },
+                                                '70%': { boxShadow: '0 0 0 6px rgba(34,197,94,0)' },
+                                                '100%': { boxShadow: '0 0 0 0 rgba(34,197,94,0)' },
+                                            }
+                                        }} />
+                                        <Typography variant="caption" color="#22C55E" fontWeight={700} fontSize="0.65rem">LIVE</Typography>
+                                    </Box>
+                                </Tooltip>
                             </Box>
                             <Typography variant="caption" color="text.secondary">{activeConn?.repositoryUrl?.replace('https://github.com/', '')} · {commits.length} commits · {branches.length} branches · {timeAgo(activeConn?.lastSyncAt || null)}</Typography>
                         </Box>
@@ -298,6 +426,7 @@ const GitHubPage: React.FC = () => {
                     <Button size="small" variant="contained" disabled={syncing} startIcon={syncing ? <CircularProgress size={14} color="inherit" /> : <SyncIcon />} onClick={handleSync}
                         sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#238636', '&:hover': { bgcolor: '#2EA043' } }}>{syncing ? 'Syncing...' : 'Sync'}</Button>
                 </Box>
+
 
                 {/* Tabs */}
                 <Box sx={{ borderBottom: '1px solid #E2E8F0', mb: 3 }}>
