@@ -440,7 +440,7 @@ const GitHubPage: React.FC = () => {
     // ══════════════ DETAIL ══════════════
     if (view === 'detail' && selectedRepo && cfgData) {
         return (
-            <Box sx={{ p: { xs: 2, md: 3 } }}>
+            <Box sx={{ p: { xs: 2, md: 3 }, overflowX: 'hidden', width: '100%', boxSizing: 'border-box' }}>
                 {/* Header */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -593,13 +593,13 @@ const GitHubPage: React.FC = () => {
                                 ) : (
                                     <Box sx={{ bgcolor: '#fff', border: '1px solid #E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
                                         {filteredCommits.slice(0, 60).map((c, i) => (
-                                            <Box key={c.commitSha || i} sx={{ p: 2, borderBottom: i < Math.min(filteredCommits.length, 60) - 1 ? '1px solid #F1F5F9' : 'none', '&:hover': { bgcolor: '#F8FAFC' }, transition: 'background 0.15s' }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                                                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                        <Typography fontWeight={600} fontSize="0.85rem" color="#1E293B" noWrap sx={{ mb: 0.3 }}>{c.commitMessage}</Typography>
+                                            <Box key={c.commitSha || i} sx={{ p: 2, borderBottom: i < Math.min(filteredCommits.length, 60) - 1 ? '1px solid #F1F5F9' : 'none', '&:hover': { bgcolor: '#F8FAFC' }, transition: 'background 0.15s', overflow: 'hidden' }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, minWidth: 0 }}>
+                                                    <Box sx={{ flex: 1, width: 0, overflow: 'hidden' }}>
+                                                        <Typography fontWeight={600} fontSize="0.85rem" color="#1E293B" sx={{ mb: 0.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.commitMessage}</Typography>
                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                                                             <Typography fontSize="0.72rem" color="text.secondary" fontWeight={600}>{c.githubLogin || c.authorName}</Typography>
-                                                            {c.branchName && <Chip label={c.branchName} size="small" sx={{ height: 18, fontSize: '0.6rem', bgcolor: '#EFF6FF', color: '#3B82F6', fontWeight: 600 }} />}
+                                                            {c.branchName && <Chip label={c.branchName} size="small" sx={{ height: 18, fontSize: '0.6rem', bgcolor: '#EFF6FF', color: '#3B82F6', fontWeight: 600, maxWidth: 150, '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }} />}
                                                             <Typography fontSize="0.68rem" color="text.disabled">{timeAgo(c.commitDate)}</Typography>
                                                         </Box>
                                                     </Box>
