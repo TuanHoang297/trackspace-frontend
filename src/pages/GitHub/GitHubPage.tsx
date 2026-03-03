@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import {
     Box, Typography, Button, TextField, Tabs, Tab, Chip,
     CircularProgress, Skeleton, IconButton, Avatar, Tooltip, MenuItem, Select,
-    InputAdornment, LinearProgress,
+    InputAdornment,
 } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -44,34 +44,67 @@ const CONTRIBUTOR_THEMES = [
 
 const RANK_EMOJI = ['🥇', '🥈', '🥉'];
 
-// ── Mini Activity Chart ──
+// ── Activity Chart — 7 days of latest commit week ──
+const CHART_H = 32;
 const ActivityChart: React.FC<{ commits: GitHubCommitResponse[]; color: string }> = ({ commits, color }) => {
-    const weeks = useMemo(() => {
-        const now = Date.now();
-        const bins: number[] = new Array(12).fill(0);
-        commits.forEach(c => {
-            if (!c.commitDate) return;
-            const wAgo = Math.floor((now - new Date(c.commitDate).getTime()) / (7 * 86400000));
-            if (wAgo >= 0 && wAgo < 12) bins[11 - wAgo]++;
+    const data = useMemo(() => {
+        // Find the most recent commit date
+        const dates = commits.map(c => c.commitDate ? new Date(c.commitDate).getTime() : 0).filter(Boolean);
+        const latestTs = dates.length > 0 ? Math.max(...dates) : Date.now();
+        const latest = new Date(latestTs);
+        // Start from Monday of that week
+        const dayOfWeek = latest.getDay();
+        const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const weekStart = new Date(latest.getTime() - mondayOffset * 86400000);
+        weekStart.setHours(0, 0, 0, 0);
+
+        return Array.from({ length: 7 }, (_, idx) => {
+            const dayStart = new Date(weekStart.getTime() + idx * 86400000);
+            const dayEnd = new Date(dayStart.getTime() + 86400000);
+            const count = commits.filter(c => {
+                if (!c.commitDate) return false;
+                const t = new Date(c.commitDate).getTime();
+                return t >= dayStart.getTime() && t < dayEnd.getTime();
+            }).length;
+            const dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+            const label = `${dayNames[idx]} ${dayStart.getDate()}/${dayStart.getMonth() + 1}`;
+            return { count, label };
         });
-        return bins;
     }, [commits]);
-    const max = Math.max(...weeks, 1);
+    const max = Math.max(...data.map(d => d.count), 1);
+    const hGrid = [0.25, 0.5, 0.75];
+    // Vertical gridlines every 5 bars → 6 lines
+    const vGrid = [1, 2, 3, 4, 5, 6].map(i => i / 7);
     return (
-        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: 36 }}>
-            {weeks.map((v, i) => (
-                <Tooltip key={i} title={`${v} commits`} arrow>
-                    <Box sx={{
-                        width: 14, minHeight: 3,
-                        height: `${Math.max((v / max) * 100, 8)}%`,
-                        bgcolor: v > 0 ? color : '#E2E8F0',
-                        borderRadius: '3px',
-                        opacity: v > 0 ? (0.4 + (v / max) * 0.6) : 0.2,
-                        transition: 'all 0.3s ease',
-                        '&:hover': { opacity: 1, transform: 'scaleY(1.15)' },
-                    }} />
-                </Tooltip>
-            ))}
+        <Box>
+            <Box sx={{ position: 'relative', height: CHART_H, bgcolor: '#FAFBFC', borderRadius: '4px', border: '1px solid #F1F5F9', overflow: 'hidden' }}>
+                {hGrid.map(p => <Box key={`h${p}`} sx={{ position: 'absolute', bottom: `${p * 100}%`, left: 0, right: 0, borderBottom: '1px dashed #E8ECF0', zIndex: 0 }} />)}
+                {vGrid.map(p => <Box key={`v${p}`} sx={{ position: 'absolute', left: `${p * 100}%`, top: 0, bottom: 0, borderLeft: '1px dashed #E8ECF0', zIndex: 0 }} />)}
+                <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '1px', height: '100%', position: 'relative', zIndex: 1, px: '2px', py: '2px' }}>
+                    {data.map((d, i) => (
+                        <Tooltip key={i} title={<Box sx={{ textAlign: 'center' }}><Typography fontSize="0.72rem" fontWeight={700}>{d.count} commits</Typography><Typography fontSize="0.6rem" sx={{ opacity: 0.7 }}>{d.label}</Typography></Box>} arrow>
+                            <Box sx={{
+                                flex: 1, minHeight: 2,
+                                height: `${Math.max((d.count / max) * 100, 4)}%`,
+                                bgcolor: d.count > 0 ? color : '#E2E8F0',
+                                borderRadius: '1.5px 1.5px 0 0',
+                                opacity: d.count > 0 ? (0.45 + (d.count / max) * 0.55) : 0.2,
+                                transition: 'all 0.15s ease',
+                                cursor: 'pointer',
+                                '&:hover': { opacity: 1, filter: 'brightness(1.15)' },
+                            }} />
+                        </Tooltip>
+                    ))}
+                </Box>
+            </Box>
+            {/* Date labels — every 7 days */}
+            <Box sx={{ display: 'flex', gap: '1px', mt: '2px', px: '2px' }}>
+                {data.map((d, i) => (
+                    <Typography key={i} sx={{ flex: 1, fontSize: '0.42rem', color: '#B0B8C4', textAlign: 'center', fontFamily: "'Inter',sans-serif", fontWeight: 500, lineHeight: 1 }}>
+                        {i < 7 ? d.label : ''}
+                    </Typography>
+                ))}
+            </Box>
         </Box>
     );
 };
@@ -467,81 +500,50 @@ const GitHubPage: React.FC = () => {
                             sorted.length === 0 ? (
                                 <Box sx={{ textAlign: 'center', py: 8 }}><PeopleIcon sx={{ fontSize: 56, color: '#CBD5E1', mb: 1 }} /><Typography color="text.secondary">No contributors yet. Sync to fetch data.</Typography></Box>
                             ) : (
-                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)', md: 'repeat(6, 1fr)' }, gap: 2 }}>
                                     {sorted.map((s, i) => {
                                         const theme = CONTRIBUTOR_THEMES[i % CONTRIBUTOR_THEMES.length];
                                         const authorCommits = commitsByAuthor[s.githubLogin] || [];
-                                        const pct = totalLinesAll > 0 ? Math.round((s.totalLinesAdded / totalLinesAll) * 100) : 0;
                                         return (
                                             <Box key={s.userName + i} sx={{
-                                                borderRadius: 3, overflow: 'hidden', bgcolor: '#fff',
+                                                borderRadius: 2.5, overflow: 'hidden', bgcolor: '#fff',
                                                 border: '1px solid #E2E8F0',
-                                                transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)',
+                                                transition: 'all 0.2s ease',
                                                 boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                                                '&:hover': { boxShadow: '0 12px 32px rgba(0,0,0,0.08)', transform: 'translateY(-4px)', borderColor: theme.accent + '40' }
+                                                '&:hover': { boxShadow: '0 6px 16px rgba(0,0,0,0.08)', transform: 'translateY(-2px)', borderColor: theme.accent + '40' }
                                             }}>
-
                                                 {/* Gradient header */}
-                                                <Box sx={{ background: theme.bg, px: 2.5, py: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                    <Avatar sx={{
-                                                        width: 52, height: 52, bgcolor: 'rgba(255,255,255,0.25)', color: '#fff',
-                                                        fontWeight: 800, fontSize: 18, border: '3px solid rgba(255,255,255,0.4)',
-                                                        backdropFilter: 'blur(8px)'
-                                                    }}>
+                                                <Box sx={{ background: theme.bg, px: 1.5, py: 1.2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: 'rgba(255,255,255,0.25)', color: '#fff', fontWeight: 800, fontSize: 13, border: '2px solid rgba(255,255,255,0.3)' }}>
                                                         {getInitials(s.userName)}
                                                     </Avatar>
                                                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                        <Typography fontWeight={800} fontSize="1.05rem" color="#fff" noWrap sx={{ textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>
-                                                            {s.userName}
-                                                        </Typography>
-                                                        <Typography fontSize="0.72rem" color="rgba(255,255,255,0.8)" fontWeight={500}>
-                                                            {pct}% of contributions
-                                                        </Typography>
+                                                        <Typography fontWeight={800} fontSize="0.78rem" color="#fff" noWrap>{s.userName}</Typography>
                                                     </Box>
-                                                    <Typography fontSize="1.5rem" sx={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>
-                                                        {RANK_EMOJI[i] || `#${i + 1}`}
-                                                    </Typography>
+                                                    <Typography fontSize="1.1rem">{RANK_EMOJI[i] || `#${i + 1}`}</Typography>
                                                 </Box>
 
-                                                {/* Body */}
-                                                <Box sx={{ p: 2.5 }}>
-                                                    {/* Stats row */}
-                                                    <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-                                                        <Tooltip title="Click to view commits" arrow>
-                                                            <Box onClick={() => handleAuthorClick(s.githubLogin)}
-                                                                sx={{
-                                                                    flex: 1, textAlign: 'center', py: 1, borderRadius: 2, bgcolor: '#F8FAFC', border: '1px solid #F1F5F9',
-                                                                    cursor: 'pointer', transition: 'all 0.2s',
-                                                                    '&:hover': { bgcolor: theme.light, borderColor: theme.accent + '40', transform: 'scale(1.04)', boxShadow: `0 4px 12px ${theme.accent}15` }
-                                                                }}>
-                                                                <Typography fontWeight={800} fontSize="1.1rem" color="#1E293B" fontFamily="'JetBrains Mono', monospace">{s.totalCommits}</Typography>
-                                                                <Typography fontSize="0.6rem" color="#94A3B8" fontWeight={600} textTransform="uppercase" letterSpacing={0.5}>Commits</Typography>
-                                                            </Box>
-                                                        </Tooltip>
-                                                        <Box sx={{ flex: 1, textAlign: 'center', py: 1, borderRadius: 2, bgcolor: '#F0FFF4', border: '1px solid #D1FAE5' }}>
-                                                            <Typography fontWeight={800} fontSize="1.1rem" color="#16A34A" fontFamily="'JetBrains Mono', monospace">+{(s.totalLinesAdded || 0).toLocaleString()}</Typography>
-                                                            <Typography fontSize="0.6rem" color="#6EE7B7" fontWeight={600} textTransform="uppercase" letterSpacing={0.5}>Added</Typography>
+                                                {/* Stats row */}
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-around', px: 1, py: 0.8, borderBottom: '1px solid #F1F5F9' }}>
+                                                    <Tooltip title="Click xem commits" arrow>
+                                                        <Box onClick={() => handleAuthorClick(s.githubLogin)} sx={{ textAlign: 'center', cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
+                                                            <Typography fontWeight={800} fontSize="0.82rem" color="#1E293B" fontFamily="'JetBrains Mono', monospace">{s.totalCommits}</Typography>
+                                                            <Typography fontSize="0.5rem" color="#94A3B8" fontWeight={600}>COMMITS</Typography>
                                                         </Box>
-                                                        <Box sx={{ flex: 1, textAlign: 'center', py: 1, borderRadius: 2, bgcolor: '#FFF5F5', border: '1px solid #FECACA' }}>
-                                                            <Typography fontWeight={800} fontSize="1.1rem" color="#DC2626" fontFamily="'JetBrains Mono', monospace">-{(s.totalLinesDeleted || 0).toLocaleString()}</Typography>
-                                                            <Typography fontSize="0.6rem" color="#FCA5A5" fontWeight={600} textTransform="uppercase" letterSpacing={0.5}>Deleted</Typography>
-                                                        </Box>
+                                                    </Tooltip>
+                                                    <Box sx={{ textAlign: 'center' }}>
+                                                        <Typography fontWeight={800} fontSize="0.82rem" color="#16A34A" fontFamily="'JetBrains Mono', monospace">+{(s.totalLinesAdded || 0).toLocaleString()}</Typography>
+                                                        <Typography fontSize="0.5rem" color="#94A3B8" fontWeight={600}>ADDED</Typography>
                                                     </Box>
+                                                    <Box sx={{ textAlign: 'center' }}>
+                                                        <Typography fontWeight={800} fontSize="0.82rem" color="#DC2626" fontFamily="'JetBrains Mono', monospace">-{(s.totalLinesDeleted || 0).toLocaleString()}</Typography>
+                                                        <Typography fontSize="0.5rem" color="#94A3B8" fontWeight={600}>DELETED</Typography>
+                                                    </Box>
+                                                </Box>
 
-                                                    {/* Progress bar */}
-                                                    <Box sx={{ mb: 2 }}>
-                                                        <LinearProgress variant="determinate" value={pct}
-                                                            sx={{
-                                                                height: 6, borderRadius: 3, bgcolor: '#F1F5F9',
-                                                                '& .MuiLinearProgress-bar': { borderRadius: 3, background: theme.bg }
-                                                            }} />
-                                                    </Box>
-
-                                                    {/* Activity chart */}
-                                                    <Box>
-                                                        <Typography fontSize="0.65rem" color="#94A3B8" fontWeight={600} sx={{ mb: 0.5 }}>Activity · last 12 weeks</Typography>
-                                                        <ActivityChart commits={authorCommits} color={theme.accent} />
-                                                    </Box>
+                                                {/* Activity chart */}
+                                                <Box sx={{ px: 1.5, py: 1 }}>
+                                                    <ActivityChart commits={authorCommits} color={theme.accent} />
                                                 </Box>
                                             </Box>
                                         );
