@@ -1,194 +1,80 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
-    Box,
-    Typography,
-    Button,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Chip,
-    IconButton,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    InputAdornment,
-    Switch,
-    Alert,
-    Skeleton,
-    Tooltip,
-    Card,
+    Box, Typography, Table, TableBody, TableCell, TableContainer,
+    TableHead, TableRow, Chip, IconButton, TextField, Select,
+    MenuItem, FormControl, InputLabel, InputAdornment, Alert,
+    Skeleton, Tooltip, Card, Avatar, Menu, ListItemIcon,
+    ListItemText, Divider, Button,
 } from '@mui/material';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { toast } from 'react-toastify';
-import adminService from '../../api/services/adminService';
-import type { UserResponse, CreateUserRequest } from '../../api/types/types';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import BlockIcon from '@mui/icons-material/Block';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
+import CreateUserDialog from './components/CreateUserDialog';
+import { useUserManagement } from './hooks/useUserManagement';
 
-const ROLE_LABELS: Record<string, { label: string; color: 'error' | 'primary' | 'warning' | 'info' | 'default' }> = {
-    ADMIN: { label: 'Admin', color: 'error' },
-    LECTURER: { label: 'Giảng viên', color: 'primary' },
-    TEAMLEADER: { label: 'Trưởng nhóm', color: 'warning' },
-    TEAMMEMBER: { label: 'Thành viên', color: 'info' },
+const ROLE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+    ADMIN: { label: 'Admin', color: '#DC2626', bg: '#FEE2E2' },
+    LECTURER: { label: 'Giảng viên', color: '#7C3AED', bg: '#EDE9FE' },
+    TEAMLEADER: { label: 'Trưởng nhóm', color: '#D97706', bg: '#FEF3C7' },
+    TEAMMEMBER: { label: 'Thành viên', color: '#2563EB', bg: '#DBEAFE' },
 };
 
+const AVATAR_COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#6366F1', '#14B8A6', '#EF4444'];
+
+const getColor = (name: string) => AVATAR_COLORS[Math.abs([...name].reduce((h, c) => c.charCodeAt(0) + ((h << 5) - h), 0)) % AVATAR_COLORS.length];
+const getInitials = (name: string) => { const p = name.trim().split(/\s+/); return p.length >= 2 ? (p[0][0] + p[p.length - 1][0]).toUpperCase() : name.substring(0, 2).toUpperCase(); };
+
 const UserManagement: React.FC = () => {
-    const [users, setUsers] = useState<UserResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [roleFilter, setRoleFilter] = useState('ALL');
-
-    // Create User Dialog
-    const [openCreate, setOpenCreate] = useState(false);
-    const [creating, setCreating] = useState(false);
-    const [newUser, setNewUser] = useState<CreateUserRequest>({
-        email: '',
-        password: '',
-        fullName: '',
-        role: 'LECTURER',
-    });
-
-    // Delete Dialog
-    const [deleteTarget, setDeleteTarget] = useState<UserResponse | null>(null);
-    const [deleting, setDeleting] = useState(false);
-
-    const fetchUsers = async () => {
-        try {
-            setLoading(true);
-            const res = await adminService.getUsers();
-            setUsers(res.data.data);
-            setError('');
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Không thể tải danh sách tài khoản');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchUsers();
-    }, []);
-
-    // Filter users
-    const filteredUsers = users.filter((u) => {
-        const matchesSearch =
-            u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
-        return matchesSearch && matchesRole;
-    });
-
-    // Create User
-    const handleCreateUser = async () => {
-        if (!newUser.email || !newUser.password || !newUser.fullName) {
-            toast.error('Vui lòng điền đầy đủ thông tin');
-            return;
-        }
-        try {
-            setCreating(true);
-            await adminService.createUser(newUser);
-            toast.success('Tạo tài khoản thành công!');
-            setOpenCreate(false);
-            setNewUser({ email: '', password: '', fullName: '', role: 'LECTURER' });
-            fetchUsers();
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Tạo tài khoản thất bại');
-        } finally {
-            setCreating(false);
-        }
-    };
-
-    // Toggle Status
-    const handleToggleStatus = async (user: UserResponse) => {
-        try {
-            await adminService.updateUserStatus(user.userId, !user.active);
-            toast.success(
-                user.active ? `Đã khóa tài khoản ${user.fullName}` : `Đã kích hoạt tài khoản ${user.fullName}`
-            );
-            fetchUsers();
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Cập nhật trạng thái thất bại');
-        }
-    };
-
-    // Delete User
-    const handleDeleteUser = async () => {
-        if (!deleteTarget) return;
-        try {
-            setDeleting(true);
-            await adminService.deleteUser(deleteTarget.userId);
-            toast.success(`Đã xóa tài khoản ${deleteTarget.fullName}`);
-            setDeleteTarget(null);
-            fetchUsers();
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Xóa tài khoản thất bại');
-        } finally {
-            setDeleting(false);
-        }
-    };
+    const h = useUserManagement();
 
     return (
-        <Box>
-            {/* Page Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Box>
-                    <Typography variant="h4" fontWeight={700}>
-                        Quản lý tài khoản
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        {users.length} tài khoản trong hệ thống
-                    </Typography>
+        <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+            {/* Header */}
+            <Box sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)', borderRadius: 4, p: { xs: 3, md: 4 }, mb: 3, color: '#fff', position: 'relative', overflow: 'hidden' }}>
+                <Box sx={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 2 }}>
+                    <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                            <PeopleAltIcon sx={{ fontSize: 32 }} />
+                            <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>Quản lý tài khoản</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ opacity: 0.85 }}>Quản lý tất cả tài khoản người dùng trong hệ thống</Typography>
+                    </Box>
+                    <Button variant="contained" startIcon={<PersonAddIcon />} onClick={() => h.setOpenCreate(true)}
+                        sx={{ borderRadius: 2.5, py: 1.2, px: 3, textTransform: 'none', fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', boxShadow: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.35)' } }}>
+                        Thêm tài khoản
+                    </Button>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<PersonAddIcon />}
-                    onClick={() => setOpenCreate(true)}
-                    sx={{ borderRadius: 2, py: 1.2, px: 3, textTransform: 'none', fontWeight: 600 }}
-                >
-                    Thêm tài khoản
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2, mt: 3, position: 'relative', zIndex: 1, flexWrap: 'wrap' }}>
+                    {[{ label: 'Tổng', value: h.users.length, icon: <PeopleAltIcon /> }, { label: 'Hoạt động', value: h.activeCount, icon: <CheckCircleIcon /> }, { label: 'Đã khóa', value: h.inactiveCount, icon: <BlockIcon /> }].map((s) => (
+                        <Box key={s.label} sx={{ bgcolor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', borderRadius: 2.5, px: 2.5, py: 1.5, minWidth: 130, border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                {React.cloneElement(s.icon, { sx: { fontSize: 18, opacity: 0.8 } })}
+                                <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 500 }}>{s.label}</Typography>
+                            </Box>
+                            <Typography variant="h5" fontWeight={800}>{h.loading ? '—' : s.value}</Typography>
+                        </Box>
+                    ))}
+                </Box>
             </Box>
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-                    {error}
-                </Alert>
-            )}
+            {h.error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{h.error}</Alert>}
 
             {/* Filters */}
-            <Card sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                <TextField
-                    size="small"
-                    placeholder="Tìm kiếm theo tên hoặc email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    sx={{ minWidth: 300, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon color="action" />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
+            <Card sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
+                <TextField size="small" placeholder="Tìm kiếm theo tên hoặc email..." value={h.searchTerm} onChange={(e) => h.setSearchTerm(e.target.value)}
+                    sx={{ minWidth: 300, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
+                    InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#94A3B8' }} /></InputAdornment> }} />
                 <FormControl size="small" sx={{ minWidth: 160 }}>
                     <InputLabel>Vai trò</InputLabel>
-                    <Select
-                        value={roleFilter}
-                        label="Vai trò"
-                        onChange={(e) => setRoleFilter(e.target.value)}
-                        sx={{ borderRadius: 2 }}
-                    >
+                    <Select value={h.roleFilter} label="Vai trò" onChange={(e) => h.setRoleFilter(e.target.value)} sx={{ borderRadius: 2.5, bgcolor: '#F8FAFC' }}>
                         <MenuItem value="ALL">Tất cả</MenuItem>
                         <MenuItem value="ADMIN">Admin</MenuItem>
                         <MenuItem value="LECTURER">Giảng viên</MenuItem>
@@ -196,201 +82,97 @@ const UserManagement: React.FC = () => {
                         <MenuItem value="TEAMMEMBER">Thành viên</MenuItem>
                     </Select>
                 </FormControl>
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>{h.filteredUsers.length} kết quả</Typography>
             </Card>
 
-            {/* Users Table */}
-            <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
+            {/* Table */}
+            <Card sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ bgcolor: '#f8f9fa' }}>
-                                <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Họ tên</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Vai trò</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }} align="center">Trạng thái</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }} align="center">Hành động</TableCell>
+                            <TableRow sx={{ background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)' }}>
+                                {['#', 'Người dùng', 'Vai trò', 'Trạng thái', ''].map((col, i) => (
+                                    <TableCell key={i} align={col === 'Trạng thái' ? 'center' : 'left'}
+                                        sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', ...(col === '#' ? { width: 50 } : col === '' ? { width: 60 } : {}) }}>
+                                        {col}
+                                    </TableCell>
+                                ))}
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {loading ? (
-                                Array.from({ length: 5 }).map((_, i) => (
-                                    <TableRow key={i}>
-                                        {Array.from({ length: 6 }).map((_, j) => (
-                                            <TableCell key={j}>
-                                                <Skeleton />
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : filteredUsers.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                                        {searchTerm || roleFilter !== 'ALL'
-                                            ? 'Không tìm thấy tài khoản phù hợp'
-                                            : 'Chưa có tài khoản nào'}
+                            {h.loading ? Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i}><TableCell><Skeleton width={20} /></TableCell><TableCell><Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}><Skeleton variant="circular" width={40} height={40} /><Box><Skeleton width={130} /><Skeleton width={180} height={16} /></Box></Box></TableCell><TableCell><Skeleton width={80} /></TableCell><TableCell align="center"><Skeleton width={70} sx={{ mx: 'auto' }} /></TableCell><TableCell><Skeleton width={24} /></TableCell></TableRow>
+                            )) : h.filteredUsers.length === 0 ? (
+                                <TableRow><TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                                    <SearchIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                                    <Typography variant="body1" fontWeight={500}>{h.searchTerm || h.roleFilter !== 'ALL' ? 'Không tìm thấy tài khoản phù hợp' : 'Chưa có tài khoản nào'}</Typography>
+                                </TableCell></TableRow>
+                            ) : h.filteredUsers.map((user, i) => (
+                                <TableRow key={user.userId} hover sx={{ '&:nth-of-type(even)': { bgcolor: '#FAFBFC' }, '&:hover': { bgcolor: '#F1F5F9' } }}>
+                                    <TableCell sx={{ color: '#94A3B8' }}>{i + 1}</TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Box sx={{ position: 'relative' }}>
+                                                <Avatar sx={{ width: 40, height: 40, bgcolor: getColor(user.fullName), fontSize: '0.88rem', fontWeight: 700 }}>{getInitials(user.fullName)}</Avatar>
+                                                <Box sx={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: '50%', bgcolor: user.active ? '#22C55E' : '#CBD5E1', border: '2px solid #fff' }} />
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="body2" fontWeight={600} sx={{ color: '#1E293B' }}>{user.fullName}</Typography>
+                                                <Typography variant="caption" sx={{ color: '#94A3B8' }}>{user.email}</Typography>
+                                            </Box>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip label={ROLE_LABELS[user.role]?.label || user.role} size="small"
+                                            sx={{ fontWeight: 600, fontSize: '0.75rem', bgcolor: ROLE_LABELS[user.role]?.bg, color: ROLE_LABELS[user.role]?.color, borderRadius: 1.5 }} />
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Chip label={user.active ? 'Hoạt động' : 'Đã khóa'} size="small"
+                                            icon={user.active ? <CheckCircleIcon sx={{ color: '#16A34A !important' }} /> : <BlockIcon sx={{ color: '#DC2626 !important' }} />}
+                                            sx={{ fontWeight: 600, fontSize: '0.72rem', bgcolor: user.active ? '#F0FDF4' : '#FEF2F2', color: user.active ? '#16A34A' : '#DC2626', borderRadius: 1.5 }} />
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Tooltip title="Tùy chọn">
+                                            <IconButton size="small" onClick={(e) => h.handleMenuOpen(e, user)} sx={{ color: '#94A3B8', '&:hover': { bgcolor: '#F1F5F9', color: '#475569' } }}>
+                                                <MoreVertIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                     </TableCell>
                                 </TableRow>
-                            ) : (
-                                filteredUsers.map((user, index) => (
-                                    <TableRow
-                                        key={user.userId}
-                                        hover
-                                        sx={{
-                                            '&:last-child td': { border: 0 },
-                                            transition: 'background 0.15s',
-                                        }}
-                                    >
-                                        <TableCell sx={{ color: 'text.secondary' }}>{index + 1}</TableCell>
-                                        <TableCell sx={{ fontWeight: 500 }}>{user.fullName}</TableCell>
-                                        <TableCell sx={{ color: 'text.secondary' }}>{user.email}</TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={ROLE_LABELS[user.role]?.label || user.role}
-                                                size="small"
-                                                color={ROLE_LABELS[user.role]?.color || 'default'}
-                                                variant="outlined"
-                                                sx={{ fontWeight: 500 }}
-                                            />
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <Tooltip title={user.active ? 'Nhấn để khóa' : 'Nhấn để kích hoạt'}>
-                                                <Switch
-                                                    checked={user.active}
-                                                    onChange={() => handleToggleStatus(user)}
-                                                    color="success"
-                                                    size="small"
-                                                    disabled={user.role === 'ADMIN'}
-                                                />
-                                            </Tooltip>
-                                        </TableCell>
-                                        <TableCell align="center">
-                                            <Tooltip title="Xóa tài khoản">
-                                                <span>
-                                                    <IconButton
-                                                        size="small"
-                                                        color="error"
-                                                        onClick={() => setDeleteTarget(user)}
-                                                        disabled={user.role === 'ADMIN'}
-                                                    >
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </span>
-                                            </Tooltip>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
+                            ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
             </Card>
 
-            {/* ================ CREATE USER DIALOG ================ */}
-            <Dialog
-                open={openCreate}
-                onClose={() => setOpenCreate(false)}
-                maxWidth="sm"
-                fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}
-            >
-                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Thêm tài khoản mới</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
-                        <TextField
-                            label="Họ tên"
-                            fullWidth
-                            value={newUser.fullName}
-                            onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
-                        <TextField
-                            label="Email"
-                            type="email"
-                            fullWidth
-                            value={newUser.email}
-                            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
-                        <TextField
-                            label="Mật khẩu"
-                            type="password"
-                            fullWidth
-                            value={newUser.password}
-                            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        />
-                        <FormControl fullWidth>
-                            <InputLabel>Vai trò</InputLabel>
-                            <Select
-                                value={newUser.role}
-                                label="Vai trò"
-                                onChange={(e) =>
-                                    setNewUser({ ...newUser, role: e.target.value as CreateUserRequest['role'] })
-                                }
-                                sx={{ borderRadius: 2 }}
-                            >
-                                <MenuItem value="LECTURER">Giảng viên</MenuItem>
-                                <MenuItem value="TEAMLEADER">Trưởng nhóm</MenuItem>
-                                <MenuItem value="TEAMMEMBER">Thành viên</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button
-                        onClick={() => setOpenCreate(false)}
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                    >
-                        Hủy
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleCreateUser}
-                        disabled={creating}
-                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}
-                    >
-                        {creating ? 'Đang tạo...' : 'Tạo tài khoản'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {/* Actions Menu */}
+            <Menu anchorEl={h.menuAnchor} open={Boolean(h.menuAnchor)} onClose={h.handleMenuClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{ sx: { borderRadius: 2.5, minWidth: 200, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid', borderColor: 'divider', mt: 0.5 } }}>
+                <MenuItem onClick={() => { if (h.menuUser) h.setToggleTarget(h.menuUser); h.handleMenuClose(); }} disabled={h.menuUser?.role === 'ADMIN'} sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5 }}>
+                    <ListItemIcon>{h.menuUser?.active ? <LockIcon fontSize="small" sx={{ color: '#D97706' }} /> : <LockOpenIcon fontSize="small" sx={{ color: '#16A34A' }} />}</ListItemIcon>
+                    <ListItemText primary={h.menuUser?.active ? 'Khóa tài khoản' : 'Kích hoạt'} primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
+                </MenuItem>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem onClick={() => { if (h.menuUser) h.setDeleteTarget(h.menuUser); h.handleMenuClose(); }} disabled={h.menuUser?.role === 'ADMIN'}
+                    sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5, color: '#DC2626', '&:hover': { bgcolor: '#FEF2F2' } }}>
+                    <ListItemIcon><DeleteIcon fontSize="small" sx={{ color: '#DC2626' }} /></ListItemIcon>
+                    <ListItemText primary="Xóa tài khoản" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
+                </MenuItem>
+            </Menu>
 
-            {/* ================ DELETE CONFIRM DIALOG ================ */}
-            <Dialog
-                open={!!deleteTarget}
-                onClose={() => setDeleteTarget(null)}
-                maxWidth="xs"
-                fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}
-            >
-                <DialogTitle sx={{ fontWeight: 700 }}>Xác nhận xóa</DialogTitle>
-                <DialogContent>
-                    <Typography>
-                        Bạn có chắc chắn muốn xóa tài khoản{' '}
-                        <strong>{deleteTarget?.fullName}</strong> ({deleteTarget?.email})?
-                    </Typography>
-                    <Alert severity="warning" sx={{ mt: 2, borderRadius: 2 }}>
-                        Hành động này không thể hoàn tác.
-                    </Alert>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button
-                        onClick={() => setDeleteTarget(null)}
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                    >
-                        Hủy
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={handleDeleteUser}
-                        disabled={deleting}
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                    >
-                        {deleting ? 'Đang xóa...' : 'Xóa tài khoản'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {/* Dialogs */}
+            <CreateUserDialog open={h.openCreate} onClose={() => h.setOpenCreate(false)} onSubmit={h.handleCreateUser} />
+
+            <ConfirmDialog open={!!h.toggleTarget} title={h.toggleTarget?.active ? 'Xác nhận khóa tài khoản' : 'Xác nhận kích hoạt'}
+                message={<>Bạn có chắc chắn muốn {h.toggleTarget?.active ? 'khóa' : 'kích hoạt'} tài khoản <strong>{h.toggleTarget?.fullName}</strong>?</>}
+                severity="warning" confirmLabel={h.toggleTarget?.active ? 'Khóa tài khoản' : 'Kích hoạt'}
+                onConfirm={h.handleToggleStatus} onCancel={() => h.setToggleTarget(null)} />
+
+            <ConfirmDialog open={!!h.deleteTarget} title="Xác nhận xóa"
+                message={<>Bạn có chắc chắn muốn xóa tài khoản <strong>{h.deleteTarget?.fullName}</strong> ({h.deleteTarget?.email})?</>}
+                severity="error" confirmLabel="Xóa tài khoản" loading={h.deleting}
+                onConfirm={h.handleDeleteUser} onCancel={() => h.setDeleteTarget(null)} />
         </Box>
     );
 };
