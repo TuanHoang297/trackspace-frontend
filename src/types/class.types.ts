@@ -18,6 +18,7 @@ export interface CreateClassRequest {
     className: string;
     classCode: string;
     semester: string;
+    lecturerId: number | null;
 }
 
 export interface UpdateClassRequest {

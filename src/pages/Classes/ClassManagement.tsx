@@ -165,7 +165,7 @@ const ClassManagement: React.FC = () => {
             </Menu>
 
             {/* Dialogs */}
-            <CreateClassDialog open={h.openCreate} onClose={() => h.setOpenCreate(false)} onCreated={() => h.setOpenCreate(false)} onSubmit={h.handleCreate} />
+            <CreateClassDialog open={h.openCreate} onClose={() => h.setOpenCreate(false)} onCreated={() => h.setOpenCreate(false)} onSubmit={h.handleCreate} lecturers={h.lecturers} />
             <EditClassDialog target={h.editTarget} onClose={() => h.setEditTarget(null)} onSubmit={h.handleEdit} />
             <AssignLecturerDialog target={h.assignTarget} lecturers={h.lecturers} onClose={() => h.setAssignTarget(null)} onSubmit={h.handleAssign} />
             <ManageStudentsDialog target={h.studentTarget} allUsers={h.allUsers} onClose={() => h.setStudentTarget(null)} onRefresh={h.fetchData} />

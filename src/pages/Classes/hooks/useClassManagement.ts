@@ -53,21 +53,42 @@ export function useClassManagement() {
     const totalStudents = useMemo(() => classes.reduce((s, c) => s + (c.totalStudents || 0), 0), [classes]);
 
     const handleCreate = async (data: CreateClassRequest) => {
-        await classService.createClass(data);
-        toast.success('Tạo lớp học thành công!');
-        fetchData();
+        try {
+            await classService.createClass(data);
+            toast.success('Tạo lớp học thành công!');
+            fetchData();
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { message?: string } } })
+                .response?.data?.message || 'Tạo lớp học thất bại';
+            toast.error(message);
+            throw err;
+        }
     };
 
     const handleEdit = async (classId: number, data: UpdateClassRequest) => {
-        await classService.updateClass(classId, data);
-        toast.success('Cập nhật lớp học thành công!');
-        fetchData();
+        try {
+            await classService.updateClass(classId, data);
+            toast.success('Cập nhật lớp học thành công!');
+            fetchData();
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { message?: string } } })
+                .response?.data?.message || 'Cập nhật lớp học thất bại';
+            toast.error(message);
+            throw err;
+        }
     };
 
     const handleAssign = async (classId: number, lecturerId: number) => {
-        await classService.assignLecturer(classId, lecturerId);
-        toast.success('Gán giảng viên thành công!');
-        fetchData();
+        try {
+            await classService.assignLecturer(classId, lecturerId);
+            toast.success('Gán giảng viên thành công!');
+            fetchData();
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { message?: string } } })
+                .response?.data?.message || 'Gán giảng viên thất bại';
+            toast.error(message);
+            throw err;
+        }
     };
 
     const handleDelete = async () => {

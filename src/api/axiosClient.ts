@@ -20,7 +20,7 @@ axiosClient.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor: handle 401
+// Response interceptor: handle 401 / 403
 axiosClient.interceptors.response.use(
     (response) => response,
     (error) => {
