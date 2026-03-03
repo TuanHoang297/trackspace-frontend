@@ -32,8 +32,8 @@ interface Props {
 
 const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRefresh }) => {
     const navigate = useNavigate();
-    const { isReadOnly } = useRole();
-    const readOnly = isReadOnly();
+    const { isAdmin, isLecturer } = useRole();
+    const readOnly = !isAdmin() && !isLecturer();
     const [openCreate, setOpenCreate] = useState(false);
     const [creating, setCreating] = useState(false);
     const [newGroup, setNewGroup] = useState<CreateGroupRequest>({ groupName: '', description: '' });

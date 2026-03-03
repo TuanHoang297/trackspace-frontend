@@ -66,8 +66,8 @@ const ProjectOverview: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const pid = Number(projectId);
-    const { isReadOnly } = useRole();
-    const readOnly = isReadOnly();
+    const { isTeamLeader } = useRole();
+    const readOnly = !isTeamLeader();
 
     const [project, setProject] = useState<ProjectResponse | null>(null);
     const [jiraConn, setJiraConn] = useState<JiraConnectionResponse | null>(null);

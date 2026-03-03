@@ -25,8 +25,8 @@ const ProjectInfo: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const id = Number(projectId);
-    const { isReadOnly } = useRole();
-    const readOnly = isReadOnly();
+    const { isTeamLeader } = useRole();
+    const readOnly = !isTeamLeader();
 
     const [project, setProject] = useState<ProjectResponse | null>(null);
     const [info, setInfo] = useState<ProjectInfoResponse | null>(null);
