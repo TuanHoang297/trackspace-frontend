@@ -66,8 +66,8 @@ const ProjectOverview: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const pid = Number(projectId);
-    const { isTeamLeader } = useRole();
-    const readOnly = !isTeamLeader();
+    const { isLecturer } = useRole();
+    const readOnly = !isLecturer();
 
     const [project, setProject] = useState<ProjectResponse | null>(null);
     const [jiraConn, setJiraConn] = useState<JiraConnectionResponse | null>(null);
@@ -107,7 +107,7 @@ const ProjectOverview: React.FC = () => {
                         setInfo(null);
                     }
                 } else {
-                    if (!readOnly) setEditing(true); // Auto open form if no info yet (not for Lecturer)
+                    if (!readOnly) setEditing(true); // Auto open form if no info yet (for Lecturer)
                 }
 
                 try {
@@ -138,7 +138,7 @@ const ProjectOverview: React.FC = () => {
         try {
             setSaving(true);
             const request: ProjectInfoRequest = {
-                topic, context, problems, primaryActors, functionalRequirements,
+                topic: project?.projectName || topic, context, problems, primaryActors, functionalRequirements,
             };
             const res = await projectService.saveProjectInfo(pid, request);
             setInfo(res.data.data);
@@ -170,7 +170,6 @@ const ProjectOverview: React.FC = () => {
     const totalGhCommits = activeGhConns.reduce((sum, c) => sum + (c.totalCommits || 0), 0);
 
     const infoFields = [
-        { label: 'Tên đề tài', value: info?.topic },
         { label: 'Bối cảnh & Mục tiêu', value: info?.context },
         { label: 'Vấn đề hiện tại', value: info?.problems },
         { label: 'Đối tượng sử dụng', value: info?.primaryActors },
@@ -229,15 +228,6 @@ const ProjectOverview: React.FC = () => {
                             Điền các thông tin cơ bản về project. Thông tin này sẽ được sử dụng để tạo tài liệu SRS sau này.
                         </Typography>
                         <Grid container spacing={2.5}>
-                            <Grid item xs={12}>
-                                <TextField
-                                    label="Tên Đề tài (Topic)"
-                                    fullWidth variant="outlined" value={topic}
-                                    onChange={e => setTopic(e.target.value)}
-                                    placeholder="Ví dụ: Nền tảng học trực tuyến"
-                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                                />
-                            </Grid>
                             <Grid item xs={12}>
                                 <TextField
                                     label="Bối cảnh & Mục tiêu (Context & Objectives)"

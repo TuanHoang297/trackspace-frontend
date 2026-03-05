@@ -40,6 +40,7 @@ export interface JiraSprintRequest {
     startDate?: string;
     endDate?: string;
     goal?: string;
+    status?: SprintStatus;
 }
 
 // --- Responses ---

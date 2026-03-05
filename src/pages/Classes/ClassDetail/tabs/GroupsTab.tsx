@@ -4,7 +4,7 @@ import {
     Box, Button, Card, Chip, IconButton, Tooltip, Typography, Skeleton,
     TextField, Dialog, DialogTitle, DialogContent, DialogActions,
     Checkbox, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-    Divider, Alert,
+    Divider, Alert, Stepper, Step, StepLabel,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -57,6 +57,19 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
     const [createProjGroup, setCreateProjGroup] = useState<GroupResponse | null>(null);
     const [newProjName, setNewProjName] = useState('');
     const [creatingProj, setCreatingProj] = useState(false);
+    const [projStep, setProjStep] = useState(0);
+
+    // Project Info fields
+
+    const [projContext, setProjContext] = useState('');
+    const [projProblems, setProjProblems] = useState('');
+    const [projActors, setProjActors] = useState('');
+    const [projRequirements, setProjRequirements] = useState('');
+
+    const resetProjInfo = () => {
+        setProjStep(0); setProjContext('');
+        setProjProblems(''); setProjActors(''); setProjRequirements('');
+    };
 
 
 
@@ -164,11 +177,20 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                 await projectService.updateProject(existingProj.id, { projectName: newProjName });
                 toast.success('Đã cập nhật tên project!');
             } else {
-                await projectService.createProject(createProjGroup.id, { projectName: newProjName });
+                const res = await projectService.createProject(createProjGroup.id, { projectName: newProjName });
+                // Save project info if any field filled
+                const hasInfo = projContext || projProblems || projActors || projRequirements;
+                if (hasInfo) {
+                    await projectService.saveProjectInfo(res.data.data.id, {
+                        topic: newProjName, context: projContext, problems: projProblems,
+                        primaryActors: projActors, functionalRequirements: projRequirements,
+                    });
+                }
                 toast.success('Tạo project thành công!');
             }
             setCreateProjGroup(null);
             setNewProjName('');
+            resetProjInfo();
             onRefresh();
         } catch (err: any) { toast.error(err.response?.data?.message || 'Thao tác thất bại'); }
         finally { setCreatingProj(false); }
@@ -670,30 +692,85 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
             </Dialog>
 
             {/* Create / Rename Project Dialog */}
-            <Dialog open={!!createProjGroup} onClose={() => setCreateProjGroup(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-                    {createProjGroup && projects.find(p => p.groupId === createProjGroup.id)
-                        ? `Đổi tên Project — ${createProjGroup.groupName}`
-                        : `Tạo Project cho ${createProjGroup?.groupName}`}
-                </DialogTitle>
-                <DialogContent>
-                    <TextField
-                        label="Tên Project" fullWidth autoFocus
-                        value={newProjName}
-                        onChange={e => setNewProjName(e.target.value)}
-                        placeholder="Ví dụ: Hệ thống quản lý bán hàng"
-                        sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                    />
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button onClick={() => setCreateProjGroup(null)} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
-                    <Button variant="contained" onClick={handleCreateProject}
-                        disabled={creatingProj || !newProjName.trim()}
-                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
-                        {creatingProj ? 'Đang xử lý...'
-                            : (createProjGroup && projects.find(p => p.groupId === createProjGroup.id) ? 'Lưu' : 'Tạo Project')}
-                    </Button>
-                </DialogActions>
+            <Dialog open={!!createProjGroup} onClose={() => { setCreateProjGroup(null); resetProjInfo(); }} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+                {(() => {
+                    const isRename = createProjGroup && projects.find(p => p.groupId === createProjGroup.id);
+                    return (
+                        <>
+                            <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
+                                {isRename ? `Đổi tên Project — ${createProjGroup?.groupName}` : `Tạo Project cho ${createProjGroup?.groupName}`}
+                            </DialogTitle>
+                            <DialogContent>
+                                {!isRename && (
+                                    <Stepper activeStep={projStep} sx={{ mt: 1, mb: 3 }} alternativeLabel>
+                                        <Step><StepLabel>Thông tin cơ bản</StepLabel></Step>
+                                        <Step><StepLabel>Chi tiết đề tài</StepLabel></Step>
+                                    </Stepper>
+                                )}
+
+                                {(isRename || projStep === 0) && (
+                                    <TextField
+                                        label="Tên Project" fullWidth autoFocus
+                                        value={newProjName}
+                                        onChange={e => setNewProjName(e.target.value)}
+                                        placeholder="Ví dụ: Hệ thống quản lý bán hàng"
+                                        sx={{ mt: isRename ? 1 : 0, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                                    />
+                                )}
+
+                                {!isRename && projStep === 1 && (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: -1 }}>
+                                            Điền thông tin chi tiết đề tài. Có thể bỏ qua và điền sau.
+                                        </Typography>
+                                        <TextField label="Bối cảnh & Mục tiêu" fullWidth multiline minRows={2}
+                                            value={projContext} onChange={e => setProjContext(e.target.value)}
+                                            placeholder="Tại sao lại làm dự án này?"
+                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                                        <TextField label="Vấn đề hiện tại" fullWidth multiline minRows={2}
+                                            value={projProblems} onChange={e => setProjProblems(e.target.value)}
+                                            placeholder="Các vấn đề thực tiễn cần giải quyết..."
+                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                                        <Divider />
+                                        <TextField label="Đối tượng sử dụng" fullWidth multiline minRows={2}
+                                            value={projActors} onChange={e => setProjActors(e.target.value)}
+                                            placeholder="Admin, Giảng viên, Sinh viên..."
+                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                                        <TextField label="Yêu cầu chức năng cốt lõi" fullWidth multiline minRows={3}
+                                            value={projRequirements} onChange={e => setProjRequirements(e.target.value)}
+                                            placeholder="- Chức năng 1: Đăng nhập&#10;- Chức năng 2: Quản lý..."
+                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                                    </Box>
+                                )}
+                            </DialogContent>
+                            <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                                <Button onClick={() => { setCreateProjGroup(null); resetProjInfo(); }} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
+                                {!isRename && projStep === 1 && (
+                                    <Button onClick={() => setProjStep(0)} sx={{ textTransform: 'none', borderRadius: 2 }}>Quay lại</Button>
+                                )}
+                                {isRename ? (
+                                    <Button variant="contained" onClick={handleCreateProject}
+                                        disabled={creatingProj || !newProjName.trim()}
+                                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
+                                        {creatingProj ? 'Đang lưu...' : 'Lưu'}
+                                    </Button>
+                                ) : projStep === 0 ? (
+                                    <Button variant="contained" onClick={() => setProjStep(1)}
+                                        disabled={!newProjName.trim()}
+                                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
+                                        Tiếp theo
+                                    </Button>
+                                ) : (
+                                    <Button variant="contained" onClick={handleCreateProject}
+                                        disabled={creatingProj}
+                                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
+                                        {creatingProj ? 'Đang tạo...' : 'Tạo Project'}
+                                    </Button>
+                                )}
+                            </DialogActions>
+                        </>
+                    );
+                })()}
             </Dialog>
 
 

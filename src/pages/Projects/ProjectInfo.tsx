@@ -25,8 +25,8 @@ const ProjectInfo: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const id = Number(projectId);
-    const { isTeamLeader } = useRole();
-    const readOnly = !isTeamLeader();
+    const { isLecturer } = useRole();
+    const readOnly = !isLecturer();
 
     const [project, setProject] = useState<ProjectResponse | null>(null);
     const [info, setInfo] = useState<ProjectInfoResponse | null>(null);
@@ -73,7 +73,7 @@ const ProjectInfo: React.FC = () => {
         try {
             setSaving(true);
             const request: ProjectInfoRequest = {
-                topic,
+                topic: project?.projectName || topic,
                 context,
                 problems,
                 primaryActors,
@@ -161,18 +161,6 @@ const ProjectInfo: React.FC = () => {
                     </Typography>
 
                     <Grid container spacing={4}>
-                        <Grid item xs={12}>
-                            <TextField
-                                label="Tên Đề tài (Topic)"
-                                fullWidth
-                                variant="outlined"
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                placeholder="Ví dụ: Nền tảng học trực tuyến"
-                                disabled={readOnly}
-                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                            />
-                        </Grid>
 
                         <Grid item xs={12}>
                             <TextField

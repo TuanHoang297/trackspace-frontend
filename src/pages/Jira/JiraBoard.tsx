@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Button, Chip, Paper, Skeleton,
-    Tooltip, IconButton, LinearProgress,
+    Tooltip, IconButton, LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -48,6 +48,54 @@ const JiraBoard: React.FC = () => {
     const [editingSprint, setEditingSprint] = useState<JiraSprintResponse | null>(null);
     const [deleteSprintId, setDeleteSprintId] = useState<number | null>(null);
 
+    // Sprint status change
+    const [statusConfirm, setStatusConfirm] = useState<{
+        sprint: JiraSprintResponse;
+        targetStatus: 'ACTIVE' | 'CLOSED';
+    } | null>(null);
+    const [statusChanging, setStatusChanging] = useState(false);
+    const [startSprintDates, setStartSprintDates] = useState({ startDate: '', endDate: '' });
+
+    // Pre-fill dates when opening Start Sprint dialog
+    useEffect(() => {
+        if (statusConfirm?.targetStatus === 'ACTIVE') {
+            setStartSprintDates({
+                startDate: statusConfirm.sprint.startDate?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+                endDate: statusConfirm.sprint.endDate?.slice(0, 10) || '',
+            });
+        }
+    }, [statusConfirm]);
+
+    const handleStatusChange = async (overrideDates?: { startDate: string; endDate: string }) => {
+        if (!statusConfirm) return;
+        setStatusChanging(true);
+        const dates = overrideDates || {
+            startDate: statusConfirm.sprint.startDate || undefined,
+            endDate: statusConfirm.sprint.endDate || undefined,
+        };
+        try {
+            await jiraService.updateSprint(statusConfirm.sprint.sprintId, {
+                projectId: pid,
+                name: statusConfirm.sprint.sprintName,
+                startDate: dates.startDate || undefined,
+                endDate: dates.endDate || undefined,
+                goal: statusConfirm.sprint.sprintGoal || undefined,
+                status: statusConfirm.targetStatus,
+            });
+            toast.success(
+                statusConfirm.targetStatus === 'ACTIVE' ? 'Sprint đã được bắt đầu!' : 'Sprint đã hoàn thành!'
+            );
+            setStatusConfirm(null);
+            refresh();
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+                || 'Thao tác thất bại — Jira từ chối thay đổi trạng thái';
+            toast.error(msg);
+        } finally {
+            setStatusChanging(false);
+        }
+    };
+
     // Fetch group members for assignee dropdown
     useEffect(() => {
         const fetchMembers = async () => {
@@ -69,9 +117,16 @@ const JiraBoard: React.FC = () => {
     }, [pid]);
     const [disconnectOpen, setDisconnectOpen] = useState(false);
 
-    // Group issues by sprint
+    // Sort: ACTIVE → CLOSED → FUTURE, then by sprintId ascending
     const sprintColumns = useMemo(() => {
-        return sprints.map(sprint => ({
+        const statusOrder: Record<string, number> = { ACTIVE: 0, CLOSED: 1, FUTURE: 2 };
+        const sorted = [...sprints].sort((a, b) => {
+            const oa = statusOrder[a.status] ?? 9;
+            const ob = statusOrder[b.status] ?? 9;
+            if (oa !== ob) return oa - ob;
+            return a.sprintId - b.sprintId;
+        });
+        return sorted.map(sprint => ({
             sprint,
             issues: issues.filter(i => i.sprintId === sprint.sprintId),
         }));
@@ -147,8 +202,15 @@ const JiraBoard: React.FC = () => {
 
     const handleUpdateSprint = async (data: JiraSprintRequest) => {
         if (!editingSprint) return;
-        await jiraService.updateSprint(editingSprint.sprintId, data);
-        toast.success('Cập nhật Sprint thành công!');
+        try {
+            await jiraService.updateSprint(editingSprint.sprintId, data);
+            toast.success(data.status ? 'Đã cập nhật trạng thái Sprint!' : 'Cập nhật Sprint thành công!');
+        } catch (err: unknown) {
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+                || 'Cập nhật Sprint thất bại';
+            toast.error(msg);
+            throw err; // re-throw so SprintDialog stays open
+        }
     };
 
     const handleDeleteSprint = async () => {
@@ -169,7 +231,7 @@ const JiraBoard: React.FC = () => {
     };
 
     return (
-        <Box sx={{ p: { xs: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ p: { xs: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 2 }}>
                 <Box>
@@ -239,8 +301,10 @@ const JiraBoard: React.FC = () => {
                     display: 'flex',
                     gap: 2,
                     overflowX: 'auto',
+                    overflowY: 'hidden',
                     flex: 1,
-                    pb: 2,
+                    minHeight: 0,
+                    pb: 1,
                     // Custom scrollbar
                     '&::-webkit-scrollbar': { height: 8 },
                     '&::-webkit-scrollbar-track': { bgcolor: '#f1f1f1', borderRadius: 4 },
@@ -258,6 +322,7 @@ const JiraBoard: React.FC = () => {
                                 sx={{
                                     minWidth: 300,
                                     maxWidth: 320,
+                                    height: '100%',
                                     borderRadius: 3,
                                     border: '2px solid',
                                     borderColor: isActive ? '#36B37E' : 'divider',
@@ -279,10 +344,22 @@ const JiraBoard: React.FC = () => {
                                             <Chip
                                                 label={sprint.status}
                                                 size="small"
+                                                onClick={canManageConnection && sprint.status !== 'CLOSED' ? () => {
+                                                    setStatusConfirm({
+                                                        sprint,
+                                                        targetStatus: sprint.status === 'FUTURE' ? 'ACTIVE' : 'CLOSED',
+                                                    });
+                                                } : undefined}
                                                 sx={{
                                                     height: 20, fontSize: '0.6rem', fontWeight: 700,
                                                     bgcolor: isActive ? '#C6F6D5' : sprint.status === 'CLOSED' ? '#E3FCEF' : '#EDF2F7',
                                                     color: isActive ? '#22543D' : sprint.status === 'CLOSED' ? '#006644' : '#42526E',
+                                                    cursor: canManageConnection && sprint.status !== 'CLOSED' ? 'pointer' : 'default',
+                                                    transition: 'all 0.2s',
+                                                    '&:hover': canManageConnection && sprint.status !== 'CLOSED' ? {
+                                                        transform: 'scale(1.05)',
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                                                    } : {},
                                                 }}
                                             />
                                             {canManageConnection && (
@@ -327,7 +404,7 @@ const JiraBoard: React.FC = () => {
                                 </Box>
 
                                 {/* Issues List */}
-                                <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 320px)' }}>
+                                <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 0 }}>
                                     {sprintIssues.length === 0 ? (
                                         <Typography variant="caption" color="text.disabled" sx={{
                                             display: 'block', textAlign: 'center', py: 4,
@@ -374,6 +451,7 @@ const JiraBoard: React.FC = () => {
                             elevation={0}
                             sx={{
                                 minWidth: 300, maxWidth: 320,
+                                height: '100%',
                                 borderRadius: 3, border: '2px dashed', borderColor: 'divider',
                                 bgcolor: '#FAFBFC',
                                 flexShrink: 0,
@@ -388,7 +466,7 @@ const JiraBoard: React.FC = () => {
                                     {backlogIssues.length} issues chưa gán sprint
                                 </Typography>
                             </Box>
-                            <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', maxHeight: 'calc(100vh - 320px)' }}>
+                            <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 0 }}>
                                 {backlogIssues.map(issue => (
                                     <IssueCard key={issue.issueId} issue={issue} onClick={setDetailIssue} />
                                 ))}
@@ -452,6 +530,48 @@ const JiraBoard: React.FC = () => {
                 message="Sprint sẽ bị xóa khỏi Jira. Các issue trong sprint sẽ chuyển về Backlog."
                 onConfirm={handleDeleteSprint}
                 onCancel={() => setDeleteSprintId(null)}
+            />
+            {/* Start Sprint Dialog — with date fields like Jira */}
+            <Dialog open={!!statusConfirm && statusConfirm.targetStatus === 'ACTIVE'}
+                onClose={() => setStatusConfirm(null)} maxWidth="xs" fullWidth
+                PaperProps={{ sx: { borderRadius: 3 } }}>
+                <DialogTitle sx={{ fontWeight: 700 }}>Start Sprint</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {statusConfirm?.sprint.sprintName}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <TextField label="Ngày bắt đầu" type="date" size="small" fullWidth required
+                            value={startSprintDates.startDate}
+                            onChange={e => setStartSprintDates(d => ({ ...d, startDate: e.target.value }))}
+                            InputLabelProps={{ shrink: true }} />
+                        <TextField label="Ngày kết thúc" type="date" size="small" fullWidth required
+                            value={startSprintDates.endDate}
+                            onChange={e => setStartSprintDates(d => ({ ...d, endDate: e.target.value }))}
+                            InputLabelProps={{ shrink: true }} />
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button onClick={() => setStatusConfirm(null)} disabled={statusChanging}
+                        sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
+                    <Button variant="contained" onClick={() => handleStatusChange(startSprintDates)}
+                        disabled={statusChanging || !startSprintDates.startDate || !startSprintDates.endDate}
+                        sx={{ textTransform: 'none', borderRadius: 2, bgcolor: '#36B37E', '&:hover': { bgcolor: '#2D9A6E' } }}>
+                        {statusChanging ? 'Đang xử lý...' : 'Start Sprint'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Complete Sprint — simple confirm */}
+            <ConfirmDialog
+                open={!!statusConfirm && statusConfirm.targetStatus === 'CLOSED'}
+                title="Complete Sprint?"
+                message={`Bạn có chắc muốn hoàn thành "${statusConfirm?.sprint.sprintName}"? Sprint sẽ được đóng lại.`}
+                onConfirm={() => handleStatusChange()}
+                onCancel={() => setStatusConfirm(null)}
+                confirmLabel="Complete Sprint"
+                severity="info"
+                loading={statusChanging}
             />
         </Box>
     );

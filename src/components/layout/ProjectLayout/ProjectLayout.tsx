@@ -44,10 +44,10 @@ const ProjectLayout: React.FC = () => {
     const classListPath = currentUser?.role === 'LECTURER' ? '/lecturer/classes' : '/student/dashboard';
 
     return (
-        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F8FAFC' }}>
+        <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#F8FAFC', overflow: 'hidden' }}>
             <ProjectSidebar />
 
-            <Box sx={{ flex: 1, ml: `${SIDEBAR_WIDTH}px`, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flex: 1, ml: `${SIDEBAR_WIDTH}px`, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
                 {/* Top Header Bar */}
                 <Box sx={{
                     px: 3, py: 1.5,
@@ -108,7 +108,7 @@ const ProjectLayout: React.FC = () => {
                 </Box>
 
                 {/* Page Content */}
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
                     <Outlet />
                 </Box>
             </Box>

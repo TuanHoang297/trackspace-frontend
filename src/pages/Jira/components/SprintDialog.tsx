@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
-    TextField, Button, Box, Divider,
+    TextField, Button, Box, Divider, Chip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import type { JiraSprintResponse, JiraSprintRequest } from '../../../types/jira.types';
@@ -54,11 +54,26 @@ const SprintDialog: React.FC<Props> = ({ open, onClose, onSaved, projectId, spri
         }
     };
 
+    const statusColor = sprint?.status === 'ACTIVE' ? '#36B37E'
+        : sprint?.status === 'CLOSED' ? '#6B7280' : '#64748B';
+    const statusLabel = sprint?.status === 'ACTIVE' ? 'Active'
+        : sprint?.status === 'CLOSED' ? 'Closed' : 'Future';
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
             PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ fontWeight: 700 }}>
+            <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 {isEdit ? 'Chỉnh sửa Sprint' : 'Tạo Sprint mới'}
+                {isEdit && sprint && (
+                    <Chip
+                        size="small"
+                        label={statusLabel}
+                        sx={{
+                            bgcolor: `${statusColor}20`, color: statusColor,
+                            fontWeight: 700, fontSize: '0.7rem',
+                        }}
+                    />
+                )}
             </DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -81,7 +96,7 @@ const SprintDialog: React.FC<Props> = ({ open, onClose, onSaved, projectId, spri
                     <>
                         <Divider sx={{ my: 2 }} />
                         <Button
-                            color="error"
+                            color="error" size="small"
                             startIcon={<DeleteIcon />}
                             onClick={onDelete}
                             sx={{ textTransform: 'none' }}
