@@ -10,7 +10,6 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import AddIcon from '@mui/icons-material/Add';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import BlockIcon from '@mui/icons-material/Block';
 import GroupsIcon from '@mui/icons-material/Groups';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
