@@ -23,6 +23,7 @@ interface Props {
 
 const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRefresh }) => {
     const [students, setStudents] = useState<StudentInClassResponse[]>([]);
+    const [enrolledIds, setEnrolledIds] = useState<Set<number>>(new Set());
     const [loading, setLoading] = useState(false);
     const [adding, setAdding] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -35,9 +36,15 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
             setLoading(true);
             setSelectedIds(new Set());
             setSearch('');
-            classService.getStudents(target.id)
-                .then(res => setStudents(res.data.data))
-                .catch(() => setStudents([]))
+            Promise.all([
+                classService.getStudents(target.id),
+                classService.getEnrolledStudentIds(),
+            ])
+                .then(([studentsRes, enrolledRes]) => {
+                    setStudents(studentsRes.data.data);
+                    setEnrolledIds(new Set(enrolledRes.data.data));
+                })
+                .catch(() => { setStudents([]); setEnrolledIds(new Set()); })
                 .finally(() => setLoading(false));
         }
     }, [target]);
@@ -45,8 +52,8 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
     const available = useMemo(() =>
         allUsers.filter(u =>
             (u.role === 'TEAMMEMBER' || u.role === 'TEAMLEADER') &&
-            !students.some(s => s.studentId === u.userId)
-        ), [allUsers, students]);
+            !enrolledIds.has(u.userId)
+        ), [allUsers, enrolledIds]);
 
     const filtered = useMemo(() =>
         available.filter(u =>
@@ -75,8 +82,12 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
 
     const refreshStudents = async () => {
         if (!target) return;
-        const res = await classService.getStudents(target.id);
-        setStudents(res.data.data);
+        const [studentsRes, enrolledRes] = await Promise.all([
+            classService.getStudents(target.id),
+            classService.getEnrolledStudentIds(),
+        ]);
+        setStudents(studentsRes.data.data);
+        setEnrolledIds(new Set(enrolledRes.data.data));
     };
 
     const handleBulkAdd = async () => {

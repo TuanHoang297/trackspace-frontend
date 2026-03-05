@@ -25,6 +25,7 @@ export interface UpdateClassRequest {
     className?: string;
     semester?: string;
     active?: boolean;
+    lecturerId?: number | null;
 }
 
 export interface AssignLecturerRequest {

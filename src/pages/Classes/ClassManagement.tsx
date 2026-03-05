@@ -9,7 +9,6 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SchoolIcon from '@mui/icons-material/School';
@@ -20,7 +19,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
 import CreateClassDialog from './components/CreateClassDialog';
 import EditClassDialog from './components/EditClassDialog';
-import AssignLecturerDialog from './components/AssignLecturerDialog';
+
 import ManageStudentsDialog from './components/ManageStudentsDialog';
 import { useClassManagement } from './hooks/useClassManagement';
 
@@ -148,10 +147,7 @@ const ClassManagement: React.FC = () => {
                     <ListItemIcon><PeopleIcon fontSize="small" sx={{ color: '#10B981' }} /></ListItemIcon>
                     <ListItemText primary="Quản lý sinh viên" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
                 </MenuItem>
-                <MenuItem onClick={() => { if (h.menuClass) h.setAssignTarget(h.menuClass); h.handleMenuClose(); }} sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5 }}>
-                    <ListItemIcon><PersonIcon fontSize="small" sx={{ color: '#8B5CF6' }} /></ListItemIcon>
-                    <ListItemText primary="Gán giảng viên" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
-                </MenuItem>
+
                 <MenuItem onClick={() => { if (h.menuClass) h.setEditTarget(h.menuClass); h.handleMenuClose(); }} sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5 }}>
                     <ListItemIcon><EditIcon fontSize="small" sx={{ color: '#3B82F6' }} /></ListItemIcon>
                     <ListItemText primary="Chỉnh sửa lớp" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
@@ -166,8 +162,7 @@ const ClassManagement: React.FC = () => {
 
             {/* Dialogs */}
             <CreateClassDialog open={h.openCreate} onClose={() => h.setOpenCreate(false)} onCreated={() => h.setOpenCreate(false)} onSubmit={h.handleCreate} lecturers={h.lecturers} />
-            <EditClassDialog target={h.editTarget} onClose={() => h.setEditTarget(null)} onSubmit={h.handleEdit} />
-            <AssignLecturerDialog target={h.assignTarget} lecturers={h.lecturers} onClose={() => h.setAssignTarget(null)} onSubmit={h.handleAssign} />
+            <EditClassDialog target={h.editTarget} onClose={() => h.setEditTarget(null)} onSubmit={h.handleEdit} lecturers={h.lecturers} />
             <ManageStudentsDialog target={h.studentTarget} allUsers={h.allUsers} onClose={() => h.setStudentTarget(null)} onRefresh={h.fetchData} />
 
             <ConfirmDialog open={!!h.deleteTarget} title="Xác nhận xóa"

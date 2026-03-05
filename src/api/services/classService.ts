@@ -34,6 +34,9 @@ const classService = {
 
     removeStudent: (classId: number, studentId: number) =>
         axiosClient.delete<ApiResponse<void>>(`/classes/${classId}/students/${studentId}`),
+
+    getEnrolledStudentIds: () =>
+        axiosClient.get<ApiResponse<number[]>>('/classes/enrolled-student-ids'),
 };
 
 export default classService;

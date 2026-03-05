@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, Box, TextField, FormControl, InputLabel, Select, MenuItem,
@@ -14,11 +14,46 @@ interface Props {
     lecturers: UserResponse[];
 }
 
+/**
+ * Generate semester options based on current date.
+ * Format: "Spring YYYY", "Summer YYYY", "Fall YYYY"
+ * Returns current semester + next 3 semesters.
+ */
+function generateSemesterOptions(): { value: string; label: string }[] {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-12
+    const year = now.getFullYear();
+
+    // Determine current semester
+    // Spring: Jan-Apr, Summer: May-Aug, Fall: Sep-Dec
+    let currentIndex: number;
+    if (month >= 1 && month <= 4) currentIndex = 0;       // Spring
+    else if (month >= 5 && month <= 8) currentIndex = 1;   // Summer
+    else currentIndex = 2;                                  // Fall
+
+    const seasons = ['Spring', 'Summer', 'Fall'];
+    const seasonLabels = ['Xuân', 'Hè', 'Thu'];
+    const options: { value: string; label: string }[] = [];
+
+    let y = year;
+    let idx = currentIndex;
+    for (let i = 0; i < 4; i++) {
+        const value = `${seasons[idx]} ${y}`;
+        const label = `${seasonLabels[idx]} ${y} (${value})`;
+        options.push({ value, label });
+        idx++;
+        if (idx >= 3) { idx = 0; y++; }
+    }
+    return options;
+}
+
 const CreateClassDialog: React.FC<Props> = ({ open, onClose, onCreated, onSubmit, lecturers }) => {
+    const semesterOptions = useMemo(() => generateSemesterOptions(), []);
+
     const [data, setData] = useState<CreateClassRequest>({
         className: '',
         classCode: '',
-        semester: '',
+        semester: semesterOptions[0]?.value ?? '',
         lecturerId: null,
     });
     const [loading, setLoading] = useState(false);
@@ -27,7 +62,7 @@ const CreateClassDialog: React.FC<Props> = ({ open, onClose, onCreated, onSubmit
         setLoading(true);
         try {
             await onSubmit(data);
-            setData({ className: '', classCode: '', semester: '', lecturerId: null });
+            setData({ className: '', classCode: '', semester: semesterOptions[0]?.value ?? '', lecturerId: null });
             onCreated();
         } finally {
             setLoading(false);
@@ -49,10 +84,19 @@ const CreateClassDialog: React.FC<Props> = ({ open, onClose, onCreated, onSubmit
                         onChange={(e) => setData({ ...data, classCode: e.target.value })}
                         placeholder="Ví dụ: SE1801"
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
-                    <TextField label="Học kỳ" fullWidth value={data.semester}
-                        onChange={(e) => setData({ ...data, semester: e.target.value })}
-                        placeholder="Ví dụ: Spring 2026"
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                    <FormControl fullWidth>
+                        <InputLabel>Học kỳ *</InputLabel>
+                        <Select
+                            value={data.semester}
+                            label="Học kỳ *"
+                            onChange={(e) => setData({ ...data, semester: e.target.value as string })}
+                            sx={{ borderRadius: 2 }}
+                        >
+                            {semesterOptions.map((opt) => (
+                                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                     <FormControl fullWidth>
                         <InputLabel>Giảng viên phụ trách *</InputLabel>
                         <Select
@@ -81,3 +125,4 @@ const CreateClassDialog: React.FC<Props> = ({ open, onClose, onCreated, onSubmit
 };
 
 export default CreateClassDialog;
+

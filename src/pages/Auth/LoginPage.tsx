@@ -75,19 +75,40 @@ const LoginPage: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const data: LoginResponse = await res.json();
-      if (res.ok && data.success) {
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('user', JSON.stringify({
-          userId: data.data.userId, email: data.data.email,
-          fullName: data.data.fullName, role: data.data.role,
-        }));
-        const r = data.data.role;
-        if (r === 'ADMIN') navigate('/admin/dashboard');
-        else if (r === 'LECTURER') navigate('/lecturer/classes');
-        else navigate('/student/dashboard');
-      } else setApiErr(data.message || 'Đăng nhập thất bại.');
-    } catch { setApiErr('Không thể kết nối đến server.'); }
+      if (res.ok) {
+        const data: LoginResponse = await res.json();
+        if (data.success) {
+          localStorage.setItem('token', data.data.token);
+          localStorage.setItem('user', JSON.stringify({
+            userId: data.data.userId, email: data.data.email,
+            fullName: data.data.fullName, role: data.data.role,
+          }));
+          const r = data.data.role;
+          if (r === 'ADMIN') navigate('/admin/dashboard');
+          else if (r === 'LECTURER') navigate('/lecturer/classes');
+          else navigate('/student/dashboard');
+        } else {
+          setApiErr(data.message || 'Đăng nhập thất bại.');
+        }
+      } else {
+        try {
+          const errData = await res.json();
+          setApiErr(errData.message || `Lỗi ${res.status}: ${res.statusText}`);
+        } catch {
+          // Could not parse JSON error body
+          if (res.status === 401) setApiErr('Email hoặc mật khẩu không đúng.');
+          else if (res.status === 403) setApiErr('Tài khoản đã bị khóa. Liên hệ quản trị viên.');
+          else if (res.status === 503) setApiErr('Hệ thống đang bảo trì. Vui lòng thử lại sau.');
+          else setApiErr(`Lỗi server (${res.status}). Vui lòng thử lại sau.`);
+        }
+      }
+    } catch (err) {
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setApiErr('Không thể kết nối đến server. Kiểm tra kết nối mạng hoặc server chưa khởi động.');
+      } else {
+        setApiErr('Không thể kết nối đến server. Vui lòng thử lại.');
+      }
+    }
     finally { setLoading(false); }
   };
 
