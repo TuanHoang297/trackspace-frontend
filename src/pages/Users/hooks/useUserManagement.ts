@@ -103,7 +103,7 @@ export function useUserManagement() {
     return {
         users, loading, error, searchTerm, setSearchTerm,
         roleFilter, setRoleFilter, filteredUsers,
-        activeCount, inactiveCount,
+        activeCount, inactiveCount, fetchUsers,
         openCreate, setOpenCreate, handleCreateUser,
         deleteTarget, setDeleteTarget, deleting, handleDeleteUser,
         toggleTarget, setToggleTarget, handleToggleStatus,

@@ -13,6 +13,17 @@ const adminService = {
 
     deleteUser: (userId: number) =>
         axiosClient.delete<ApiResponse<void>>(`/admin/users/${userId}`),
+
+    importUsers: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return axiosClient.post<ApiResponse<any>>('/admin/users/import', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
+
+    downloadTemplate: () =>
+        axiosClient.get('/admin/users/import-template', { responseType: 'blob' }),
 };
 
 export default adminService;

@@ -15,8 +15,10 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BlockIcon from '@mui/icons-material/Block';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
 import CreateUserDialog from './components/CreateUserDialog';
+import ImportUsersDialog from './components/ImportUsersDialog';
 import { useUserManagement } from './hooks/useUserManagement';
 
 const ROLE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -33,6 +35,7 @@ const getInitials = (name: string) => { const p = name.trim().split(/\s+/); retu
 
 const UserManagement: React.FC = () => {
     const h = useUserManagement();
+    const [importOpen, setImportOpen] = React.useState(false);
 
     return (
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
@@ -47,10 +50,16 @@ const UserManagement: React.FC = () => {
                         </Box>
                         <Typography variant="body2" sx={{ opacity: 0.85 }}>Quản lý tất cả tài khoản người dùng trong hệ thống</Typography>
                     </Box>
-                    <Button variant="contained" startIcon={<PersonAddIcon />} onClick={() => h.setOpenCreate(true)}
-                        sx={{ borderRadius: 2.5, py: 1.2, px: 3, textTransform: 'none', fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', boxShadow: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.35)' } }}>
-                        Thêm tài khoản
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        <Button variant="contained" startIcon={<FileUploadIcon />} onClick={() => setImportOpen(true)}
+                            sx={{ borderRadius: 2.5, py: 1.2, px: 3, textTransform: 'none', fontWeight: 600, bgcolor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } }}>
+                            Import Excel
+                        </Button>
+                        <Button variant="contained" startIcon={<PersonAddIcon />} onClick={() => h.setOpenCreate(true)}
+                            sx={{ borderRadius: 2.5, py: 1.2, px: 3, textTransform: 'none', fontWeight: 600, bgcolor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', boxShadow: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.35)' } }}>
+                            Thêm tài khoản
+                        </Button>
+                    </Box>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, mt: 3, position: 'relative', zIndex: 1, flexWrap: 'wrap' }}>
                     {[{ label: 'Tổng', value: h.users.length, icon: <PeopleAltIcon /> }, { label: 'Hoạt động', value: h.activeCount, icon: <CheckCircleIcon /> }, { label: 'Đã khóa', value: h.inactiveCount, icon: <BlockIcon /> }].map((s) => (
@@ -163,6 +172,7 @@ const UserManagement: React.FC = () => {
 
             {/* Dialogs */}
             <CreateUserDialog open={h.openCreate} onClose={() => h.setOpenCreate(false)} onSubmit={h.handleCreateUser} />
+            <ImportUsersDialog open={importOpen} onClose={() => setImportOpen(false)} onSuccess={h.fetchUsers} />
 
             <ConfirmDialog open={!!h.toggleTarget} title={h.toggleTarget?.active ? 'Xác nhận khóa tài khoản' : 'Xác nhận kích hoạt'}
                 message={<>Bạn có chắc chắn muốn {h.toggleTarget?.active ? 'khóa' : 'kích hoạt'} tài khoản <strong>{h.toggleTarget?.fullName}</strong>?</>}

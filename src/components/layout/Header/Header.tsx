@@ -15,7 +15,9 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
+import LockIcon from '@mui/icons-material/Lock';
 import { getUser, logout } from '../../../utils/auth';
+import ChangePasswordDialog from '../../common/ChangePasswordDialog';
 
 interface HeaderProps {
     onMenuClick: () => void;
@@ -25,10 +27,12 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
     const user = getUser();
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [pwOpen, setPwOpen] = React.useState(false);
 
     const handleMenu = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
     const handleClose = () => setAnchorEl(null);
     const handleLogout = () => { handleClose(); logout(); };
+    const handleChangePw = () => { handleClose(); setPwOpen(true); };
 
     const initials = user?.fullName
         ?.split(' ')
@@ -117,14 +121,21 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
                         <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                         <ListItemText>Hồ sơ</ListItemText>
                     </MenuItem>
+                    <MenuItem onClick={handleChangePw} sx={{ borderRadius: 2, mx: 1, mb: 0.5 }}>
+                        <ListItemIcon><LockIcon fontSize="small" sx={{ color: '#8B5CF6' }} /></ListItemIcon>
+                        <ListItemText>Đổi mật khẩu</ListItemText>
+                    </MenuItem>
                     <MenuItem onClick={handleLogout} sx={{ borderRadius: 2, mx: 1 }}>
                         <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
                         <ListItemText sx={{ color: 'error.main' }}>Đăng xuất</ListItemText>
                     </MenuItem>
                 </Menu>
+
+                <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
             </Toolbar>
         </AppBar>
     );
 };
 
 export default Header;
+
