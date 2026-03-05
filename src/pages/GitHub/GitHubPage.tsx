@@ -251,7 +251,6 @@ const GitHubPage: React.FC = () => {
     const accent = cfgData?.color || '#3B82F6';
     const repoName = activeConn?.repositoryUrl?.replace('https://github.com/', '').replace('.git', '') || '';
     const sorted = [...stats].sort((a, b) => b.totalLinesAdded - a.totalLinesAdded);
-    const totalLinesAll = sorted.reduce((a, s) => a + s.totalLinesAdded, 0);
 
     // ══════════════ OVERVIEW ══════════════
     if (view === 'overview') {
