@@ -117,15 +117,27 @@ const IssueDetailDialog: React.FC<Props> = ({
     };
 
     const handleDelete = async () => {
+        if (deleteLoading) return; // guard duplicate calls
         try {
             setDeleteLoading(true);
             await jiraService.deleteIssue(issue.issueId);
-            toast.success('Đã xóa issue');
-            setDeleteConfirm(false);
-            onClose();
-            onUpdated();
-        } catch { toast.error('Không thể xóa issue'); }
-        finally { setDeleteLoading(false); }
+            toast.success('Đã xóa issue thành công!');
+        } catch (err: unknown) {
+            const status = (err as { response?: { status?: number } })?.response?.status;
+            if (status === 404) {
+                toast.success('Issue đã được xóa');
+            } else {
+                console.error('Delete issue error:', err);
+                toast.error('Không thể xóa issue');
+                setDeleteLoading(false);
+                return;
+            }
+        }
+        setDeleteLoading(false);
+        setDeleteConfirm(false);
+        onClose();
+        // Delay refresh so toast stays visible
+        setTimeout(() => onUpdated(), 500);
     };
 
     const handleSave = async () => {
