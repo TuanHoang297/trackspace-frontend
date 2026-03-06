@@ -73,7 +73,7 @@ const ProjectLayout: React.FC = () => {
                     ) : (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
                             <Typography variant="h6" fontWeight={700} noWrap>
-                                {project?.projectName || 'Project'}
+                                {project?.groupName || 'Workspace'}
                             </Typography>
                         </Box>
                     )}

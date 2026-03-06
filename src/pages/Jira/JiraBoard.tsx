@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Button, Chip, Paper, Skeleton,
@@ -9,6 +9,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EditIcon from '@mui/icons-material/Edit';
+
 import useJira from '../../hooks/useJira';
 import jiraService from '../../api/services/jiraService';
 import { toast } from 'react-toastify';
@@ -20,13 +21,72 @@ import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
 import projectService from '../../api/services/projectService';
 import groupService from '../../api/services/groupService';
 import type { JiraIssueResponse, JiraSprintResponse, JiraSprintRequest } from '../../types/jira.types';
+import {
+    DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors,
+    type DragStartEvent, type DragEndEvent,
+} from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+
+/* ── Draggable Issue Wrapper ── */
+const DraggableIssue: React.FC<{
+    issue: JiraIssueResponse;
+    onClick: (issue: JiraIssueResponse) => void;
+    disabled?: boolean;
+}> = ({ issue, onClick, disabled }) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: `issue-${issue.issueId}`,
+        data: { issue },
+        disabled,
+    });
+    const style: React.CSSProperties = {
+        ...(transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : {}),
+        transition: isDragging ? 'none' : 'transform 0.2s ease',
+        opacity: isDragging ? 0.3 : 1,
+        cursor: disabled ? 'default' : 'grab',
+        zIndex: isDragging ? 999 : 'auto',
+    };
+
+    return (
+        <Box
+            ref={setNodeRef}
+            style={style}
+            {...(disabled ? {} : { ...listeners, ...attributes })}
+        >
+            <IssueCard issue={issue} onClick={onClick} />
+        </Box>
+    );
+};
+
+/* ── Droppable Sprint Column Wrapper ── */
+const DroppableSprint: React.FC<{
+    sprintId: number | null; // null = backlog
+    children: React.ReactNode;
+}> = ({ sprintId, children }) => {
+    const { setNodeRef, isOver } = useDroppable({
+        id: sprintId !== null ? `sprint-${sprintId}` : 'backlog',
+    });
+    return (
+        <Box
+            ref={setNodeRef}
+            sx={{
+                flex: 1, minHeight: 0,
+                transition: 'background-color 0.2s',
+                bgcolor: isOver ? 'rgba(59,130,246,0.06)' : 'transparent',
+                borderRadius: 2,
+                border: isOver ? '2px dashed #3B82F6' : '2px dashed transparent',
+            }}
+        >
+            {children}
+        </Box>
+    );
+};
 
 const JiraBoard: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const pid = Number(projectId);
 
-    const { connection, sprints, issues, loading, refresh } = useJira(pid);
+    const { connection, sprints, issues, setIssues, loading, refresh } = useJira(pid);
 
     // Role-based permissions (Jira-style)
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -55,6 +115,70 @@ const JiraBoard: React.FC = () => {
     } | null>(null);
     const [statusChanging, setStatusChanging] = useState(false);
     const [startSprintDates, setStartSprintDates] = useState({ startDate: '', endDate: '' });
+
+    // DnD state
+    const [activeIssue, setActiveIssue] = useState<JiraIssueResponse | null>(null);
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    );
+
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+        const issue = event.active.data.current?.issue as JiraIssueResponse | undefined;
+        if (issue) setActiveIssue(issue);
+    }, []);
+
+    const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+        setActiveIssue(null);
+        const { active, over } = event;
+        if (!over) return;
+
+        const issue = active.data.current?.issue as JiraIssueResponse;
+        if (!issue) return;
+
+        // Parse target sprint ID
+        const overId = String(over.id);
+        let targetSprintId: number | null = null;
+        if (overId === 'backlog') {
+            targetSprintId = null;
+        } else if (overId.startsWith('sprint-')) {
+            targetSprintId = Number(overId.replace('sprint-', ''));
+        } else if (overId.startsWith('issue-')) {
+            // Dropped on another issue — find that issue's sprint
+            const targetIssueId = Number(overId.replace('issue-', ''));
+            const targetIssue = issues.find(i => i.issueId === targetIssueId);
+            targetSprintId = targetIssue?.sprintId ?? null;
+        } else {
+            return;
+        }
+
+        // Skip if same sprint
+        if (issue.sprintId === targetSprintId) return;
+
+        // Optimistic update — move issue immediately in UI
+        const prevIssues = [...issues];
+        setIssues(prev => prev.map(i =>
+            i.issueId === issue.issueId ? { ...i, sprintId: targetSprintId } : i
+        ));
+
+        try {
+            await jiraService.updateIssue(issue.issueId, {
+                projectId: pid,
+                sprintId: targetSprintId ?? undefined,
+                issueType: issue.issueType,
+                summary: issue.summary,
+                description: issue.description ?? undefined,
+                priority: issue.priority,
+            });
+            const targetName = targetSprintId
+                ? sprints.find(s => s.sprintId === targetSprintId)?.sprintName || 'Sprint'
+                : 'Backlog';
+            toast.success(`Đã chuyển ${issue.issueKey} → ${targetName}`);
+        } catch {
+            // Revert on failure
+            setIssues(prevIssues);
+            toast.error(`Không thể chuyển ${issue.issueKey}`);
+        }
+    }, [pid, sprints, issues, setIssues, refresh]);
 
     // Pre-fill dates when opening Start Sprint dialog
     useEffect(() => {
@@ -297,195 +421,221 @@ const JiraBoard: React.FC = () => {
                     ))}
                 </Box>
             ) : (
-                <Box sx={{
-                    display: 'flex',
-                    gap: 2,
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    flex: 1,
-                    minHeight: 0,
-                    pb: 1,
-                    // Custom scrollbar
-                    '&::-webkit-scrollbar': { height: 8 },
-                    '&::-webkit-scrollbar-track': { bgcolor: '#f1f1f1', borderRadius: 4 },
-                    '&::-webkit-scrollbar-thumb': { bgcolor: '#c1c1c1', borderRadius: 4 },
-                }}>
-                    {sprintColumns.map(({ sprint, issues: sprintIssues }) => {
-                        const doneCount = sprintIssues.filter(i => i.status === 'Done').length;
-                        const progress = sprintIssues.length > 0 ? Math.round((doneCount / sprintIssues.length) * 100) : 0;
-                        const isActive = sprint.status === 'ACTIVE';
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                >
+                    <Box sx={{
+                        display: 'flex',
+                        gap: 2,
+                        overflowX: 'auto',
+                        overflowY: 'hidden',
+                        flex: 1,
+                        minHeight: 0,
+                        pb: 1,
+                        // Custom scrollbar
+                        '&::-webkit-scrollbar': { height: 8 },
+                        '&::-webkit-scrollbar-track': { bgcolor: '#f1f1f1', borderRadius: 4 },
+                        '&::-webkit-scrollbar-thumb': { bgcolor: '#c1c1c1', borderRadius: 4 },
+                    }}>
+                        {sprintColumns.map(({ sprint, issues: sprintIssues }) => {
+                            const doneCount = sprintIssues.filter(i => i.status === 'Done').length;
+                            const progress = sprintIssues.length > 0 ? Math.round((doneCount / sprintIssues.length) * 100) : 0;
+                            const isActive = sprint.status === 'ACTIVE';
 
-                        return (
-                            <Paper
-                                key={sprint.sprintId}
-                                elevation={0}
-                                sx={{
-                                    minWidth: 300,
-                                    maxWidth: 320,
-                                    height: '100%',
-                                    borderRadius: 3,
-                                    border: '2px solid',
-                                    borderColor: isActive ? '#36B37E' : 'divider',
-                                    bgcolor: isActive ? '#F0FFF4' : '#FAFBFC',
-                                    flexShrink: 0,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                }}
-                            >
-                                {/* Sprint Header */}
-                                <Box sx={{ p: 2, pb: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                                        <Typography variant="subtitle2" fontWeight={700} sx={{
-                                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160,
-                                        }}>
-                                            {sprint.sprintName}
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                                            <Chip
-                                                label={sprint.status}
-                                                size="small"
-                                                onClick={canManageConnection && sprint.status !== 'CLOSED' ? () => {
-                                                    setStatusConfirm({
-                                                        sprint,
-                                                        targetStatus: sprint.status === 'FUTURE' ? 'ACTIVE' : 'CLOSED',
-                                                    });
-                                                } : undefined}
+                            return (
+                                <Paper
+                                    key={sprint.sprintId}
+                                    elevation={0}
+                                    sx={{
+                                        minWidth: 300,
+                                        maxWidth: 320,
+                                        height: '100%',
+                                        borderRadius: 3,
+                                        border: '2px solid',
+                                        borderColor: isActive ? '#36B37E' : 'divider',
+                                        bgcolor: isActive ? '#F0FFF4' : '#FAFBFC',
+                                        flexShrink: 0,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                    }}
+                                >
+                                    {/* Sprint Header */}
+                                    <Box sx={{ p: 2, pb: 1 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                            <Typography variant="subtitle2" fontWeight={700} sx={{
+                                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160,
+                                            }}>
+                                                {sprint.sprintName}
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                                <Chip
+                                                    label={sprint.status}
+                                                    size="small"
+                                                    onClick={canManageConnection && sprint.status !== 'CLOSED' ? () => {
+                                                        setStatusConfirm({
+                                                            sprint,
+                                                            targetStatus: sprint.status === 'FUTURE' ? 'ACTIVE' : 'CLOSED',
+                                                        });
+                                                    } : undefined}
+                                                    sx={{
+                                                        height: 20, fontSize: '0.6rem', fontWeight: 700,
+                                                        bgcolor: isActive ? '#C6F6D5' : sprint.status === 'CLOSED' ? '#E3FCEF' : '#EDF2F7',
+                                                        color: isActive ? '#22543D' : sprint.status === 'CLOSED' ? '#006644' : '#42526E',
+                                                        cursor: canManageConnection && sprint.status !== 'CLOSED' ? 'pointer' : 'default',
+                                                        transition: 'all 0.2s',
+                                                        '&:hover': canManageConnection && sprint.status !== 'CLOSED' ? {
+                                                            transform: 'scale(1.05)',
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                                                        } : {},
+                                                    }}
+                                                />
+                                                {canManageConnection && (
+                                                    <IconButton size="small" onClick={() => { setEditingSprint(sprint); setSprintDialogOpen(true); }}>
+                                                        <EditIcon sx={{ fontSize: 14 }} />
+                                                    </IconButton>
+                                                )}
+                                            </Box>
+                                        </Box>
+
+                                        {/* Dates */}
+                                        {(sprint.startDate || sprint.endDate) && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                                                <CalendarTodayIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {formatDate(sprint.startDate)} — {formatDate(sprint.endDate)}
+                                                </Typography>
+                                            </Box>
+                                        )}
+
+                                        {/* Progress */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={progress}
                                                 sx={{
-                                                    height: 20, fontSize: '0.6rem', fontWeight: 700,
-                                                    bgcolor: isActive ? '#C6F6D5' : sprint.status === 'CLOSED' ? '#E3FCEF' : '#EDF2F7',
-                                                    color: isActive ? '#22543D' : sprint.status === 'CLOSED' ? '#006644' : '#42526E',
-                                                    cursor: canManageConnection && sprint.status !== 'CLOSED' ? 'pointer' : 'default',
-                                                    transition: 'all 0.2s',
-                                                    '&:hover': canManageConnection && sprint.status !== 'CLOSED' ? {
-                                                        transform: 'scale(1.05)',
-                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                                                    } : {},
+                                                    flex: 1, height: 6, borderRadius: 3,
+                                                    bgcolor: '#E2E8F0',
+                                                    '& .MuiLinearProgress-bar': {
+                                                        borderRadius: 3,
+                                                        bgcolor: progress >= 80 ? '#36B37E' : progress >= 40 ? '#FFAB00' : '#FF5630',
+                                                    },
                                                 }}
                                             />
-                                            {canManageConnection && (
-                                                <IconButton size="small" onClick={() => { setEditingSprint(sprint); setSprintDialogOpen(true); }}>
-                                                    <EditIcon sx={{ fontSize: 14 }} />
-                                                </IconButton>
-                                            )}
-                                        </Box>
-                                    </Box>
-
-                                    {/* Dates */}
-                                    {(sprint.startDate || sprint.endDate) && (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                                            <CalendarTodayIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
-                                            <Typography variant="caption" color="text.secondary">
-                                                {formatDate(sprint.startDate)} — {formatDate(sprint.endDate)}
+                                            <Typography variant="caption" fontWeight={700} color="text.secondary">
+                                                {progress}%
                                             </Typography>
                                         </Box>
-                                    )}
-
-                                    {/* Progress */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                        <LinearProgress
-                                            variant="determinate"
-                                            value={progress}
-                                            sx={{
-                                                flex: 1, height: 6, borderRadius: 3,
-                                                bgcolor: '#E2E8F0',
-                                                '& .MuiLinearProgress-bar': {
-                                                    borderRadius: 3,
-                                                    bgcolor: progress >= 80 ? '#36B37E' : progress >= 40 ? '#FFAB00' : '#FF5630',
-                                                },
-                                            }}
-                                        />
-                                        <Typography variant="caption" fontWeight={700} color="text.secondary">
-                                            {progress}%
+                                        <Typography variant="caption" color="text.disabled">
+                                            {doneCount}/{sprintIssues.length} issues hoàn thành
                                         </Typography>
                                     </Box>
+
+                                    {/* Issues List — Droppable */}
+                                    <DroppableSprint sprintId={sprint.sprintId}>
+                                        <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 60 }}>
+                                            {sprintIssues.length === 0 ? (
+                                                <Typography variant="caption" color="text.disabled" sx={{
+                                                    display: 'block', textAlign: 'center', py: 4,
+                                                }}>
+                                                    Kéo issue vào đây
+                                                </Typography>
+                                            ) : (
+                                                sprintIssues.map(issue => (
+                                                    <DraggableIssue
+                                                        key={issue.issueId}
+                                                        issue={issue}
+                                                        onClick={setDetailIssue}
+                                                        disabled={!canCreateIssue}
+                                                    />
+                                                ))
+                                            )}
+                                        </Box>
+                                    </DroppableSprint>
+
+                                    {/* Add Issue Footer */}
+                                    {canCreateIssue && (
+                                        <Box sx={{
+                                            p: 1.5, pt: 0, borderTop: '1px dashed', borderColor: 'divider',
+                                        }}>
+                                            <Button
+                                                fullWidth size="small"
+                                                startIcon={<AddIcon />}
+                                                onClick={() => setCreateOpen(true)}
+                                                sx={{
+                                                    textTransform: 'none', color: 'text.secondary',
+                                                    justifyContent: 'flex-start', fontWeight: 500,
+                                                    '&:hover': { bgcolor: 'action.hover' },
+                                                }}
+                                            >
+                                                Thêm thẻ
+                                            </Button>
+                                        </Box>
+                                    )}
+                                </Paper>
+                            );
+                        })}
+
+                        {/* Backlog Column */}
+                        {backlogIssues.length > 0 && (
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    minWidth: 300, maxWidth: 320,
+                                    height: '100%',
+                                    borderRadius: 3, border: '2px dashed', borderColor: 'divider',
+                                    bgcolor: '#FAFBFC',
+                                    flexShrink: 0,
+                                    display: 'flex', flexDirection: 'column',
+                                }}
+                            >
+                                <Box sx={{ p: 2, pb: 1 }}>
+                                    <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
+                                        Backlog
+                                    </Typography>
                                     <Typography variant="caption" color="text.disabled">
-                                        {doneCount}/{sprintIssues.length} issues hoàn thành
+                                        {backlogIssues.length} issues chưa gán sprint
                                     </Typography>
                                 </Box>
-
-                                {/* Issues List */}
-                                <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 0 }}>
-                                    {sprintIssues.length === 0 ? (
-                                        <Typography variant="caption" color="text.disabled" sx={{
-                                            display: 'block', textAlign: 'center', py: 4,
-                                        }}>
-                                            Chưa có issue
-                                        </Typography>
-                                    ) : (
-                                        sprintIssues.map(issue => (
-                                            <IssueCard
-                                                key={issue.issueId}
-                                                issue={issue}
-                                                onClick={setDetailIssue}
-                                            />
-                                        ))
-                                    )}
-                                </Box>
-
-                                {/* Add Issue Footer */}
-                                {canCreateIssue && (
-                                    <Box sx={{
-                                        p: 1.5, pt: 0, borderTop: '1px dashed', borderColor: 'divider',
-                                    }}>
-                                        <Button
-                                            fullWidth size="small"
-                                            startIcon={<AddIcon />}
-                                            onClick={() => setCreateOpen(true)}
-                                            sx={{
-                                                textTransform: 'none', color: 'text.secondary',
-                                                justifyContent: 'flex-start', fontWeight: 500,
-                                                '&:hover': { bgcolor: 'action.hover' },
-                                            }}
-                                        >
-                                            Thêm thẻ
-                                        </Button>
+                                <DroppableSprint sprintId={null}>
+                                    <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 60 }}>
+                                        {backlogIssues.map(issue => (
+                                            <DraggableIssue key={issue.issueId} issue={issue} onClick={setDetailIssue} disabled={!canCreateIssue} />
+                                        ))}
                                     </Box>
-                                )}
+                                </DroppableSprint>
                             </Paper>
-                        );
-                    })}
+                        )}
 
-                    {/* Backlog Column */}
-                    {backlogIssues.length > 0 && (
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                minWidth: 300, maxWidth: 320,
-                                height: '100%',
-                                borderRadius: 3, border: '2px dashed', borderColor: 'divider',
-                                bgcolor: '#FAFBFC',
-                                flexShrink: 0,
-                                display: 'flex', flexDirection: 'column',
-                            }}
-                        >
-                            <Box sx={{ p: 2, pb: 1 }}>
-                                <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
-                                    Backlog
+                        {/* Empty state */}
+                        {sprintColumns.length === 0 && backlogIssues.length === 0 && (
+                            <Box sx={{ textAlign: 'center', py: 8, width: '100%' }}>
+                                <Typography variant="h6" color="text.secondary" fontWeight={600}>
+                                    Chưa có Sprint nào
                                 </Typography>
-                                <Typography variant="caption" color="text.disabled">
-                                    {backlogIssues.length} issues chưa gán sprint
+                                <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+                                    Nhấn "Đồng bộ từ Jira" để lấy dữ liệu Sprint và Issues
                                 </Typography>
                             </Box>
-                            <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 0 }}>
-                                {backlogIssues.map(issue => (
-                                    <IssueCard key={issue.issueId} issue={issue} onClick={setDetailIssue} />
-                                ))}
-                            </Box>
-                        </Paper>
-                    )}
+                        )}
+                    </Box>
 
-                    {/* Empty state */}
-                    {sprintColumns.length === 0 && backlogIssues.length === 0 && (
-                        <Box sx={{ textAlign: 'center', py: 8, width: '100%' }}>
-                            <Typography variant="h6" color="text.secondary" fontWeight={600}>
-                                Chưa có Sprint nào
-                            </Typography>
-                            <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
-                                Nhấn "Đồng bộ từ Jira" để lấy dữ liệu Sprint và Issues
-                            </Typography>
-                        </Box>
-                    )}
-                </Box>
+                    {/* Drag Overlay */}
+                    <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+                        {activeIssue && (
+                            <Box sx={{
+                                width: 290,
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+                                borderRadius: 2,
+                                cursor: 'grabbing',
+                            }}>
+                                <IssueCard issue={activeIssue} onClick={() => { }} />
+                            </Box>
+                        )}
+                    </DragOverlay>
+                </DndContext>
             )}
 
             {/* Dialogs */}

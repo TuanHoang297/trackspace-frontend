@@ -6,6 +6,7 @@ interface UseJiraReturn {
     connection: JiraConnectionResponse | null;
     sprints: JiraSprintResponse[];
     issues: JiraIssueResponse[];
+    setIssues: React.Dispatch<React.SetStateAction<JiraIssueResponse[]>>;
     loading: boolean;
     error: string | null;
     refresh: () => void;
@@ -71,5 +72,5 @@ export default function useJira(projectId: number): UseJiraReturn {
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [fetchData]);
 
-    return { connection, sprints, issues, loading, error, refresh: fetchData };
+    return { connection, sprints, issues, setIssues, loading, error, refresh: fetchData };
 }
