@@ -19,7 +19,7 @@ const ClassDetail: React.FC = () => {
     const id = Number(classId);
     const { students, groups, projects, loading, error, refresh } = useClassDetail(id);
 
-    const pageTitle = `Chi tiết lớp học`;
+    const pageTitle = `Chi tiết môn học`;
 
 
     if (loading) {
@@ -44,7 +44,7 @@ const ClassDetail: React.FC = () => {
                     <Link underline="hover" color="inherit" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.5 }}
                         onClick={() => navigate(-1)}>
                         <ArrowBackIcon fontSize="small" />
-                        Quản lý lớp học
+                        Quản lý môn học
                     </Link>
                     <Typography color="text.primary" fontWeight={500}>{pageTitle}</Typography>
                 </Breadcrumbs>

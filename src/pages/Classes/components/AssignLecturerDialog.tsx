@@ -34,7 +34,7 @@ const AssignLecturerDialog: React.FC<Props> = ({ target, lecturers, onClose, onS
 
     return (
         <Dialog open={!!target} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Gán giảng viên: {target?.className}</DialogTitle>
+            <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Gán giảng viên: {target?.subjectName ?? target?.classCode}</DialogTitle>
             <DialogContent>
                 <FormControl fullWidth sx={{ mt: 1 }}>
                     <InputLabel>Chọn giảng viên</InputLabel>

@@ -171,7 +171,7 @@ const ProjectManagement: React.FC = () => {
                         color="inherit"
                         onClick={() => navigate(`/lecturer/classes/${id}`)}
                     >
-                        {classInfo?.className || 'Chi tiết lớp'}
+                        {classInfo?.subjectName || classInfo?.classCode || 'Chi tiết lớp'}
                     </Link>
                     <Typography color="text.primary" variant="body2">
                         Quản lý Projects
@@ -184,7 +184,7 @@ const ProjectManagement: React.FC = () => {
                     </IconButton>
                     <Box sx={{ flex: 1 }}>
                         <Typography variant="h4" sx={{ fontWeight: 800, color: '#1E293B' }}>
-                            Quản lý Projects — {classInfo?.className}
+                            Quản lý Projects — {classInfo?.subjectName ?? classInfo?.classCode}
                         </Typography>
                         <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
                             Tổng số: {projects.length} project đang thực hiện

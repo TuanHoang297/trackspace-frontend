@@ -8,6 +8,8 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import ClassIcon from '@mui/icons-material/School';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import MenuIcon from '@mui/icons-material/Menu';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -32,9 +34,11 @@ const adminNavItems: NavItem[] = [
     { label: 'Dashboard', icon: <DashboardIcon sx={{ fontSize: 19 }} />, path: '/admin/dashboard' },
     { label: 'Quản lý tài khoản', icon: <PeopleIcon sx={{ fontSize: 19 }} />, path: '/admin/users' },
     { label: 'Quản lý lớp học', icon: <ClassIcon sx={{ fontSize: 19 }} />, path: '/admin/classes' },
+    { label: 'Quản lý môn học', icon: <MenuBookIcon sx={{ fontSize: 19 }} />, path: '/admin/subjects' },
+    { label: 'Quản lý học kỳ', icon: <CalendarMonthIcon sx={{ fontSize: 19 }} />, path: '/admin/semesters' },
 ];
 const lecturerNavItems: NavItem[] = [
-    { label: 'Lớp học của tôi', icon: <ClassIcon sx={{ fontSize: 19 }} />, path: '/lecturer/classes' },
+    { label: 'Môn học của tôi', icon: <ClassIcon sx={{ fontSize: 19 }} />, path: '/lecturer/classes' },
 ];
 const studentNavItems: NavItem[] = [
     { label: 'Dashboard', icon: <DashboardIcon sx={{ fontSize: 19 }} />, path: '/student/dashboard' },

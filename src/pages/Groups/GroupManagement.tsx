@@ -102,10 +102,10 @@ const GroupManagement: React.FC = () => {
             <Box sx={{ mb: 4 }}>
                 <Breadcrumbs sx={{ mb: 2 }}>
                     <Link component="button" variant="body2" underline="hover" color="inherit"
-                        onClick={() => navigate('/lecturer/classes')}>Lớp học</Link>
+                        onClick={() => navigate('/lecturer/classes')}>Môn học</Link>
                     <Link component="button" variant="body2" underline="hover" color="inherit"
                         onClick={() => navigate(`/lecturer/classes/${id}`)}>
-                        {classInfo?.className || 'Chi tiết lớp'}
+                        {classInfo?.subjectName ?? classInfo?.classCode ?? 'Chi tiết môn học'}
                     </Link>
                     <Typography color="text.primary" variant="body2">Quản lý Nhóm</Typography>
                 </Breadcrumbs>
@@ -116,7 +116,7 @@ const GroupManagement: React.FC = () => {
                     </IconButton>
                     <Box sx={{ flex: 1 }}>
                         <Typography variant="h4" sx={{ fontWeight: 800, color: '#1E293B' }}>
-                            Quản lý Nhóm — {classInfo?.className}
+                            Quản lý Nhóm — {classInfo?.subjectName ?? classInfo?.classCode}
                         </Typography>
                         <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
                             Tổng số: {groups.length} nhóm

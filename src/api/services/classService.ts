@@ -5,6 +5,10 @@ import type {
     CreateClassRequest,
     UpdateClassRequest,
     StudentInClassResponse,
+    SemesterResponse,
+    SemesterRequest,
+    SubjectResponse,
+    SubjectRequest,
 } from '../types/types';
 
 const classService = {
@@ -37,6 +41,40 @@ const classService = {
 
     getEnrolledStudentIds: () =>
         axiosClient.get<ApiResponse<number[]>>('/classes/enrolled-student-ids'),
+};
+
+export const semesterService = {
+    getSemesters: () =>
+        axiosClient.get<ApiResponse<SemesterResponse[]>>('/semesters'),
+
+    getAllSemesters: () =>
+        axiosClient.get<ApiResponse<SemesterResponse[]>>('/semesters/all'),
+
+    createSemester: (data: SemesterRequest) =>
+        axiosClient.post<ApiResponse<SemesterResponse>>('/semesters', data),
+
+    updateSemester: (id: number, data: SemesterRequest) =>
+        axiosClient.put<ApiResponse<SemesterResponse>>(`/semesters/${id}`, data),
+
+    deleteSemester: (id: number) =>
+        axiosClient.delete<ApiResponse<void>>(`/semesters/${id}`),
+};
+
+export const subjectService = {
+    getSubjects: () =>
+        axiosClient.get<ApiResponse<SubjectResponse[]>>('/subjects'),
+
+    getAllSubjects: () =>
+        axiosClient.get<ApiResponse<SubjectResponse[]>>('/subjects/all'),
+
+    createSubject: (data: SubjectRequest) =>
+        axiosClient.post<ApiResponse<SubjectResponse>>('/subjects', data),
+
+    updateSubject: (id: number, data: SubjectRequest) =>
+        axiosClient.put<ApiResponse<SubjectResponse>>(`/subjects/${id}`, data),
+
+    deleteSubject: (id: number) =>
+        axiosClient.delete<ApiResponse<void>>(`/subjects/${id}`),
 };
 
 export default classService;
