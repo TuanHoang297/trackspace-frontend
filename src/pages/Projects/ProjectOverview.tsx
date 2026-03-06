@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Box, Typography, Paper, Chip, Skeleton, TextField, Button, Grid, Divider,
+    Box, Typography, Paper, Chip, Skeleton, TextField, Button, Grid, Divider, Avatar,
 } from '@mui/material';
 import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -14,10 +14,12 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import projectService from '../../api/services/projectService';
 import jiraService from '../../api/services/jiraService';
 import githubService from '../../api/services/githubService';
+import groupService from '../../api/services/groupService';
 import type { ProjectResponse } from '../../types/project.types';
 import type { JiraConnectionResponse } from '../../types/jira.types';
 import type { GitHubConnectionResponse } from '../../types/github.types';
 import type { ProjectInfoResponse, ProjectInfoRequest } from '../../api/types/types';
+import type { GroupMemberResponse } from '../../types/group.types';
 import { toast } from 'react-toastify';
 import { useRole } from '../../hooks/useRole';
 
@@ -73,6 +75,7 @@ const ProjectOverview: React.FC = () => {
     const [jiraConn, setJiraConn] = useState<JiraConnectionResponse | null>(null);
     const [ghConns, setGhConns] = useState<GitHubConnectionResponse[]>([]);
     const [loading, setLoading] = useState(true);
+    const [members, setMembers] = useState<GroupMemberResponse[]>([]);
 
     // Project Info state
     const [info, setInfo] = useState<ProjectInfoResponse | null>(null);
@@ -119,11 +122,20 @@ const ProjectOverview: React.FC = () => {
 
                 try {
                     const ghRes = await githubService.getConnections(pid);
-                    // Handle both single object (legacy) and array response formats
                     const data = ghRes.data.data;
                     setGhConns(Array.isArray(data) ? data : data ? [data] : []);
                 } catch {
                     setGhConns([]);
+                }
+
+                // Fetch group members
+                if (p.classId && p.groupId) {
+                    try {
+                        const membersRes = await groupService.getMembers(p.classId, p.groupId);
+                        setMembers(membersRes.data.data ?? []);
+                    } catch {
+                        setMembers([]);
+                    }
                 }
             } catch {
                 setProject(null);
@@ -327,6 +339,65 @@ const ProjectOverview: React.FC = () => {
                         <InfoOutlinedIcon sx={{ fontSize: 48, color: '#CBD5E1', mb: 1 }} />
                         <Typography color="text.secondary" sx={{ mb: 1 }}>Chưa có thông tin project</Typography>
                         <Typography variant="caption" color="text.disabled">Điền thông tin bên trên để bắt đầu</Typography>
+                    </Box>
+                )}
+            </Paper>
+
+            {/* Members Section */}
+            <Paper elevation={0} sx={{
+                p: 3, borderRadius: 3, mb: 3,
+                bgcolor: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <GroupsIcon sx={{ color: '#8B5CF6', fontSize: 22 }} />
+                    <Typography variant="h6" fontWeight={700}>Thành viên nhóm</Typography>
+                    <Chip label={`${members.length} thành viên`} size="small"
+                        sx={{ ml: 'auto', fontWeight: 600, fontSize: '0.72rem', bgcolor: '#EDE9FE', color: '#7C3AED', borderRadius: 1.5 }} />
+                </Box>
+                {members.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 3, color: 'text.secondary' }}>
+                        <GroupsIcon sx={{ fontSize: 40, opacity: 0.3, mb: 1 }} />
+                        <Typography variant="body2">Chưa có thành viên nào</Typography>
+                    </Box>
+                ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {members.sort((a, b) => (b.isLeader ? 1 : 0) - (a.isLeader ? 1 : 0)).map((m) => (
+                            <Box key={m.membershipId} sx={{
+                                display: 'flex', alignItems: 'center', gap: 2,
+                                py: 1.2, px: 1.5, borderRadius: 2,
+                                '&:hover': { bgcolor: '#F8FAFC' },
+                                border: '1px solid', borderColor: m.isLeader ? '#EDE9FE' : 'transparent',
+                                bgcolor: m.isLeader ? 'rgba(139,92,246,0.03)' : 'transparent',
+                            }}>
+                                <Avatar sx={{
+                                    width: 36, height: 36,
+                                    bgcolor: m.isLeader ? '#8B5CF6' : '#3B82F6',
+                                    fontSize: '0.8rem', fontWeight: 700,
+                                }}>
+                                    {m.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                </Avatar>
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Typography variant="body2" fontWeight={600} noWrap>{m.fullName}</Typography>
+                                        {m.isLeader && (
+                                            <Chip label="Leader" size="small"
+                                                sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#EDE9FE', color: '#7C3AED', borderRadius: 1 }} />
+                                        )}
+                                    </Box>
+                                    <Typography variant="caption" color="text.secondary" noWrap>
+                                        {m.studentCode && `${m.studentCode} • `}{m.email}
+                                    </Typography>
+                                </Box>
+                                <Chip label={m.role === 'TEAMLEADER' ? 'Trưởng nhóm' : 'Thành viên'} size="small"
+                                    sx={{
+                                        height: 20, fontSize: '0.68rem', fontWeight: 600, borderRadius: 1.5,
+                                        bgcolor: m.role === 'TEAMLEADER' ? '#FEF3C7' : '#DBEAFE',
+                                        color: m.role === 'TEAMLEADER' ? '#D97706' : '#2563EB',
+                                    }} />
+                            </Box>
+                        ))}
                     </Box>
                 )}
             </Paper>

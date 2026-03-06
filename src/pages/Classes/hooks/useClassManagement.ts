@@ -14,6 +14,7 @@ export function useClassManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const [semesters, setSemesters] = useState<SemesterResponse[]>([]);
     const [semesterFilter, setSemesterFilter] = useState<number | ''>('');
+    const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | ''>('active');
 
     // Dialog state
     const [openCreate, setOpenCreate] = useState(false);
@@ -52,8 +53,9 @@ export function useClassManagement() {
         const matchesSearch = (c.subjectName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             c.classCode.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesSemester = semesterFilter === '' || c.semesterId === semesterFilter;
-        return matchesSearch && matchesSemester;
-    }), [classes, searchTerm, semesterFilter]);
+        const matchesStatus = statusFilter === '' || (statusFilter === 'active' ? c.active : !c.active);
+        return matchesSearch && matchesSemester && matchesStatus;
+    }), [classes, searchTerm, semesterFilter, statusFilter]);
 
     const activeCount = useMemo(() => classes.filter(c => c.active).length, [classes]);
     const totalStudents = useMemo(() => classes.reduce((s, c) => s + (c.totalStudents || 0), 0), [classes]);
@@ -121,6 +123,7 @@ export function useClassManagement() {
         classes, allUsers, loading, error, searchTerm, setSearchTerm,
         filtered, activeCount, totalStudents, lecturers,
         semesters, semesterFilter, setSemesterFilter,
+        statusFilter, setStatusFilter,
         openCreate, setOpenCreate, handleCreate,
         editTarget, setEditTarget, handleEdit,
         assignTarget, setAssignTarget, handleAssign,

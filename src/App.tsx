@@ -35,7 +35,7 @@ function App() {
                 autoClose={2500}
                 hideProgressBar={false}
                 newestOnTop
-                closeOnClick
+                closeOnClick={false}
                 pauseOnFocusLoss={false}
                 draggable
                 pauseOnHover

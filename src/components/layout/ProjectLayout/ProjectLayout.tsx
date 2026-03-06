@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useParams, useNavigate } from 'react-router-dom';
 import {
     Box, Typography, IconButton, Skeleton,
-    Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Tooltip,
+    Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
+import LockIcon from '@mui/icons-material/Lock';
 import ProjectSidebar, { SIDEBAR_WIDTH } from './ProjectSidebar';
 import projectService from '../../../api/services/projectService';
 import type { ProjectResponse } from '../../../types/project.types';
 import { getUser, logout } from '../../../utils/auth';
+import ChangePasswordDialog from '../../common/ChangePasswordDialog';
 
 const ProjectLayout: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
@@ -20,6 +22,7 @@ const ProjectLayout: React.FC = () => {
     const [project, setProject] = useState<ProjectResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [pwOpen, setPwOpen] = useState(false);
     const currentUser = getUser();
 
     const initials = currentUser?.fullName
@@ -77,34 +80,55 @@ const ProjectLayout: React.FC = () => {
 
 
 
-                    {/* User Avatar */}
-                    <Tooltip title={currentUser?.fullName || ''}>
-                        <IconButton onClick={e => setAnchorEl(e.currentTarget)} size="small" sx={{ ml: 1 }}>
-                            <Avatar sx={{ width: 32, height: 32, background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', fontSize: 13, fontWeight: 700 }}>
-                                {initials}
-                            </Avatar>
-                        </IconButton>
-                    </Tooltip>
+                    {/* User section */}
+                    <Box
+                        onClick={e => setAnchorEl(e.currentTarget)}
+                        sx={{
+                            display: 'flex', alignItems: 'center', gap: 1.5,
+                            cursor: 'pointer', py: 0.5, px: 1.5, borderRadius: 3,
+                            '&:hover': { bgcolor: '#F1F5F9' },
+                            transition: 'background 0.2s ease',
+                        }}
+                    >
+                        <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+                            <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ lineHeight: 1.3 }}>
+                                {currentUser?.fullName || 'User'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                {currentUser?.role || ''}
+                            </Typography>
+                        </Box>
+                        <Avatar sx={{ width: 38, height: 38, background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', fontSize: 14, fontWeight: 800, boxShadow: '0 2px 8px rgba(59,130,246,0.3)' }}>
+                            {initials}
+                        </Avatar>
+                    </Box>
                     <Menu
                         anchorEl={anchorEl}
                         open={Boolean(anchorEl)}
                         onClose={() => setAnchorEl(null)}
                         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                        slotProps={{ paper: { sx: { width: 200, mt: 1, borderRadius: 2 } } }}
+                        slotProps={{ paper: { sx: { width: 220, mt: 1, borderRadius: 3, boxShadow: '0 10px 40px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' } } }}
                     >
-                        <MenuItem disabled>
+                        <Box sx={{ px: 2, py: 1.5 }}>
+                            <Typography variant="body2" fontWeight={700}>{currentUser?.fullName}</Typography>
+                            <Typography variant="caption" color="text.secondary">{currentUser?.email}</Typography>
+                        </Box>
+                        <Divider sx={{ my: 0.5 }} />
+                        <MenuItem onClick={() => setAnchorEl(null)} sx={{ borderRadius: 2, mx: 1, mb: 0.5 }}>
                             <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primaryTypographyProps={{ variant: 'caption' }}>
-                                {currentUser?.email}
-                            </ListItemText>
+                            <ListItemText>Hồ sơ</ListItemText>
                         </MenuItem>
-                        <Divider />
-                        <MenuItem onClick={() => { setAnchorEl(null); logout(); }}>
+                        <MenuItem onClick={() => { setAnchorEl(null); setPwOpen(true); }} sx={{ borderRadius: 2, mx: 1, mb: 0.5 }}>
+                            <ListItemIcon><LockIcon fontSize="small" sx={{ color: '#8B5CF6' }} /></ListItemIcon>
+                            <ListItemText>Đổi mật khẩu</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { setAnchorEl(null); logout(); }} sx={{ borderRadius: 2, mx: 1 }}>
                             <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
                             <ListItemText sx={{ color: 'error.main' }}>Đăng xuất</ListItemText>
                         </MenuItem>
                     </Menu>
+                    <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
                 </Box>
 
                 {/* Page Content */}

@@ -485,9 +485,19 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                 <Typography variant="body2" color="text.secondary">{viewGroup.description}</Typography>
                             )}
                         </Box>
-                        <IconButton onClick={() => setViewGroup(null)} sx={{ color: '#94A3B8' }}>
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            {!readOnly && (
+                                <Tooltip title="Xóa nhóm">
+                                    <IconButton size="small" color="error"
+                                        onClick={() => { setViewGroup(null); setDeleteTarget(viewGroup); }}>
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+                            <IconButton onClick={() => setViewGroup(null)} sx={{ color: '#94A3B8' }}>
+                                ✕
+                            </IconButton>
+                        </Box>
                     </Box>
                 </Box>
 

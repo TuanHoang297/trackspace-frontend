@@ -56,7 +56,7 @@ const LecturerClasses: React.FC = () => {
         <Box sx={{ maxWidth: 900 }}>
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>
-                    Môn học của tôi
+                    Lớp học của tôi
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
                     {classes.length} môn đang phụ trách

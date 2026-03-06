@@ -82,6 +82,19 @@ const ClassManagement: React.FC = () => {
                         ))}
                     </Select>
                 </FormControl>
+                <FormControl size="small" sx={{ minWidth: 170 }}>
+                    <Select
+                        value={h.statusFilter}
+                        onChange={(e) => h.setStatusFilter(e.target.value as 'active' | 'inactive' | '')}
+                        displayEmpty
+                        startAdornment={<CheckCircleIcon sx={{ color: '#94A3B8', mr: 1, fontSize: 20 }} />}
+                        sx={{ borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' }, fontSize: '0.875rem' }}
+                    >
+                        <MenuItem value="active">Hoạt động</MenuItem>
+                        <MenuItem value="inactive">Đã xóa</MenuItem>
+                        <MenuItem value="">Tất cả</MenuItem>
+                    </Select>
+                </FormControl>
                 <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>{h.filtered.length} kết quả</Typography>
             </Card>
 
@@ -106,7 +119,7 @@ const ClassManagement: React.FC = () => {
                                     <Typography variant="body1" fontWeight={500}>{h.searchTerm ? 'Không tìm thấy lớp phù hợp' : 'Chưa có lớp nào'}</Typography>
                                 </TableCell></TableRow>
                             ) : h.filtered.map((cls, i) => (
-                                <TableRow key={cls.id} hover sx={{ '&:nth-of-type(even)': { bgcolor: '#FAFBFC' }, '&:hover': { bgcolor: '#F1F5F9' } }}>
+                                <TableRow key={cls.id} hover sx={{ '&:nth-of-type(even)': { bgcolor: '#FAFBFC' }, '&:hover': { bgcolor: '#F1F5F9' }, ...(!cls.active && { opacity: 0.55, bgcolor: '#FEF2F2 !important' }) }}>
                                     <TableCell sx={{ color: '#94A3B8' }}>{i + 1}</TableCell>
                                     <TableCell>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

@@ -105,7 +105,7 @@ const GroupManagement: React.FC = () => {
                         onClick={() => navigate('/lecturer/classes')}>Môn học</Link>
                     <Link component="button" variant="body2" underline="hover" color="inherit"
                         onClick={() => navigate(`/lecturer/classes/${id}`)}>
-                        {classInfo?.subjectName ?? classInfo?.classCode ?? 'Chi tiết môn học'}
+                        {classInfo?.subjectName ?? classInfo?.classCode ?? 'Chi tiết lớp học'}
                     </Link>
                     <Typography color="text.primary" variant="body2">Quản lý Nhóm</Typography>
                 </Breadcrumbs>

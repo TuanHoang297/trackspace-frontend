@@ -38,7 +38,7 @@ const adminNavItems: NavItem[] = [
     { label: 'Quản lý học kỳ', icon: <CalendarMonthIcon sx={{ fontSize: 19 }} />, path: '/admin/semesters' },
 ];
 const lecturerNavItems: NavItem[] = [
-    { label: 'Môn học của tôi', icon: <ClassIcon sx={{ fontSize: 19 }} />, path: '/lecturer/classes' },
+    { label: 'Lớp học của tôi', icon: <ClassIcon sx={{ fontSize: 19 }} />, path: '/lecturer/classes' },
 ];
 const studentNavItems: NavItem[] = [
     { label: 'Dashboard', icon: <DashboardIcon sx={{ fontSize: 19 }} />, path: '/student/dashboard' },

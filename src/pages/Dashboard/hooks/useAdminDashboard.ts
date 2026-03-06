@@ -45,9 +45,9 @@ export function useAdminDashboard() {
         totalUsers: users.length,
         activeUsers: users.filter(u => u.active).length,
         lockedUsers: users.filter(u => !u.active).length,
-        totalClasses: classes.length,
+        totalClasses: classes.filter(c => c.active).length,
         activeClasses: classes.filter(c => c.active).length,
-        totalStudents: classes.reduce((sum, c) => sum + (c.totalStudents || 0), 0),
+        totalStudents: classes.filter(c => c.active).reduce((sum, c) => sum + (c.totalStudents || 0), 0),
         roles: {
             admins: users.filter(u => u.role === 'ADMIN').length,
             lecturers: users.filter(u => u.role === 'LECTURER').length,
@@ -57,7 +57,7 @@ export function useAdminDashboard() {
     }), [users, classes]);
 
     const recentUsers = useMemo(() => users.slice(0, 5), [users]);
-    const recentClasses = useMemo(() => classes.slice(0, 5), [classes]);
+    const recentClasses = useMemo(() => classes.filter(c => c.active).slice(0, 5), [classes]);
 
     return { loading, error, stats, recentUsers, recentClasses };
 }
