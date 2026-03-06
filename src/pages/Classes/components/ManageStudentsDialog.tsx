@@ -24,6 +24,7 @@ interface Props {
 const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRefresh }) => {
     const [students, setStudents] = useState<StudentInClassResponse[]>([]);
     const [enrolledIds, setEnrolledIds] = useState<Set<number>>(new Set());
+    const [sameSubjectEnrolledIds, setSameSubjectEnrolledIds] = useState<Set<number>>(new Set());
     const [loading, setLoading] = useState(false);
     const [adding, setAdding] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -36,13 +37,17 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
             setLoading(true);
             setSelectedIds(new Set());
             setSearch('');
-            classService.getStudents(target.id)
-                .then((res) => {
-                    const list = res.data.data ?? [];
+            Promise.all([
+                classService.getStudents(target.id),
+                classService.getEnrolledStudentIdsByClass(target.id),
+            ])
+                .then(([studentsRes, enrolledRes]) => {
+                    const list = studentsRes.data.data ?? [];
                     setStudents(list);
                     setEnrolledIds(new Set(list.map((s) => s.studentId)));
+                    setSameSubjectEnrolledIds(new Set(enrolledRes.data.data ?? []));
                 })
-                .catch(() => { setStudents([]); setEnrolledIds(new Set()); })
+                .catch(() => { setStudents([]); setEnrolledIds(new Set()); setSameSubjectEnrolledIds(new Set()); })
                 .finally(() => setLoading(false));
         }
     }, [target]);
@@ -50,8 +55,9 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
     const available = useMemo(() =>
         allUsers.filter(u =>
             (u.role === 'TEAMMEMBER' || u.role === 'TEAMLEADER') &&
-            !enrolledIds.has(u.userId)
-        ), [allUsers, enrolledIds]);
+            !enrolledIds.has(u.userId) &&
+            !sameSubjectEnrolledIds.has(u.userId)
+        ), [allUsers, enrolledIds, sameSubjectEnrolledIds]);
 
     const filtered = useMemo(() =>
         available.filter(u =>
@@ -80,10 +86,14 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
 
     const refreshStudents = async () => {
         if (!target) return;
-        const res = await classService.getStudents(target.id);
-        const list = res.data.data ?? [];
+        const [studentsRes, enrolledRes] = await Promise.all([
+            classService.getStudents(target.id),
+            classService.getEnrolledStudentIdsByClass(target.id),
+        ]);
+        const list = studentsRes.data.data ?? [];
         setStudents(list);
         setEnrolledIds(new Set(list.map((s) => s.studentId)));
+        setSameSubjectEnrolledIds(new Set(enrolledRes.data.data ?? []));
     };
 
     const handleBulkAdd = async () => {

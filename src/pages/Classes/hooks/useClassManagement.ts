@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import classService from '../../../api/services/classService';
+import { semesterService } from '../../../api/services/classService';
 import adminService from '../../../api/services/adminService';
-import type { ClassResponse, CreateClassRequest, UpdateClassRequest } from '../../../types/class.types';
+import type { ClassResponse, CreateClassRequest, UpdateClassRequest, SemesterResponse } from '../../../types/class.types';
 import type { UserResponse } from '../../../types/auth.types';
 
 export function useClassManagement() {
@@ -11,6 +12,8 @@ export function useClassManagement() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [semesters, setSemesters] = useState<SemesterResponse[]>([]);
+    const [semesterFilter, setSemesterFilter] = useState<number | ''>('');
 
     // Dialog state
     const [openCreate, setOpenCreate] = useState(false);
@@ -29,11 +32,12 @@ export function useClassManagement() {
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
-            const [classesRes, usersRes] = await Promise.all([
-                classService.getClasses(), adminService.getUsers(),
+            const [classesRes, usersRes, semestersRes] = await Promise.all([
+                classService.getClasses(), adminService.getUsers(), semesterService.getAllSemesters(),
             ]);
             setClasses(classesRes.data.data ?? []);
             setAllUsers(usersRes.data.data ?? []);
+            setSemesters(semestersRes.data.data ?? []);
             setError('');
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
@@ -44,10 +48,12 @@ export function useClassManagement() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    const filtered = useMemo(() => classes.filter(c =>
-        (c.subjectName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.classCode.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [classes, searchTerm]);
+    const filtered = useMemo(() => classes.filter(c => {
+        const matchesSearch = (c.subjectName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.classCode.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSemester = semesterFilter === '' || c.semesterId === semesterFilter;
+        return matchesSearch && matchesSemester;
+    }), [classes, searchTerm, semesterFilter]);
 
     const activeCount = useMemo(() => classes.filter(c => c.active).length, [classes]);
     const totalStudents = useMemo(() => classes.reduce((s, c) => s + (c.totalStudents || 0), 0), [classes]);
@@ -114,6 +120,7 @@ export function useClassManagement() {
     return {
         classes, allUsers, loading, error, searchTerm, setSearchTerm,
         filtered, activeCount, totalStudents, lecturers,
+        semesters, semesterFilter, setSemesterFilter,
         openCreate, setOpenCreate, handleCreate,
         editTarget, setEditTarget, handleEdit,
         assignTarget, setAssignTarget, handleAssign,

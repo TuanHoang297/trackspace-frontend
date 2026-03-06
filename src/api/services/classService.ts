@@ -41,6 +41,9 @@ const classService = {
 
     getEnrolledStudentIds: () =>
         axiosClient.get<ApiResponse<number[]>>('/classes/enrolled-student-ids'),
+
+    getEnrolledStudentIdsByClass: (classId: number) =>
+        axiosClient.get<ApiResponse<number[]>>(`/classes/${classId}/enrolled-student-ids`),
 };
 
 export const semesterService = {

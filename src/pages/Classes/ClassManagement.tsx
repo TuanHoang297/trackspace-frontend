@@ -4,7 +4,7 @@ import {
     TableHead, TableRow, Chip, IconButton, TextField,
     InputAdornment, Alert, Skeleton, Tooltip, Typography,
     Avatar, Menu, MenuItem, ListItemIcon, ListItemText,
-    Divider, Card, Button,
+    Divider, Card, Button, FormControl, Select,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -13,6 +13,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SchoolIcon from '@mui/icons-material/School';
 import ClassIcon from '@mui/icons-material/Class';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BlockIcon from '@mui/icons-material/Block';
 import AddIcon from '@mui/icons-material/Add';
@@ -67,6 +68,20 @@ const ClassManagement: React.FC = () => {
                 <TextField size="small" placeholder="Tìm kiếm theo tên hoặc mã môn..." value={h.searchTerm} onChange={(e) => h.setSearchTerm(e.target.value)}
                     sx={{ minWidth: 300, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#94A3B8' }} /></InputAdornment> }} />
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <Select
+                        value={h.semesterFilter}
+                        onChange={(e) => h.setSemesterFilter(e.target.value as number | '')}
+                        displayEmpty
+                        startAdornment={<CalendarMonthIcon sx={{ color: '#94A3B8', mr: 1, fontSize: 20 }} />}
+                        sx={{ borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' }, fontSize: '0.875rem' }}
+                    >
+                        <MenuItem value="">Tất cả học kỳ</MenuItem>
+                        {h.semesters.map((s) => (
+                            <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
                 <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>{h.filtered.length} kết quả</Typography>
             </Card>
 
@@ -88,7 +103,7 @@ const ClassManagement: React.FC = () => {
                             )) : h.filtered.length === 0 ? (
                                 <TableRow><TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                                     <SchoolIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                                        <Typography variant="body1" fontWeight={500}>{h.searchTerm ? 'Không tìm thấy lớp phù hợp' : 'Chưa có lớp nào'}</Typography>
+                                    <Typography variant="body1" fontWeight={500}>{h.searchTerm ? 'Không tìm thấy lớp phù hợp' : 'Chưa có lớp nào'}</Typography>
                                 </TableCell></TableRow>
                             ) : h.filtered.map((cls, i) => (
                                 <TableRow key={cls.id} hover sx={{ '&:nth-of-type(even)': { bgcolor: '#FAFBFC' }, '&:hover': { bgcolor: '#F1F5F9' } }}>
