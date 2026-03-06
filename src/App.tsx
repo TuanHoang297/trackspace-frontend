@@ -23,6 +23,8 @@ import JiraBoard from './pages/Jira/JiraBoard';
 import JiraConnect from './pages/Jira/JiraConnect';
 import GitHubPage from './pages/GitHub/GitHubPage';
 import StudentDashboard from './pages/Student/StudentDashboard';
+import SemesterManagement from './pages/Semesters/SemesterManagement';
+import SubjectManagement from './pages/Subjects/SubjectManagement';
 
 function App() {
     return (
@@ -58,6 +60,8 @@ function App() {
                         <Route path="/admin/dashboard" element={<AdminDashboard />} />
                         <Route path="/admin/users" element={<UserManagement />} />
                         <Route path="/admin/classes" element={<ClassManagement />} />
+                        <Route path="/admin/subjects" element={<SubjectManagement />} />
+                        <Route path="/admin/semesters" element={<SemesterManagement />} />
                     </Route>
                     {/* Lecturer routes */}
                     <Route

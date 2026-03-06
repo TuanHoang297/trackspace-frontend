@@ -38,7 +38,7 @@ const ClassManagement: React.FC = () => {
                     <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                             <SchoolIcon sx={{ fontSize: 32 }} />
-                            <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>Quản lý lớp học</Typography>
+                            <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>Quản lý lớp</Typography>
                         </Box>
                         <Typography variant="body2" sx={{ opacity: 0.85 }}>Quản lý lớp học, giảng viên và sinh viên trong hệ thống</Typography>
                     </Box>
@@ -64,7 +64,7 @@ const ClassManagement: React.FC = () => {
 
             {/* Filters */}
             <Card sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
-                <TextField size="small" placeholder="Tìm kiếm theo tên hoặc mã lớp..." value={h.searchTerm} onChange={(e) => h.setSearchTerm(e.target.value)}
+                <TextField size="small" placeholder="Tìm kiếm theo tên hoặc mã môn..." value={h.searchTerm} onChange={(e) => h.setSearchTerm(e.target.value)}
                     sx={{ minWidth: 300, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#94A3B8' }} /></InputAdornment> }} />
                 <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>{h.filtered.length} kết quả</Typography>
@@ -76,7 +76,7 @@ const ClassManagement: React.FC = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)' }}>
-                                {['#', 'Lớp học', 'Học kỳ', 'Giảng viên', 'SV', 'Trạng thái', ''].map((col, i) => (
+                                {['#', 'Lớp học / Môn học', 'Học kỳ', 'Giảng viên', 'SV', 'Trạng thái', ''].map((col, i) => (
                                     <TableCell key={i} align={['SV', 'Trạng thái'].includes(col) ? 'center' : 'left'}
                                         sx={{ fontWeight: 700, color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', ...(col === '#' ? { width: 50 } : col === '' ? { width: 60 } : {}) }}>{col}</TableCell>
                                 ))}
@@ -88,23 +88,31 @@ const ClassManagement: React.FC = () => {
                             )) : h.filtered.length === 0 ? (
                                 <TableRow><TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                                     <SchoolIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                                    <Typography variant="body1" fontWeight={500}>{h.searchTerm ? 'Không tìm thấy lớp phù hợp' : 'Chưa có lớp nào'}</Typography>
+                                        <Typography variant="body1" fontWeight={500}>{h.searchTerm ? 'Không tìm thấy lớp phù hợp' : 'Chưa có lớp nào'}</Typography>
                                 </TableCell></TableRow>
                             ) : h.filtered.map((cls, i) => (
                                 <TableRow key={cls.id} hover sx={{ '&:nth-of-type(even)': { bgcolor: '#FAFBFC' }, '&:hover': { bgcolor: '#F1F5F9' } }}>
                                     <TableCell sx={{ color: '#94A3B8' }}>{i + 1}</TableCell>
                                     <TableCell>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            <Avatar sx={{ width: 40, height: 40, bgcolor: getColor(cls.className), fontSize: '0.85rem', fontWeight: 700, borderRadius: 2 }}>
-                                                {cls.className.substring(0, 2).toUpperCase()}
+                                            <Avatar sx={{ width: 40, height: 40, bgcolor: getColor(cls.classCode), fontSize: '0.85rem', fontWeight: 700, borderRadius: 2 }}>
+                                                {cls.classCode.substring(0, 2).toUpperCase()}
                                             </Avatar>
                                             <Box>
-                                                <Typography variant="body2" fontWeight={600} sx={{ color: '#1E293B' }}>{cls.className}</Typography>
-                                                <Chip label={cls.classCode} size="small" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, bgcolor: '#F1F5F9', color: '#64748B', borderRadius: 1 }} />
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 500, minWidth: 52 }}>Lớp học</Typography>
+                                                    <Chip label={cls.classCode} size="small" sx={{ height: 20, fontSize: '0.72rem', fontWeight: 700, bgcolor: '#DBEAFE', color: '#2563EB', borderRadius: 1 }} />
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                                    <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 500, minWidth: 52 }}>Môn học</Typography>
+                                                    {cls.subjectCode
+                                                        ? <Chip label={cls.subjectCode} size="small" sx={{ height: 20, fontSize: '0.72rem', fontWeight: 700, bgcolor: '#EDE9FE', color: '#7C3AED', borderRadius: 1 }} />
+                                                        : <Typography variant="caption" sx={{ color: '#CBD5E1' }}>—</Typography>}
+                                                </Box>
                                             </Box>
                                         </Box>
                                     </TableCell>
-                                    <TableCell><Chip label={cls.semester} size="small" sx={{ fontWeight: 600, fontSize: '0.75rem', bgcolor: '#EDE9FE', color: '#7C3AED', borderRadius: 1.5 }} /></TableCell>
+                                    <TableCell><Chip label={cls.semesterName ?? '—'} size="small" sx={{ fontWeight: 600, fontSize: '0.75rem', bgcolor: '#EDE9FE', color: '#7C3AED', borderRadius: 1.5 }} /></TableCell>
                                     <TableCell>
                                         {cls.lecturerName ? (
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -156,7 +164,7 @@ const ClassManagement: React.FC = () => {
                 <MenuItem onClick={() => { if (h.menuClass) h.setDeleteTarget(h.menuClass); h.handleMenuClose(); }}
                     sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5, color: '#DC2626', '&:hover': { bgcolor: '#FEF2F2' } }}>
                     <ListItemIcon><DeleteIcon fontSize="small" sx={{ color: '#DC2626' }} /></ListItemIcon>
-                    <ListItemText primary="Xóa lớp học" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
+                    <ListItemText primary="Xóa lớp" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
                 </MenuItem>
             </Menu>
 
@@ -166,7 +174,7 @@ const ClassManagement: React.FC = () => {
             <ManageStudentsDialog target={h.studentTarget} allUsers={h.allUsers} onClose={() => h.setStudentTarget(null)} onRefresh={h.fetchData} />
 
             <ConfirmDialog open={!!h.deleteTarget} title="Xác nhận xóa"
-                message={<>Bạn có chắc chắn muốn xóa lớp <strong>{h.deleteTarget?.className} ({h.deleteTarget?.classCode})</strong>?</>}
+                message={<>Bạn có chắc chắn muốn xóa lớp <strong>{h.deleteTarget?.subjectName ?? h.deleteTarget?.classCode} ({h.deleteTarget?.classCode})</strong>?</>}
                 severity="error" confirmLabel="Xóa lớp" loading={h.deleting}
                 onConfirm={h.handleDelete} onCancel={() => h.setDeleteTarget(null)} />
         </Box>

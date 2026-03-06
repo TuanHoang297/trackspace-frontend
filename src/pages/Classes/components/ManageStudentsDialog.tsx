@@ -36,13 +36,11 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
             setLoading(true);
             setSelectedIds(new Set());
             setSearch('');
-            Promise.all([
-                classService.getStudents(target.id),
-                classService.getEnrolledStudentIds(),
-            ])
-                .then(([studentsRes, enrolledRes]) => {
-                    setStudents(studentsRes.data.data);
-                    setEnrolledIds(new Set(enrolledRes.data.data));
+            classService.getStudents(target.id)
+                .then((res) => {
+                    const list = res.data.data ?? [];
+                    setStudents(list);
+                    setEnrolledIds(new Set(list.map((s) => s.studentId)));
                 })
                 .catch(() => { setStudents([]); setEnrolledIds(new Set()); })
                 .finally(() => setLoading(false));
@@ -82,12 +80,10 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
 
     const refreshStudents = async () => {
         if (!target) return;
-        const [studentsRes, enrolledRes] = await Promise.all([
-            classService.getStudents(target.id),
-            classService.getEnrolledStudentIds(),
-        ]);
-        setStudents(studentsRes.data.data);
-        setEnrolledIds(new Set(enrolledRes.data.data));
+        const res = await classService.getStudents(target.id);
+        const list = res.data.data ?? [];
+        setStudents(list);
+        setEnrolledIds(new Set(list.map((s) => s.studentId)));
     };
 
     const handleBulkAdd = async () => {
@@ -130,7 +126,7 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
                 <DialogTitle sx={{ fontWeight: 700, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid', borderColor: 'divider' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <PeopleIcon sx={{ color: 'primary.main' }} />
-                        <Typography fontWeight={700}>{target?.className} ({target?.classCode})</Typography>
+                        <Typography fontWeight={700}>{target?.subjectName ?? target?.classCode} ({target?.classCode})</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                         <Chip label={`${students.length} đã vào lớp`} color="primary" size="small" />

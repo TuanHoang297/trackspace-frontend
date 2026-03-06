@@ -56,10 +56,10 @@ const LecturerClasses: React.FC = () => {
         <Box sx={{ maxWidth: 900 }}>
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>
-                    Lớp học của tôi
+                    Môn học của tôi
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
-                    {classes.length} lớp đang phụ trách
+                    {classes.length} môn đang phụ trách
                 </Typography>
             </Box>
 
@@ -72,7 +72,7 @@ const LecturerClasses: React.FC = () => {
                     bgcolor: 'transparent', boxShadow: 'none',
                 }}>
                     <SchoolIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                    <Typography color="text.secondary">Bạn chưa được gán lớp học nào.</Typography>
+                    <Typography color="text.secondary">Bạn chưa được gán môn học nào.</Typography>
                 </Card>
             ) : (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.5 }}>
@@ -103,7 +103,7 @@ const LecturerClasses: React.FC = () => {
 
                                     <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                            <Chip label={cls.className} size="small" sx={{
+                                            <Chip label={cls.subjectName ?? cls.classCode} size="small" sx={{
                                                 bgcolor: 'rgba(59,130,246,0.08)', color: '#3B82F6',
                                                 fontWeight: 600, fontSize: '0.7rem', height: 24,
                                             }} />
@@ -121,7 +121,7 @@ const LecturerClasses: React.FC = () => {
                                         </Typography>
 
                                         <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5 }}>
-                                            {cls.semester}
+                                            {cls.semesterName ?? '—'}
                                         </Typography>
 
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, mt: 'auto' }}>

@@ -174,13 +174,13 @@ const AdminDashboard: React.FC = () => {
                                 <Box sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}><SchoolIcon sx={{ fontSize: 40, opacity: 0.3, mb: 1 }} /><Typography variant="body2">Chưa có lớp nào</Typography></Box>
                             ) : recentClasses.map((c, i) => (
                                 <Box key={c.id} sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.2, px: 1, borderRadius: 2, '&:hover': { bgcolor: '#F8FAFC' }, ...(i < recentClasses.length - 1 ? { borderBottom: '1px solid', borderColor: 'divider' } : {}) }}>
-                                    <Avatar sx={{ width: 36, height: 36, bgcolor: getColor(c.className), fontSize: '0.8rem', fontWeight: 700, borderRadius: 2 }}>{c.className.substring(0, 2).toUpperCase()}</Avatar>
+                                    <Avatar sx={{ width: 36, height: 36, bgcolor: getColor(c.subjectName ?? c.classCode), fontSize: '0.8rem', fontWeight: 700, borderRadius: 2 }}>{(c.subjectName ?? c.classCode).substring(0, 2).toUpperCase()}</Avatar>
                                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                                        <Typography variant="body2" fontWeight={600} noWrap sx={{ color: '#1E293B' }}>{c.className}</Typography>
+                                        <Typography variant="body2" fontWeight={600} noWrap sx={{ color: '#1E293B' }}>{c.subjectName ?? '—'}</Typography>
                                         <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                                             <Typography variant="caption" sx={{ color: '#94A3B8' }}>{c.classCode}</Typography>
                                             <Typography variant="caption" sx={{ color: '#CBD5E1' }}>•</Typography>
-                                            <Typography variant="caption" sx={{ color: '#94A3B8' }}>{c.semester}</Typography>
+                                            <Typography variant="caption" sx={{ color: '#94A3B8' }}>{c.semesterName ?? '—'}</Typography>
                                         </Box>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

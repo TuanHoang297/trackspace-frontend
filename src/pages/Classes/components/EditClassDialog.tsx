@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
-    Button, Box, TextField, FormControl, InputLabel, Select, MenuItem,
+    Button, Box, FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
-import type { ClassResponse, UpdateClassRequest } from '../../../types/class.types';
+import type { ClassResponse, UpdateClassRequest, SemesterResponse, SubjectResponse } from '../../../types/class.types';
 import type { UserResponse } from '../../../types/auth.types';
+import { semesterService, subjectService } from '../../../api/services/classService';
 
 interface Props {
     target: ClassResponse | null;
@@ -13,48 +14,27 @@ interface Props {
     lecturers: UserResponse[];
 }
 
-function generateSemesterOptions(currentValue?: string): { value: string; label: string }[] {
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
-
-    let currentIndex: number;
-    if (month >= 1 && month <= 4) currentIndex = 0;
-    else if (month >= 5 && month <= 8) currentIndex = 1;
-    else currentIndex = 2;
-
-    const seasons = ['Spring', 'Summer', 'Fall'];
-    const seasonLabels = ['Xuân', 'Hè', 'Thu'];
-    const options: { value: string; label: string }[] = [];
-
-    let y = year;
-    let idx = currentIndex;
-    for (let i = 0; i < 4; i++) {
-        const value = `${seasons[idx]} ${y}`;
-        const label = `${seasonLabels[idx]} ${y} (${value})`;
-        options.push({ value, label });
-        idx++;
-        if (idx >= 3) { idx = 0; y++; }
-    }
-
-    if (currentValue && !options.some(o => o.value === currentValue)) {
-        options.unshift({ value: currentValue, label: currentValue });
-    }
-
-    return options;
-}
-
 const EditClassDialog: React.FC<Props> = ({ target, onClose, onSubmit, lecturers }) => {
+    const [semesters, setSemesters] = useState<SemesterResponse[]>([]);
+    const [subjects, setSubjects] = useState<SubjectResponse[]>([]);
     const [data, setData] = useState<UpdateClassRequest>({});
     const [loading, setLoading] = useState(false);
 
-    const semesterOptions = useMemo(() => generateSemesterOptions(target?.semester), [target]);
+    useEffect(() => {
+        Promise.all([
+            semesterService.getSemesters(),
+            subjectService.getSubjects(),
+        ]).then(([semRes, subRes]) => {
+            setSemesters(semRes.data.data ?? []);
+            setSubjects(subRes.data.data ?? []);
+        }).catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (target) {
             setData({
-                className: target.className,
-                semester: target.semester,
+                subjectId: target.subjectId,
+                semesterId: target.semesterId,
                 active: target.active,
                 lecturerId: target.lecturerId,
             });
@@ -74,23 +54,35 @@ const EditClassDialog: React.FC<Props> = ({ target, onClose, onSubmit, lecturers
 
     return (
         <Dialog open={!!target} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Sửa lớp: {target?.classCode}</DialogTitle>
+            <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Sửa lớp học: {target?.classCode}</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
-                    <TextField label="Tên lớp" fullWidth value={data.className || ''}
-                        onChange={(e) => setData({ ...data, className: e.target.value })}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                    <FormControl fullWidth>
+                        <InputLabel>Môn học</InputLabel>
+                        <Select
+                            value={data.subjectId ?? ''}
+                            label="Môn học"
+                            onChange={(e) => setData({ ...data, subjectId: e.target.value as number })}
+                            sx={{ borderRadius: 2 }}
+                        >
+                            {subjects.map((s) => (
+                                <MenuItem key={s.id} value={s.id}>{s.subjectCode} — {s.subjectName}</MenuItem>
+                            ))}
+                            {subjects.length === 0 && <MenuItem disabled>Chưa có môn học nào</MenuItem>}
+                        </Select>
+                    </FormControl>
                     <FormControl fullWidth>
                         <InputLabel>Học kỳ</InputLabel>
                         <Select
-                            value={data.semester || ''}
+                            value={data.semesterId ?? ''}
                             label="Học kỳ"
-                            onChange={(e) => setData({ ...data, semester: e.target.value as string })}
+                            onChange={(e) => setData({ ...data, semesterId: e.target.value as number })}
                             sx={{ borderRadius: 2 }}
                         >
-                            {semesterOptions.map((opt) => (
-                                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                            {semesters.map((s) => (
+                                <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
                             ))}
+                            {semesters.length === 0 && <MenuItem disabled>Chưa có học kỳ nào</MenuItem>}
                         </Select>
                     </FormControl>
                     <FormControl fullWidth>

@@ -32,8 +32,8 @@ export function useClassManagement() {
             const [classesRes, usersRes] = await Promise.all([
                 classService.getClasses(), adminService.getUsers(),
             ]);
-            setClasses(classesRes.data.data);
-            setAllUsers(usersRes.data.data);
+            setClasses(classesRes.data.data ?? []);
+            setAllUsers(usersRes.data.data ?? []);
             setError('');
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
@@ -45,7 +45,7 @@ export function useClassManagement() {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const filtered = useMemo(() => classes.filter(c =>
-        c.className.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.subjectName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.classCode.toLowerCase().includes(searchTerm.toLowerCase())
     ), [classes, searchTerm]);
 
@@ -96,7 +96,7 @@ export function useClassManagement() {
         try {
             setDeleting(true);
             await classService.deleteClass(deleteTarget.id);
-            toast.success(`Đã xóa lớp ${deleteTarget.className}`);
+            toast.success(`Đã xóa lớp ${deleteTarget.classCode}`);
             setDeleteTarget(null);
             fetchData();
         } catch (err: unknown) {

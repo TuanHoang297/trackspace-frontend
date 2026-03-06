@@ -215,7 +215,7 @@ const LecturerDashboard: React.FC = () => {
 
                                     <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                            <Chip label={cls.className} size="small" sx={{
+                                            <Chip label={cls.subjectName ?? cls.classCode} size="small" sx={{
                                                 bgcolor: 'rgba(59,130,246,0.08)', color: '#3B82F6',
                                                 fontWeight: 600, fontSize: '0.7rem', height: 24,
                                             }} />
@@ -233,7 +233,7 @@ const LecturerDashboard: React.FC = () => {
                                         </Typography>
 
                                         <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5 }}>
-                                            {cls.semester}
+                                            {cls.semesterName ?? '—'}
                                         </Typography>
 
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, mt: 'auto' }}>
