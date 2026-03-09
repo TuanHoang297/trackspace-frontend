@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Box, Typography, Card, Button, Chip, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, IconButton, Tooltip,
@@ -23,12 +24,8 @@ import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
 const GroupManagement: React.FC = () => {
     const { classId } = useParams<{ classId: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const id = Number(classId);
-
-    const [classInfo, setClassInfo] = useState<ClassResponse | null>(null);
-    const [groups, setGroups] = useState<GroupResponse[]>([]);
-    const [students, setStudents] = useState<StudentInClassResponse[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Dialog state
     const [openCreate, setOpenCreate] = useState(false);
@@ -37,30 +34,30 @@ const GroupManagement: React.FC = () => {
     const [deleting, setDeleting] = useState(false);
     const [viewGroup, setViewGroup] = useState<GroupResponse | null>(null);
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [classRes, groupsRes, studentsRes] = await Promise.all([
-                classService.getClassById(id),
-                groupService.getGroups(id),
-                classService.getStudents(id),
-            ]);
-            setClassInfo(classRes.data.data);
-            setGroups(groupsRes.data.data);
-            setStudents(studentsRes.data.data);
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Lỗi tải dữ liệu nhóm');
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Parallel data fetching with React Query cache
+    const { data: classInfo = null, isLoading: classLoading } = useQuery({
+        queryKey: ['class', id],
+        queryFn: async () => { const r = await classService.getClassById(id); return r.data.data as ClassResponse; },
+        enabled: !!id,
+    });
+    const { data: groups = [], isLoading: groupsLoading } = useQuery({
+        queryKey: ['class', id, 'groups'],
+        queryFn: async () => { const r = await groupService.getGroups(id); return r.data.data as GroupResponse[]; },
+        enabled: !!id,
+    });
+    const { data: students = [], isLoading: studentsLoading } = useQuery({
+        queryKey: ['class', id, 'students'],
+        queryFn: async () => { const r = await classService.getStudents(id); return r.data.data as StudentInClassResponse[]; },
+        enabled: !!id,
+    });
+    const loading = classLoading || groupsLoading || studentsLoading;
 
-    useEffect(() => { if (id) fetchData(); }, [id]);
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['class', id] });
 
     const handleCreate = async (data: CreateGroupRequest) => {
         await groupService.createGroup(id, data);
         toast.success('Tạo nhóm thành công!');
-        fetchData();
+        invalidate();
     };
 
     const handleEdit = async (data: CreateGroupRequest) => {
@@ -68,7 +65,7 @@ const GroupManagement: React.FC = () => {
         await groupService.updateGroup(id, editTarget.id, data);
         toast.success('Cập nhật nhóm thành công');
         setEditTarget(null);
-        fetchData();
+        invalidate();
     };
 
     const handleDelete = async () => {
@@ -79,13 +76,14 @@ const GroupManagement: React.FC = () => {
             toast.success(`Đã xóa nhóm ${deleteTarget.groupName}`);
             setDeleteTarget(null);
             if (viewGroup?.id === deleteTarget.id) setViewGroup(null);
-            fetchData();
+            invalidate();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Xóa nhóm thất bại');
         } finally {
             setDeleting(false);
         }
     };
+
 
     if (loading) {
         return (
@@ -205,7 +203,7 @@ const GroupManagement: React.FC = () => {
                 group={viewGroup}
                 students={students}
                 onClose={() => setViewGroup(null)}
-                onRefresh={fetchData}
+                onRefresh={invalidate}
             />
 
             <ConfirmDialog

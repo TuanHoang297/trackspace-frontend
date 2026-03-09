@@ -1,12 +1,12 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import adminService from '../../../api/services/adminService';
 import type { UserResponse, CreateUserRequest } from '../../../api/types/types';
 
 export function useUserManagement() {
-    const [users, setUsers] = useState<UserResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const queryClient = useQueryClient();
+
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('ALL');
 
@@ -20,22 +20,14 @@ export function useUserManagement() {
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [menuUser, setMenuUser] = useState<UserResponse | null>(null);
 
-    const fetchUsers = useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await adminService.getUsers();
-            setUsers(res.data.data);
-            setError('');
-        } catch (err: unknown) {
-            const message = (err as { response?: { data?: { message?: string } } })
-                .response?.data?.message || 'Không thể tải danh sách tài khoản';
-            setError(message);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const { data: users = [], isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['admin', 'users'],
+        queryFn: async () => { const r = await adminService.getUsers(); return r.data.data as UserResponse[]; },
+    });
 
-    useEffect(() => { fetchUsers(); }, [fetchUsers]);
+    const error = queryError ? ((queryError as any)?.response?.data?.message || 'Không thể tải danh sách tài khoản') : '';
+
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
 
     const filteredUsers = useMemo(() => users.filter((u) => {
         const matchesSearch =
@@ -52,7 +44,7 @@ export function useUserManagement() {
         await adminService.createUser(newUser);
         toast.success('Tạo tài khoản thành công!');
         setOpenCreate(false);
-        fetchUsers();
+        invalidate();
     };
 
     const handleToggleStatus = async () => {
@@ -65,7 +57,7 @@ export function useUserManagement() {
                     : `Đã kích hoạt tài khoản ${toggleTarget.fullName}`
             );
             setToggleTarget(null);
-            fetchUsers();
+            invalidate();
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
                 .response?.data?.message || 'Cập nhật trạng thái thất bại';
@@ -80,7 +72,7 @@ export function useUserManagement() {
             await adminService.deleteUser(deleteTarget.userId);
             toast.success(`Đã xóa tài khoản ${deleteTarget.fullName}`);
             setDeleteTarget(null);
-            fetchUsers();
+            invalidate();
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
                 .response?.data?.message || 'Xóa tài khoản thất bại';
@@ -103,7 +95,7 @@ export function useUserManagement() {
     return {
         users, loading, error, searchTerm, setSearchTerm,
         roleFilter, setRoleFilter, filteredUsers,
-        activeCount, inactiveCount, fetchUsers,
+        activeCount, inactiveCount, fetchUsers: invalidate,
         openCreate, setOpenCreate, handleCreateUser,
         deleteTarget, setDeleteTarget, deleting, handleDeleteUser,
         toggleTarget, setToggleTarget, handleToggleStatus,

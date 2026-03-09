@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
     Box, Typography, Button, TextField, Tabs, Tab, Chip,
@@ -114,14 +115,13 @@ const ActivityChart: React.FC<{ commits: GitHubCommitResponse[]; color: string }
 const GitHubPage: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const pid = Number(projectId);
+    const queryClient = useQueryClient();
     const { isReadOnly } = useRole();
     const readOnly = isReadOnly();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const initialRepo = searchParams.get('repo') as RepoType | null;
 
-    const [connections, setConnections] = useState<GitHubConnectionResponse[]>([]);
-    const [loading, setLoading] = useState(true);
     const [view, setView] = useState<ViewMode>(initialRepo ? 'detail' : 'overview');
     const [selectedRepo, setSelectedRepo] = useState<RepoType | null>(initialRepo);
     const [connecting, setConnecting] = useState(false);
@@ -137,12 +137,23 @@ const GitHubPage: React.FC = () => {
     const [authorFilter, setAuthorFilter] = useState<string>('all');
     const [branchSearch, setBranchSearch] = useState('');
     const [disconnectOpen, setDisconnectOpen] = useState(false);
+    const initDone = useRef(false);
+
+    // ── Connections cached by React Query ──
+    const { data: connections = [], isLoading: loading } = useQuery({
+        queryKey: ['github', 'connections', pid],
+        queryFn: async () => {
+            try { const r = await githubService.getConnections(pid); return r.data.data || []; }
+            catch { return [] as GitHubConnectionResponse[]; }
+        },
+        enabled: !!pid,
+    });
 
     const getConn = (t: RepoType) => connections.find(c => c.repoLabel === t && c.connectionStatus === 'CONNECTED');
     const fetchConns = useCallback(async () => {
-        try { const r = await githubService.getConnections(pid); setConnections(r.data.data || []); }
-        catch { setConnections([]); }
-    }, [pid]);
+        await queryClient.invalidateQueries({ queryKey: ['github', 'connections', pid] });
+    }, [pid, queryClient]);
+
     const fetchData = useCallback(async (connId?: number) => {
         setLoadingData(true);
         try {
@@ -152,45 +163,35 @@ const GitHubPage: React.FC = () => {
         } catch { /* silent */ } finally { setLoadingData(false); }
     }, [pid]);
 
-    // On mount: load local data first, then background sync from GitHub
-    useEffect(() => {
-        const init = async () => {
-            setLoading(true);
-            const r = await githubService.getConnections(pid).catch(() => null);
-            const conns = r?.data?.data || [];
-            setConnections(conns);
-            setLoading(false);
+    // Auto-navigate to detail if URL has ?repo=X (runs once when connections load)
+    if (!loading && connections.length > 0 && initialRepo && !initDone.current) {
+        initDone.current = true;
+        const conn = connections.find(c => c.repoLabel === initialRepo && c.connectionStatus === 'CONNECTED');
+        if (conn) {
+            setView('detail');
+            fetchData(conn.connectionId);
+        } else {
+            setView('overview');
+            setSelectedRepo(null);
+            setSearchParams({}, { replace: true });
+        }
+    }
 
-            // If URL has ?repo=X, auto-navigate to detail
-            if (initialRepo) {
-                const conn = conns.find(c => c.repoLabel === initialRepo && c.connectionStatus === 'CONNECTED');
-                if (conn) {
-                    setView('detail');
-                    fetchData(conn.connectionId);
-                } else {
-                    setView('overview');
-                    setSelectedRepo(null);
-                    setSearchParams({}, { replace: true });
-                }
-            }
-
-            // Background sync from GitHub
+    // ── Background sync from GitHub (runs once per mount, 60s stale) ──
+    useQuery({
+        queryKey: ['github', 'backgroundSync', pid],
+        queryFn: async () => {
+            setSyncing(true);
             try {
-                setSyncing(true);
                 await githubService.sync({ projectId: pid });
-                const updated = await githubService.getConnections(pid).catch(() => null);
-                if (updated) setConnections(updated.data.data || []);
-                // Re-fetch detail data if in detail view
-                if (initialRepo) {
-                    const conn = (updated?.data?.data || []).find(c => c.repoLabel === initialRepo && c.connectionStatus === 'CONNECTED');
-                    if (conn) fetchData(conn.connectionId);
-                }
+                await queryClient.invalidateQueries({ queryKey: ['github', 'connections', pid] });
             } catch { /* sync failure is non-blocking */ }
             finally { setSyncing(false); }
-        };
-        init();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pid]);
+            return null;
+        },
+        enabled: !!pid && connections.length > 0,
+        staleTime: 60_000,
+    });
 
     const handleCardClick = (t: RepoType) => {
         setSelectedRepo(t);

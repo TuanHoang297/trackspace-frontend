@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box, Typography, IconButton, Skeleton,
     Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider,
@@ -19,8 +20,6 @@ const ProjectLayout: React.FC = () => {
     const navigate = useNavigate();
     const pid = Number(projectId);
 
-    const [project, setProject] = useState<ProjectResponse | null>(null);
-    const [loading, setLoading] = useState(true);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [pwOpen, setPwOpen] = useState(false);
     const currentUser = getUser();
@@ -28,20 +27,14 @@ const ProjectLayout: React.FC = () => {
     const initials = currentUser?.fullName
         ?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
-    useEffect(() => {
-        const fetchProject = async () => {
-            try {
-                setLoading(true);
-                const res = await projectService.getProjectById(pid);
-                setProject(res.data.data);
-            } catch {
-                setProject(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (pid) fetchProject();
-    }, [pid]);
+    const { data: project = null, isLoading: loading } = useQuery({
+        queryKey: ['project', pid],
+        queryFn: async () => {
+            try { const r = await projectService.getProjectById(pid); return r.data.data as ProjectResponse; }
+            catch { return null; }
+        },
+        enabled: !!pid,
+    });
 
     // Breadcrumb "Lớp học" link should be role-aware
     const classListPath = currentUser?.role === 'LECTURER' ? '/lecturer/classes' : '/student/dashboard';

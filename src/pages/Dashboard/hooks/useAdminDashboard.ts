@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import adminService from '../../../api/services/adminService';
 import classService from '../../../api/services/classService';
 import type { UserResponse } from '../../../api/types/types';
@@ -15,31 +16,18 @@ export interface DashboardStats {
 }
 
 export function useAdminDashboard() {
-    const [users, setUsers] = useState<UserResponse[]>([]);
-    const [classes, setClasses] = useState<ClassResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery({
+        queryKey: ['admin', 'users'],
+        queryFn: async () => { const r = await adminService.getUsers(); return r.data.data as UserResponse[]; },
+    });
 
-    const fetchData = useCallback(async () => {
-        try {
-            setLoading(true);
-            const [usersRes, classesRes] = await Promise.all([
-                adminService.getUsers(),
-                classService.getClasses(),
-            ]);
-            setUsers(usersRes.data.data);
-            setClasses(classesRes.data.data);
-            setError('');
-        } catch (err: unknown) {
-            const message = (err as { response?: { data?: { message?: string } } })
-                .response?.data?.message || 'Không thể tải dữ liệu';
-            setError(message);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const { data: classes = [], isLoading: classesLoading } = useQuery({
+        queryKey: ['admin', 'classes'],
+        queryFn: async () => { const r = await classService.getClasses(); return r.data.data as ClassResponse[]; },
+    });
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    const loading = usersLoading || classesLoading;
+    const error = usersError ? ((usersError as any)?.response?.data?.message || 'Không thể tải dữ liệu') : '';
 
     const stats: DashboardStats = useMemo(() => ({
         totalUsers: users.length,

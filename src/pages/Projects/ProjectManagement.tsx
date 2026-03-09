@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
     Typography,
@@ -45,14 +46,10 @@ import { useRole } from '../../hooks/useRole';
 const ProjectManagement: React.FC = () => {
     const { classId } = useParams<{ classId: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const id = Number(classId);
     const { isReadOnly } = useRole();
     const readOnly = isReadOnly();
-
-    const [classInfo, setClassInfo] = useState<ClassResponse | null>(null);
-    const [projects, setProjects] = useState<ProjectResponse[]>([]);
-    const [groups, setGroups] = useState<GroupResponse[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Create Project
     const [openCreate, setOpenCreate] = useState(false);
@@ -69,27 +66,24 @@ const ProjectManagement: React.FC = () => {
     const [deleteTarget, setDeleteTarget] = useState<ProjectResponse | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [classRes, projectsRes, groupsRes] = await Promise.all([
-                classService.getClassById(id),
-                projectService.getProjectsByClass(id),
-                groupService.getGroups(id),
-            ]);
-            setClassInfo(classRes.data.data);
-            setProjects(projectsRes.data.data);
-            setGroups(groupsRes.data.data);
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Lỗi tải dữ liệu projects');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (id) fetchData();
-    }, [id]);
+    // ── Parallel cached queries ──
+    const { data: classInfo = null, isLoading: classLoading } = useQuery({
+        queryKey: ['class', id],
+        queryFn: async () => { const r = await classService.getClassById(id); return r.data.data as ClassResponse; },
+        enabled: !!id,
+    });
+    const { data: projects = [], isLoading: projectsLoading } = useQuery({
+        queryKey: ['class', id, 'projects'],
+        queryFn: async () => { const r = await projectService.getProjectsByClass(id); return r.data.data as ProjectResponse[]; },
+        enabled: !!id,
+    });
+    const { data: groups = [], isLoading: groupsLoading } = useQuery({
+        queryKey: ['class', id, 'groups'],
+        queryFn: async () => { const r = await groupService.getGroups(id); return r.data.data as GroupResponse[]; },
+        enabled: !!id,
+    });
+    const loading = classLoading || projectsLoading || groupsLoading;
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['class', id] });
 
     const handleCreate = async () => {
         if (!selectedGroupId || !newProjectName) {
@@ -103,7 +97,7 @@ const ProjectManagement: React.FC = () => {
             setOpenCreate(false);
             setSelectedGroupId('');
             setNewProjectName('');
-            fetchData();
+            invalidate();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Tạo project thất bại');
         } finally {
@@ -118,7 +112,7 @@ const ProjectManagement: React.FC = () => {
             await projectService.updateProject(editTarget.id, { projectName: editName });
             toast.success('Cập nhật thành công');
             setEditTarget(null);
-            fetchData();
+            invalidate();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Cập nhật thất bại');
         } finally {
@@ -133,7 +127,7 @@ const ProjectManagement: React.FC = () => {
             await projectService.deleteProject(deleteTarget.id);
             toast.success('Đã xóa project');
             setDeleteTarget(null);
-            fetchData();
+            invalidate();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Xóa thất bại');
         } finally {

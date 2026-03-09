@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box, Grid, Card, CardContent, CardActionArea,
     Typography, Chip, Skeleton, Alert, Avatar, LinearProgress,
@@ -48,29 +49,30 @@ const STAT_CONFIG = [
 
 const LecturerDashboard: React.FC = () => {
     const navigate = useNavigate();
-    const [classes, setClasses] = useState<ClassResponse[]>([]);
-    const [allGroups, setAllGroups] = useState<GroupResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await classService.getClasses();
-                const classList = res.data.data;
-                setClasses(classList);
-                const groupResults = await Promise.all(
-                    classList.map(c => groupService.getGroups(c.id).then(r => r.data.data).catch(() => []))
-                );
-                setAllGroups(groupResults.flat());
-            } catch (err: any) {
-                setError(err.response?.data?.message || 'Không thể tải dữ liệu');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+    // Fetch classes — cached by React Query
+    const { data: classes = [], isLoading: classesLoading, error: classesError } = useQuery({
+        queryKey: ['lecturer', 'classes'],
+        queryFn: async () => {
+            const res = await classService.getClasses();
+            return res.data.data as ClassResponse[];
+        },
+    });
+
+    // Fetch groups for all classes — parallel via Promise.all, cached as a unit
+    const { data: allGroups = [], isLoading: groupsLoading } = useQuery({
+        queryKey: ['lecturer', 'allGroups', classes.map(c => c.id)],
+        queryFn: async () => {
+            const results = await Promise.all(
+                classes.map(c => groupService.getGroups(c.id).then(r => r.data.data).catch(() => [] as GroupResponse[]))
+            );
+            return results.flat();
+        },
+        enabled: classes.length > 0,
+    });
+
+    const loading = classesLoading || groupsLoading;
+    const error = classesError ? ((classesError as any)?.response?.data?.message || 'Không thể tải dữ liệu') : '';
 
     const totalStudents = classes.reduce((sum, c) => sum + (c.totalStudents || 0), 0);
     const totalGroups = allGroups.length;

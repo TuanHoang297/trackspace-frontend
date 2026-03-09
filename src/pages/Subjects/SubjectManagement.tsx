@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import {
     Box, Typography, Button, Card, Table, TableContainer, TableHead, TableRow,
@@ -23,10 +24,7 @@ import type { SubjectResponse, SubjectRequest, ClassResponse } from '../../types
 import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
 
 const SubjectManagement: React.FC = () => {
-    const [subjects, setSubjects] = useState<SubjectResponse[]>([]);
-    const [allClasses, setAllClasses] = useState<ClassResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
@@ -41,6 +39,19 @@ const SubjectManagement: React.FC = () => {
 
     const [deleteTarget, setDeleteTarget] = useState<SubjectResponse | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    // ── Cached parallel queries ──
+    const { data: subjects = [], isLoading: subjectsLoading, error: subjectsError } = useQuery({
+        queryKey: ['admin', 'subjects'],
+        queryFn: async () => { const r = await subjectService.getAllSubjects(); return (r.data.data ?? []) as SubjectResponse[]; },
+    });
+    const { data: allClasses = [], isLoading: classesLoading } = useQuery({
+        queryKey: ['admin', 'classes'],
+        queryFn: async () => { const r = await classService.getClasses(); return (r.data.data ?? []) as ClassResponse[]; },
+    });
+    const loading = subjectsLoading || classesLoading;
+    const error = subjectsError ? 'Không thể tải dữ liệu' : null;
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
 
     const classesBySubject = useMemo(() => {
         const map = new Map<number, ClassResponse[]>();
@@ -60,24 +71,6 @@ const SubjectManagement: React.FC = () => {
             return next;
         });
     };
-
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [subRes, clsRes] = await Promise.all([
-                subjectService.getAllSubjects(),
-                classService.getClasses(),
-            ]);
-            setSubjects(subRes.data.data ?? []);
-            setAllClasses(clsRes.data.data ?? []);
-        } catch {
-            setError('Không thể tải dữ liệu');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { fetchData(); }, []);
 
     const filtered = useMemo(() => {
         const q = searchTerm.toLowerCase();
@@ -123,7 +116,7 @@ const SubjectManagement: React.FC = () => {
                 toast.success(`Tạo môn học ${form.subjectCode} thành công!`);
             }
             setDialogOpen(false);
-            await fetchData();
+            invalidate();
         } catch (err: any) {
             setFormError(err?.response?.data?.message ?? 'Có lỗi xảy ra');
         } finally {
@@ -138,7 +131,7 @@ const SubjectManagement: React.FC = () => {
             await subjectService.deleteSubject(deleteTarget.id);
             toast.success(`Đã xóa môn học ${deleteTarget.subjectCode}`);
             setDeleteTarget(null);
-            await fetchData();
+            invalidate();
         } catch (e: any) {
             toast.error(e?.response?.data?.message ?? 'Không thể xóa môn học');
         } finally {
@@ -179,7 +172,7 @@ const SubjectManagement: React.FC = () => {
                 </Box>
             </Box>
 
-            {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+            {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
             <Card sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
                 <TextField size="small" placeholder="Tìm kiếm theo mã hoặc tên môn học..." value={searchTerm}

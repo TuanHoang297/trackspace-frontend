@@ -86,7 +86,7 @@ const JiraBoard: React.FC = () => {
     const navigate = useNavigate();
     const pid = Number(projectId);
 
-    const { connection, sprints, issues, setIssues, loading, refresh } = useJira(pid);
+    const { connection, sprints, issues, setIssues, loading, refresh, loadLocal } = useJira(pid);
 
     // Role-based permissions (Jira-style)
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -298,11 +298,18 @@ const JiraBoard: React.FC = () => {
     };
 
     const handleUpdateSprint = async (data: JiraSprintRequest) => {
-        if (!editingSprint) return;
+        console.log('=== handleUpdateSprint ===', { editingSprint, data });
+        if (!editingSprint) {
+            console.error('editingSprint is NULL — skipping update!');
+            return;
+        }
         try {
-            await jiraService.updateSprint(editingSprint.sprintId, data);
+            console.log('Calling jiraService.updateSprint with sprintId:', editingSprint.sprintId);
+            const res = await jiraService.updateSprint(editingSprint.sprintId, data);
+            console.log('=== updateSprint RESPONSE ===', res.data);
             toast.success(data.status ? 'Đã cập nhật trạng thái Sprint!' : 'Cập nhật Sprint thành công!');
         } catch (err: unknown) {
+            console.error('=== updateSprint ERROR ===', err);
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
                 || 'Cập nhật Sprint thất bại';
             toast.error(msg);
@@ -630,7 +637,7 @@ const JiraBoard: React.FC = () => {
             <SprintDialog
                 open={sprintDialogOpen}
                 onClose={() => { setSprintDialogOpen(false); setEditingSprint(null); }}
-                onSaved={() => { setSprintDialogOpen(false); setEditingSprint(null); refresh(); }}
+                onSaved={() => { setSprintDialogOpen(false); setEditingSprint(null); loadLocal(); }}
                 projectId={pid}
                 sprint={editingSprint}
                 onSubmit={editingSprint ? handleUpdateSprint : handleCreateSprint}

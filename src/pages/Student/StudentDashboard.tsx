@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box, Typography, Card, CardContent, CardActionArea,
     Chip, Skeleton, Alert,
@@ -15,30 +16,21 @@ import { getUser } from '../../utils/auth';
 const StudentDashboard: React.FC = () => {
     const navigate = useNavigate();
     const user = getUser();
-    const [workspaces, setWorkspaces] = useState<WorkspaceResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
-    useEffect(() => {
-        const fetchWorkspaces = async () => {
-            try {
-                const res = await studentService.getMyWorkspaces();
-                const data = res.data.data;
-                setWorkspaces(data);
-
-                // Auto-redirect if only 1 workspace with a project
-                if (data.length === 1 && data[0].projectId) {
-                    navigate(`/projects/${data[0].projectId}`, { replace: true });
-                    return;
-                }
-            } catch (err: any) {
-                setError(err.response?.data?.message || 'Không thể tải dữ liệu');
-            } finally {
-                setLoading(false);
+    const { data: workspaces = [], isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['student', 'workspaces'],
+        queryFn: async () => {
+            const res = await studentService.getMyWorkspaces();
+            const data = res.data.data as WorkspaceResponse[];
+            // Auto-redirect if only 1 workspace with a project
+            if (data.length === 1 && data[0].projectId) {
+                navigate(`/projects/${data[0].projectId}`, { replace: true });
             }
-        };
-        fetchWorkspaces();
-    }, [navigate]);
+            return data;
+        },
+    });
+
+    const error = queryError ? ((queryError as any)?.response?.data?.message || 'Không thể tải dữ liệu') : '';
 
     if (loading) {
         return (

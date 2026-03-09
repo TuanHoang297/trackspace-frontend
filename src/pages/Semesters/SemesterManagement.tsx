@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import {
     Box, Typography, Button, Table, TableBody, TableCell, TableContainer,
@@ -32,9 +33,7 @@ function formatDate(iso: string | null | undefined): string {
 }
 
 const SemesterManagement: React.FC = () => {
-    const [semesters, setSemesters] = useState<SemesterResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
 
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -47,9 +46,20 @@ const SemesterManagement: React.FC = () => {
     const [deleteTarget, setDeleteTarget] = useState<SemesterResponse | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    // Classes per semester
-    const [allClasses, setAllClasses] = useState<ClassResponse[]>([]);
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+
+    // ── Cached parallel queries ──
+    const { data: semesters = [], isLoading: semLoading, error: semError } = useQuery({
+        queryKey: ['admin', 'semesters'],
+        queryFn: async () => { const r = await semesterService.getAllSemesters(); return (r.data.data ?? []) as SemesterResponse[]; },
+    });
+    const { data: allClasses = [], isLoading: classesLoading } = useQuery({
+        queryKey: ['admin', 'classes'],
+        queryFn: async () => { const r = await classService.getClasses(); return (r.data.data ?? []) as ClassResponse[]; },
+    });
+    const loading = semLoading || classesLoading;
+    const error = semError ? 'Không thể tải dữ liệu' : '';
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
 
     const classesBySemester = useMemo(() => {
         const map = new Map<number, ClassResponse[]>();
@@ -79,7 +89,7 @@ const SemesterManagement: React.FC = () => {
     const DEFAULT_SEMESTERS = (year: string) => [
         { name: `Spring ${year}`, startDate: `${year}-01-01`, endDate: `${year}-04-30` },
         { name: `Summer ${year}`, startDate: `${year}-05-01`, endDate: `${year}-08-31` },
-        { name: `Fall ${year}`,   startDate: `${year}-09-01`, endDate: `${year}-12-31` },
+        { name: `Fall ${year}`, startDate: `${year}-09-01`, endDate: `${year}-12-31` },
     ];
 
     const handleSeed = async () => {
@@ -92,7 +102,7 @@ const SemesterManagement: React.FC = () => {
                 await semesterService.createSemester(s);
             }
             setSeedOpen(false);
-            await load();
+            invalidate();
         } catch (e: any) {
             setSeedError(e?.response?.data?.message ?? 'Một số học kỳ đã tồn tại hoặc có lỗi xảy ra');
         } finally {
@@ -115,24 +125,6 @@ const SemesterManagement: React.FC = () => {
         if (start && end && end <= start) return 'Ngày kết thúc phải sau ngày bắt đầu';
         return '';
     };
-
-    const load = async () => {
-        try {
-            setLoading(true);
-            const [semRes, clsRes] = await Promise.all([
-                semesterService.getAllSemesters(),
-                classService.getClasses(),
-            ]);
-            setSemesters(semRes.data.data ?? []);
-            setAllClasses(clsRes.data.data ?? []);
-        } catch {
-            setError('Không thể tải dữ liệu');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { load(); }, []);
 
     const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, s: SemesterResponse) => {
         setMenuAnchor(e.currentTarget);
@@ -171,7 +163,7 @@ const SemesterManagement: React.FC = () => {
                 toast.success(`Tạo học kỳ ${form.name} thành công!`);
             }
             setDialogOpen(false);
-            await load();
+            invalidate();
         } catch (e: any) {
             setFormError(e?.response?.data?.message ?? 'Có lỗi xảy ra');
         } finally {
@@ -186,7 +178,7 @@ const SemesterManagement: React.FC = () => {
             await semesterService.deleteSemester(deleteTarget.id);
             toast.success(`Đã xóa học kỳ ${deleteTarget.name}`);
             setDeleteTarget(null);
-            await load();
+            invalidate();
         } catch (e: any) {
             toast.error(e?.response?.data?.message ?? 'Không thể xóa học kỳ');
             setDeleteTarget(null);
@@ -236,7 +228,7 @@ const SemesterManagement: React.FC = () => {
                 </Box>
             </Box>
 
-            {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
+            {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
             {/* Search */}
             <Card sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
