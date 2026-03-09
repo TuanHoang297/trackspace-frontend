@@ -151,7 +151,6 @@ const JiraBoard: React.FC = () => {
             return;
         }
 
-        // Skip if same sprint
         if (issue.sprintId === targetSprintId) return;
 
         // Optimistic update — move issue immediately in UI
@@ -174,7 +173,6 @@ const JiraBoard: React.FC = () => {
                 : 'Backlog';
             toast.success(`Đã chuyển ${issue.issueKey} → ${targetName}`);
         } catch {
-            // Revert on failure
             setIssues(prevIssues);
             toast.error(`Không thể chuyển ${issue.issueKey}`);
         }
@@ -262,36 +260,11 @@ const JiraBoard: React.FC = () => {
         [issues]
     );
 
-    // Not connected
-    if (!loading && !connection) {
-        return (
-            <Box sx={{ textAlign: 'center', mt: 8, px: 3 }}>
-                <Box sx={{
-                    width: 80, height: 80, mx: 'auto', mb: 3,
-                    borderRadius: '50%', bgcolor: '#EFF6FF',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                    <SyncIcon sx={{ fontSize: 40, color: '#3B82F6' }} />
-                </Box>
-                <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>Chưa kết nối Jira</Typography>
-                <Typography color="text.secondary" sx={{ mb: 3 }}>
-                    Liên kết Jira Cloud để quản lý Sprints và Issues tại đây
-                </Typography>
-                {canManageConnection ? (
-                    <Button
-                        variant="contained" size="large"
-                        onClick={() => navigate(`/projects/${pid}/jira/connect`)}
-                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, background: 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)' }}
-                    >
-                        Kết nối Jira ngay
-                    </Button>
-                ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        Yêu cầu Team Leader kết nối Jira để bắt đầu
-                    </Typography>
-                )}
-            </Box>
-        );
+    // Not connected — redirect to connect page
+    const isConnected = connection?.connectionStatus === 'CONNECTED';
+    if (!loading && (!connection || !isConnected)) {
+        navigate(`/projects/${pid}/jira/connect`, { replace: true });
+        return null;
     }
 
     const handleSync = async () => {
@@ -312,7 +285,7 @@ const JiraBoard: React.FC = () => {
             await jiraService.disconnect(pid);
             toast.success('Đã ngắt kết nối Jira');
             setDisconnectOpen(false);
-            refresh();
+            navigate(`/projects/${pid}/jira/connect`);
         } catch {
             toast.error('Không thể ngắt kết nối');
         }
@@ -369,8 +342,7 @@ const JiraBoard: React.FC = () => {
                     </Typography>
                     {connection && (
                         <Typography variant="caption" color="text.secondary">
-                            {connection.projectKey} • {connection.totalSprints} sprints • {connection.totalIssues} issues •
-                            Sync: {connection.lastSyncAt ? new Date(connection.lastSyncAt).toLocaleString('vi-VN') : 'chưa'}
+                            {connection.projectKey} • {connection.totalSprints} sprints • {connection.totalIssues} issues
                         </Typography>
                     )}
                 </Box>

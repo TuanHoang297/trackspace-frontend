@@ -23,6 +23,9 @@ const githubService = {
     disconnect: (projectId: number) =>
         axiosClient.delete<ApiResponse<void>>(`${BASE}/disconnect/${projectId}`),
 
+    disconnectSingle: (connectionId: number) =>
+        axiosClient.delete<ApiResponse<void>>(`${BASE}/disconnect/connection/${connectionId}`),
+
     // Sync
     sync: (data: GitHubSyncRequest) =>
         axiosClient.post<ApiResponse<GitHubSyncResponse>>(`${BASE}/sync`, data),

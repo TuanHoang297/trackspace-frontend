@@ -38,6 +38,7 @@ const JiraConnect: React.FC = () => {
 
     const handleConnect = async () => {
         if (!isFormValid) return;
+        let connected = false;
         try {
             setLoading(true);
             setError('');
@@ -51,6 +52,7 @@ const JiraConnect: React.FC = () => {
                 apiToken: form.apiToken,
                 projectKey: form.projectKey.toUpperCase(),
             });
+            connected = true;
 
             // Step 2: Sync data
             await jiraService.sync({ projectId: pid });
@@ -59,9 +61,29 @@ const JiraConnect: React.FC = () => {
             navigate(`/projects/${pid}/jira`);
         } catch (err: unknown) {
             setStep(0);
-            const message = err instanceof Error ? err.message : 'Không thể kết nối Jira — kiểm tra lại credentials';
+
+            // Extract server error message
+            let message = 'Không thể kết nối Jira — kiểm tra lại credentials';
+            if (err && typeof err === 'object' && 'response' in err) {
+                const axiosError = err as { response?: { data?: { message?: string } } };
+                if (axiosError.response?.data?.message) {
+                    message = axiosError.response.data.message;
+                }
+            } else if (err instanceof Error) {
+                message = err.message;
+            }
+
             setError(message);
-            toast.error('Kết nối thất bại');
+            toast.error(message);
+
+            // If connect succeeded but sync failed, cleanup the connection
+            if (connected) {
+                try {
+                    await jiraService.disconnect(pid);
+                } catch {
+                    // Ignore cleanup error
+                }
+            }
         } finally {
             setLoading(false);
         }
