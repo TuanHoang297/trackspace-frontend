@@ -18,7 +18,7 @@ const NAV_ITEMS = [
     { icon: <DashboardIcon sx={{ fontSize: 19 }} />, label: 'Tổng quan', path: '' },
     { icon: <ViewKanbanIcon sx={{ fontSize: 19 }} />, label: 'Jira Board', path: '/jira' },
     { icon: <GitHubIcon sx={{ fontSize: 19 }} />, label: 'GitHub', path: '/github' },
-    { icon: <BarChartIcon sx={{ fontSize: 19 }} />, label: 'Đóng góp', path: '/contribution' },
+    { icon: <BarChartIcon sx={{ fontSize: 19 }} />, label: 'Contribution', path: '/contribution' },
     { icon: <DescriptionIcon sx={{ fontSize: 19 }} />, label: 'SRS Document', path: '/srs' },
     { icon: <SettingsIcon sx={{ fontSize: 19 }} />, label: 'Cài đặt', path: '/settings' },
 ];
