@@ -1,5 +1,5 @@
 import axiosClient from '../axiosClient';
-import type { ApiResponse, UserResponse, CreateUserRequest } from '../types/types';
+import type { ApiResponse, UserResponse, CreateUserRequest, UpdateUserRequest } from '../types/types';
 
 const adminService = {
     getUsers: () =>
@@ -7,6 +7,9 @@ const adminService = {
 
     createUser: (data: CreateUserRequest) =>
         axiosClient.post<ApiResponse<any>>('/admin/users', data),
+
+    updateUser: (userId: number, data: UpdateUserRequest) =>
+        axiosClient.put<ApiResponse<UserResponse>>(`/admin/users/${userId}`, data),
 
     updateUserStatus: (userId: number, active: boolean) =>
         axiosClient.patch<ApiResponse<UserResponse>>(`/admin/users/${userId}/status`, { active }),

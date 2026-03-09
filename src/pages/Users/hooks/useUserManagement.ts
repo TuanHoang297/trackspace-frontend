@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import adminService from '../../../api/services/adminService';
-import type { UserResponse, CreateUserRequest } from '../../../api/types/types';
+import type { UserResponse, CreateUserRequest, UpdateUserRequest } from '../../../api/types/types';
 
 export function useUserManagement() {
     const queryClient = useQueryClient();
@@ -12,6 +12,7 @@ export function useUserManagement() {
 
     // Dialog targets
     const [openCreate, setOpenCreate] = useState(false);
+    const [editTarget, setEditTarget] = useState<UserResponse | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<UserResponse | null>(null);
     const [toggleTarget, setToggleTarget] = useState<UserResponse | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -44,6 +45,13 @@ export function useUserManagement() {
         await adminService.createUser(newUser);
         toast.success('Tạo tài khoản thành công!');
         setOpenCreate(false);
+        invalidate();
+    };
+
+    const handleEditUser = async (userId: number, data: UpdateUserRequest) => {
+        await adminService.updateUser(userId, data);
+        toast.success('Cập nhật thông tin thành công!');
+        setEditTarget(null);
         invalidate();
     };
 
@@ -97,6 +105,7 @@ export function useUserManagement() {
         roleFilter, setRoleFilter, filteredUsers,
         activeCount, inactiveCount, fetchUsers: invalidate,
         openCreate, setOpenCreate, handleCreateUser,
+        editTarget, setEditTarget, handleEditUser,
         deleteTarget, setDeleteTarget, deleting, handleDeleteUser,
         toggleTarget, setToggleTarget, handleToggleStatus,
         menuAnchor, menuUser, handleMenuOpen, handleMenuClose,

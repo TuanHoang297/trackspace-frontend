@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './config/queryClient';
@@ -12,30 +12,28 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout/AppLayout';
 import ProjectLayout from './components/layout/ProjectLayout/ProjectLayout';
 
-// ── Lazy-loaded pages (each becomes a separate chunk) ──
+// ── Eager imports: sidebar pages (instant navigation, no flash) ──
+import AdminDashboard from './pages/Dashboard/AdminDashboard';
+import LecturerDashboard from './pages/Dashboard/LecturerDashboard';
+import UserManagement from './pages/Users/UserManagement';
+import ClassManagement from './pages/Classes/ClassManagement';
+import ClassDetail from './pages/Classes/ClassDetail/index';
+import GroupManagement from './pages/Groups/GroupManagement';
+import SubjectManagement from './pages/Subjects/SubjectManagement';
+import SemesterManagement from './pages/Semesters/SemesterManagement';
+import StudentDashboard from './pages/Student/StudentDashboard';
+import ProjectOverview from './pages/Projects/ProjectOverview';
+import ProjectInfo from './pages/Projects/ProjectInfo';
+import JiraBoard from './pages/Jira/JiraBoard';
+import JiraConnect from './pages/Jira/JiraConnect';
+import GitHubPage from './pages/GitHub/GitHubPage';
+
+// ── Lazy: auth pages (loaded once per session) ──
 const LandingPage = lazy(() => import('./pages/Landing/LandingPage'));
 const LoginPage = lazy(() => import('./pages/Auth/LoginPage'));
 const OAuth2RedirectPage = lazy(() => import('./pages/Auth/OAuth2RedirectPage'));
-const AdminDashboard = lazy(() => import('./pages/Dashboard/AdminDashboard'));
-const LecturerDashboard = lazy(() => import('./pages/Dashboard/LecturerDashboard'));
-const UserManagement = lazy(() => import('./pages/Users/UserManagement'));
-const ClassManagement = lazy(() => import('./pages/Classes/ClassManagement'));
-const ClassDetail = lazy(() => import('./pages/Classes/ClassDetail/index'));
-const GroupManagement = lazy(() => import('./pages/Groups/GroupManagement'));
-const ProjectInfo = lazy(() => import('./pages/Projects/ProjectInfo'));
-const ProjectOverview = lazy(() => import('./pages/Projects/ProjectOverview'));
-const JiraBoard = lazy(() => import('./pages/Jira/JiraBoard'));
-const JiraConnect = lazy(() => import('./pages/Jira/JiraConnect'));
-const GitHubPage = lazy(() => import('./pages/GitHub/GitHubPage'));
-const StudentDashboard = lazy(() => import('./pages/Student/StudentDashboard'));
-const SemesterManagement = lazy(() => import('./pages/Semesters/SemesterManagement'));
-const SubjectManagement = lazy(() => import('./pages/Subjects/SubjectManagement'));
 
-const PageLoader = () => (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress size={32} />
-    </Box>
-);
+const PageLoader = () => null;
 
 
 function App() {

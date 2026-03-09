@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -18,6 +19,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
 import CreateUserDialog from './components/CreateUserDialog';
+import EditUserDialog from './components/EditUserDialog';
 import ImportUsersDialog from './components/ImportUsersDialog';
 import { useUserManagement } from './hooks/useUserManagement';
 
@@ -158,6 +160,10 @@ const UserManagement: React.FC = () => {
             <Menu anchorEl={h.menuAnchor} open={Boolean(h.menuAnchor)} onClose={h.handleMenuClose}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                 PaperProps={{ sx: { borderRadius: 2.5, minWidth: 200, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid', borderColor: 'divider', mt: 0.5 } }}>
+                <MenuItem onClick={() => { if (h.menuUser) h.setEditTarget(h.menuUser); h.handleMenuClose(); }} sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5 }}>
+                    <ListItemIcon><EditIcon fontSize="small" sx={{ color: '#3B82F6' }} /></ListItemIcon>
+                    <ListItemText primary="Chỉnh sửa" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
+                </MenuItem>
                 <MenuItem onClick={() => { if (h.menuUser) h.setToggleTarget(h.menuUser); h.handleMenuClose(); }} disabled={h.menuUser?.role === 'ADMIN'} sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5 }}>
                     <ListItemIcon>{h.menuUser?.active ? <LockIcon fontSize="small" sx={{ color: '#D97706' }} /> : <LockOpenIcon fontSize="small" sx={{ color: '#16A34A' }} />}</ListItemIcon>
                     <ListItemText primary={h.menuUser?.active ? 'Khóa tài khoản' : 'Kích hoạt'} primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
@@ -172,6 +178,7 @@ const UserManagement: React.FC = () => {
 
             {/* Dialogs */}
             <CreateUserDialog open={h.openCreate} onClose={() => h.setOpenCreate(false)} onSubmit={h.handleCreateUser} />
+            <EditUserDialog open={!!h.editTarget} user={h.editTarget} onClose={() => h.setEditTarget(null)} onSubmit={h.handleEditUser} />
             <ImportUsersDialog open={importOpen} onClose={() => setImportOpen(false)} onSuccess={h.fetchUsers} />
 
             <ConfirmDialog open={!!h.toggleTarget} title={h.toggleTarget?.active ? 'Xác nhận khóa tài khoản' : 'Xác nhận kích hoạt'}
