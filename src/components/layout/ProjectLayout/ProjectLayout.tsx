@@ -9,7 +9,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
-import ProjectSidebar, { SIDEBAR_WIDTH } from './ProjectSidebar';
+import ProjectSidebar, { SIDEBAR_EXPANDED, SIDEBAR_COLLAPSED } from './ProjectSidebar';
 import projectService from '../../../api/services/projectService';
 import type { ProjectResponse } from '../../../types/project.types';
 import { getUser, logout } from '../../../utils/auth';
@@ -20,9 +20,11 @@ const ProjectLayout: React.FC = () => {
     const navigate = useNavigate();
     const pid = Number(projectId);
 
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [pwOpen, setPwOpen] = useState(false);
     const currentUser = getUser();
+    const drawerWidth = sidebarOpen ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
     const initials = currentUser?.fullName
         ?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
@@ -41,12 +43,13 @@ const ProjectLayout: React.FC = () => {
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#F8FAFC', overflow: 'hidden' }}>
-            <ProjectSidebar />
+            <ProjectSidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-            <Box sx={{ flex: 1, ml: `${SIDEBAR_WIDTH}px`, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+            <Box sx={{ flex: 1, ml: `${drawerWidth}px`, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', transition: 'margin-left 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
                 {/* Top Header Bar */}
                 <Box sx={{
-                    px: 3, py: 1.5,
+                    px: 3, py: 0,
+                    minHeight: 64,
                     bgcolor: 'rgba(248,250,252,0.85)',
                     backdropFilter: 'blur(16px)',
                     borderBottom: '1px solid #E2E8F0',

@@ -39,8 +39,8 @@ const githubService = {
         axiosClient.get<ApiResponse<GitHubStatsResponse[]>>(`${BASE}/stats/${projectId}`, { params }),
 
     // Branches
-    getBranches: (projectId: number) =>
-        axiosClient.get<ApiResponse<GitHubBranchResponse[]>>(`${BASE}/branches/${projectId}`),
+    getBranches: (projectId: number, params?: { connectionId?: number }) =>
+        axiosClient.get<ApiResponse<GitHubBranchResponse[]>>(`${BASE}/branches/${projectId}`, { params }),
 
     // All connections (multi-repo)
     getConnections: (projectId: number) =>

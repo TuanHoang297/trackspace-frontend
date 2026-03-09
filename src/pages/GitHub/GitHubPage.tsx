@@ -158,7 +158,7 @@ const GitHubPage: React.FC = () => {
         setLoadingData(true);
         try {
             const params = connId ? { connectionId: connId } : undefined;
-            const [c, s, b] = await Promise.all([githubService.getCommits(pid, params), githubService.getStats(pid, params), githubService.getBranches(pid)]);
+            const [c, s, b] = await Promise.all([githubService.getCommits(pid, params), githubService.getStats(pid, params), githubService.getBranches(pid, params)]);
             setCommits(c.data.data || []); setStats(s.data.data || []); setBranches(b.data.data || []);
         } catch { /* silent */ } finally { setLoadingData(false); }
     }, [pid]);
