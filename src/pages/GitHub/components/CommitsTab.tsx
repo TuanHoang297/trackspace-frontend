@@ -24,9 +24,11 @@ const CommitsTab: React.FC<Props> = ({ commits, filterUser, onFilterUserChange }
         return name.substring(0, 2).toUpperCase();
     };
 
+    const getDisplayName = (c: GitHubCommitResponse) => c.githubLogin || c.authorName;
+
     const colorMap = useMemo(() => {
         const map: Record<string, string> = {};
-        const uniqueAuthors = [...new Set(commits.map(c => c.authorName))];
+        const uniqueAuthors = [...new Set(commits.map(c => getDisplayName(c)))];
         uniqueAuthors.forEach((name, i) => { map[name] = AVATAR_COLORS[i % AVATAR_COLORS.length]; });
         return map;
     }, [commits]);
@@ -36,7 +38,7 @@ const CommitsTab: React.FC<Props> = ({ commits, filterUser, onFilterUserChange }
 
         // User filter
         if (filterUser) {
-            result = result.filter(c => c.authorName === filterUser);
+            result = result.filter(c => getDisplayName(c) === filterUser);
         }
 
         // Date filter
@@ -77,7 +79,7 @@ const CommitsTab: React.FC<Props> = ({ commits, filterUser, onFilterUserChange }
         return `${days} days ago`;
     };
 
-    const uniqueAuthors = [...new Set(commits.map(c => c.authorName))];
+    const uniqueAuthors = [...new Set(commits.map(c => getDisplayName(c)))];
 
     return (
         <Box>
@@ -149,7 +151,7 @@ const CommitsTab: React.FC<Props> = ({ commits, filterUser, onFilterUserChange }
                             overflow: 'hidden',
                         }}>
                             {dateCommits.map((c, idx) => {
-                                const color = colorMap[c.authorName] || '#94A3B8';
+                                const color = colorMap[getDisplayName(c)] || '#94A3B8';
                                 return (
                                     <Box key={c.commitId} sx={{
                                         px: 2.5, py: 1.75,
@@ -165,7 +167,7 @@ const CommitsTab: React.FC<Props> = ({ commits, filterUser, onFilterUserChange }
                                             fontWeight: 700, fontSize: 12,
                                             fontFamily: "'Inter', sans-serif",
                                         }}>
-                                            {getInitials(c.authorName)}
+                                            {getInitials(getDisplayName(c))}
                                         </Avatar>
 
                                         {/* Message + Author */}
@@ -179,7 +181,7 @@ const CommitsTab: React.FC<Props> = ({ commits, filterUser, onFilterUserChange }
                                             </Typography>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <Typography fontSize="0.72rem" fontWeight={500} sx={{ color }}>
-                                                    {c.authorName}
+                                                    {getDisplayName(c)}
                                                 </Typography>
                                                 <Typography fontSize="0.68rem" color="text.disabled">
                                                     committed {relativeTime(c.commitDate)}

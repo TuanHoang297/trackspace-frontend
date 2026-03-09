@@ -283,7 +283,7 @@ const GitHubPage: React.FC = () => {
     }, [commits, branchFilter, authorFilter]);
 
     // Only show merged author names (from stats) in the filter — value is githubLogin
-    const mergedAuthors = useMemo(() => stats.map(s => ({ label: s.userName, value: s.githubLogin })), [stats]);
+    const mergedAuthors = useMemo(() => stats.map(s => ({ label: s.githubLogin || s.userName, value: s.githubLogin })), [stats]);
     const filteredBranches = useMemo(() => branchSearch ? branches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase())) : branches, [branches, branchSearch]);
     // Unique branch names from commits (for filter)
     const commitBranches = useMemo(() => [...new Set(commits.map(c => c.branchName).filter(Boolean))], [commits]);
@@ -557,10 +557,10 @@ const GitHubPage: React.FC = () => {
                                                     {/* Gradient header */}
                                                     <Box sx={{ background: theme.bg, px: 1.5, py: 1.2, display: 'flex', alignItems: 'center', gap: 1 }}>
                                                         <Avatar sx={{ width: 32, height: 32, bgcolor: 'rgba(255,255,255,0.25)', color: '#fff', fontWeight: 800, fontSize: 13, border: '2px solid rgba(255,255,255,0.3)' }}>
-                                                            {getInitials(s.userName)}
+                                                            {getInitials(s.githubLogin || s.userName)}
                                                         </Avatar>
                                                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                            <Typography fontWeight={800} fontSize="0.78rem" color="#fff" noWrap>{s.userName}</Typography>
+                                                            <Typography fontWeight={800} fontSize="0.78rem" color="#fff" noWrap>{s.githubLogin || s.userName}</Typography>
                                                         </Box>
                                                         <Typography fontSize="1.1rem">{RANK_EMOJI[i] || `#${i + 1}`}</Typography>
                                                     </Box>
@@ -623,7 +623,7 @@ const GitHubPage: React.FC = () => {
                                         <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <PeopleIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
                                             <Typography fontSize="0.8rem" color="#1E40AF" fontWeight={600}>
-                                                Showing commits by <strong>{stats.find(s => s.githubLogin === authorFilter)?.userName || authorFilter}</strong>
+                                                Showing commits by <strong>{stats.find(s => s.githubLogin === authorFilter)?.githubLogin || authorFilter}</strong>
                                             </Typography>
                                             <Chip label="✕ Clear" size="small" onClick={() => setAuthorFilter('all')}
                                                 sx={{ ml: 'auto', height: 22, fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', bgcolor: '#DBEAFE', color: '#2563EB' }} />
@@ -696,7 +696,7 @@ const GitHubPage: React.FC = () => {
                             )}
                         </>
                     )}
-                </Box>
+                </Box >
 
                 {/* Disconnect Confirm Dialog */}
                 <ConfirmDialog
