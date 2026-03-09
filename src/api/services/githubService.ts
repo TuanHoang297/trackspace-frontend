@@ -42,6 +42,12 @@ const githubService = {
     getBranches: (projectId: number, params?: { connectionId?: number }) =>
         axiosClient.get<ApiResponse<GitHubBranchResponse[]>>(`${BASE}/branches/${projectId}`, { params }),
 
+    // Commits by branch (real-time from GitHub API)
+    getCommitsByBranch: (projectId: number, connectionId: number, branch: string) =>
+        axiosClient.get<ApiResponse<GitHubCommitResponse[]>>(`${BASE}/commits/${projectId}/by-branch`, {
+            params: { connectionId, branch },
+        }),
+
     // All connections (multi-repo)
     getConnections: (projectId: number) =>
         axiosClient.get<ApiResponse<GitHubConnectionResponse[]>>(`${BASE}/connections/${projectId}`),

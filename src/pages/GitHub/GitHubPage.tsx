@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -137,6 +137,8 @@ const GitHubPage: React.FC = () => {
     const [authorFilter, setAuthorFilter] = useState<string>('all');
     const [branchSearch, setBranchSearch] = useState('');
     const [disconnectOpen, setDisconnectOpen] = useState(false);
+    const [branchCommits, setBranchCommits] = useState<GitHubCommitResponse[] | null>(null);
+    const [branchLoading, setBranchLoading] = useState(false);
     const initDone = useRef(false);
 
     // ── Connections cached by React Query ──
@@ -159,7 +161,11 @@ const GitHubPage: React.FC = () => {
         try {
             const params = connId ? { connectionId: connId } : undefined;
             const [c, s, b] = await Promise.all([githubService.getCommits(pid, params), githubService.getStats(pid, params), githubService.getBranches(pid, params)]);
-            setCommits(c.data.data || []); setStats(s.data.data || []); setBranches(b.data.data || []);
+            // Deduplicate commits by SHA (DB may have duplicates from overlapping syncs)
+            const raw = c.data.data || [];
+            const seen = new Set<string>();
+            const unique = raw.filter(cm => { if (seen.has(cm.commitSha)) return false; seen.add(cm.commitSha); return true; });
+            setCommits(unique); setStats(s.data.data || []); setBranches(b.data.data || []);
         } catch { /* silent */ } finally { setLoadingData(false); }
     }, [pid]);
 
@@ -261,6 +267,23 @@ const GitHubPage: React.FC = () => {
     };
     const getInitials = (n: string) => { const p = n.trim().split(' '); return p.length >= 2 ? (p[0][0] + p[p.length - 1][0]).toUpperCase() : n.substring(0, 2).toUpperCase(); };
 
+    // Fetch commits from GitHub API when branch filter changes
+    useEffect(() => {
+        if (branchFilter === 'all') {
+            setBranchCommits(null); // Use default DB commits
+            return;
+        }
+        const conn = selectedRepo ? getConn(selectedRepo) : null;
+        if (!conn) return;
+        let cancelled = false;
+        setBranchLoading(true);
+        githubService.getCommitsByBranch(pid, conn.connectionId, branchFilter)
+            .then(r => { if (!cancelled) setBranchCommits(r.data.data || []); })
+            .catch(() => { if (!cancelled) setBranchCommits([]); })
+            .finally(() => { if (!cancelled) setBranchLoading(false); });
+        return () => { cancelled = true; };
+    }, [branchFilter, pid, selectedRepo, connections]);
+
     // Commits per merged author — group by githubLogin (100% reliable)
     const commitsByAuthor = useMemo(() => {
         const map: Record<string, GitHubCommitResponse[]> = {};
@@ -272,15 +295,15 @@ const GitHubPage: React.FC = () => {
         return map;
     }, [commits, stats]);
 
-    // Filtered commits — match by githubLogin
+    // Filtered commits — use branchCommits (from API) when branch is selected, otherwise DB commits
     const filteredCommits = useMemo(() => {
-        let r = commits;
-        if (branchFilter !== 'all') r = r.filter(c => c.branchName === branchFilter);
+        const source = branchFilter !== 'all' && branchCommits !== null ? branchCommits : commits;
+        let r = source;
         if (authorFilter !== 'all') {
             r = r.filter(c => c.githubLogin?.toLowerCase() === authorFilter.toLowerCase());
         }
         return r;
-    }, [commits, branchFilter, authorFilter]);
+    }, [commits, branchCommits, branchFilter, authorFilter]);
 
     // Only show merged author names (from stats) in the filter — value is githubLogin
     const mergedAuthors = useMemo(() => stats.map(s => ({ label: s.githubLogin || s.userName, value: s.githubLogin })), [stats]);
@@ -630,7 +653,9 @@ const GitHubPage: React.FC = () => {
                                         </Box>
                                     )}
 
-                                    {filteredCommits.length === 0 ? (
+                                    {branchLoading ? (
+                                        <Box sx={{ textAlign: 'center', py: 8 }}><CircularProgress size={32} /><Typography color="text.secondary" sx={{ mt: 2 }}>Loading commits for branch <strong>{branchFilter}</strong>...</Typography></Box>
+                                    ) : filteredCommits.length === 0 ? (
                                         <Box sx={{ textAlign: 'center', py: 8 }}><CommitIcon sx={{ fontSize: 56, color: '#CBD5E1', mb: 1 }} /><Typography color="text.secondary">No commits found for these filters.</Typography></Box>
                                     ) : (
                                         <Box sx={{ bgcolor: '#fff', border: '1px solid #E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
