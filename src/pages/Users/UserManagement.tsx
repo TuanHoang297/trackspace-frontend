@@ -52,7 +52,7 @@ const UserManagement: React.FC = () => {
                         </Box>
                         <Typography variant="body2" sx={{ opacity: 0.85 }}>Quản lý tất cả tài khoản người dùng trong hệ thống</Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                         <Button variant="contained" startIcon={<FileUploadIcon />} onClick={() => setImportOpen(true)}
                             sx={{ borderRadius: 2.5, py: 1.2, px: 3, textTransform: 'none', fontWeight: 600, bgcolor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } }}>
                             Import Excel
@@ -81,7 +81,7 @@ const UserManagement: React.FC = () => {
             {/* Filters */}
             <Card sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
                 <TextField size="small" placeholder="Tìm kiếm theo tên hoặc email..." value={h.searchTerm} onChange={(e) => h.setSearchTerm(e.target.value)}
-                    sx={{ minWidth: 300, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
+                    sx={{ minWidth: { xs: '100%', sm: 300 }, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#94A3B8' }} /></InputAdornment> }} />
                 <FormControl size="small" sx={{ minWidth: 160 }}>
                     <InputLabel>Vai trò</InputLabel>

@@ -45,10 +45,15 @@ const ProjectLayout: React.FC = () => {
         <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#F8FAFC', overflow: 'hidden' }}>
             <ProjectSidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-            <Box sx={{ flex: 1, ml: `${drawerWidth}px`, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', transition: 'margin-left 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
+            <Box sx={{
+                flex: 1,
+                ml: { xs: `${SIDEBAR_COLLAPSED}px`, md: `${drawerWidth}px` },
+                display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
+                transition: 'margin-left 0.22s cubic-bezier(0.4,0,0.2,1)',
+            }}>
                 {/* Top Header Bar */}
                 <Box sx={{
-                    px: 3, py: 0,
+                    px: { xs: 1.5, sm: 2, md: 3 }, py: 0,
                     minHeight: 64,
                     bgcolor: 'rgba(248,250,252,0.85)',
                     backdropFilter: 'blur(16px)',

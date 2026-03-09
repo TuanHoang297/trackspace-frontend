@@ -42,7 +42,7 @@ const StudentDashboard: React.FC = () => {
     }
 
     return (
-        <Box sx={{ p: 4, maxWidth: 900, mx: 'auto' }}>
+        <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 900, mx: 'auto' }}>
             {/* Header */}
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" fontWeight={800} gutterBottom>

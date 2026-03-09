@@ -177,7 +177,7 @@ const SubjectManagement: React.FC = () => {
             <Card sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
                 <TextField size="small" placeholder="Tìm kiếm theo mã hoặc tên môn học..." value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    sx={{ minWidth: 320, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
+                    sx={{ minWidth: { xs: '100%', sm: 320 }, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#94A3B8' }} /></InputAdornment> }} />
                 <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>{filtered.length} kết quả</Typography>
             </Card>

@@ -70,6 +70,8 @@ const DroppableSprint: React.FC<{
             ref={setNodeRef}
             sx={{
                 flex: 1, minHeight: 0,
+                display: 'flex', flexDirection: 'column',
+                overflow: 'hidden',
                 transition: 'background-color 0.2s',
                 bgcolor: isOver ? 'rgba(59,130,246,0.06)' : 'transparent',
                 borderRadius: 2,
@@ -335,11 +337,11 @@ const JiraBoard: React.FC = () => {
     };
 
     return (
-        <Box sx={{ p: { xs: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 2 }}>
                 <Box>
-                    <Typography variant="h5" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h5" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.5rem' } }}>
                         <Box component="span" sx={{
                             width: 8, height: 8, borderRadius: '50%',
                             bgcolor: connection?.connectionStatus === 'CONNECTED' ? '#36B37E' : '#FF5630',
@@ -353,16 +355,16 @@ const JiraBoard: React.FC = () => {
                         </Typography>
                     )}
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     {canCreateIssue && (
                         <>
                             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}
-                                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+                                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, px: { xs: 1.5, sm: 2 } }}>
                                 Tạo Issue
                             </Button>
                             <Button variant="outlined" startIcon={<AddIcon />}
                                 onClick={() => { setEditingSprint(null); setSprintDialogOpen(true); }}
-                                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+                                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, px: { xs: 1.5, sm: 2 } }}>
                                 Tạo Sprint
                             </Button>
                         </>
@@ -408,7 +410,7 @@ const JiraBoard: React.FC = () => {
                 >
                     <Box sx={{
                         display: 'flex',
-                        gap: 2,
+                        gap: { xs: 1.5, sm: 2 },
                         overflowX: 'auto',
                         overflowY: 'hidden',
                         flex: 1,
@@ -429,8 +431,8 @@ const JiraBoard: React.FC = () => {
                                     key={sprint.sprintId}
                                     elevation={0}
                                     sx={{
-                                        minWidth: 300,
-                                        maxWidth: 320,
+                                        minWidth: { xs: 260, sm: 280, md: 300 },
+                                        maxWidth: { xs: 280, sm: 300, md: 320 },
                                         height: '100%',
                                         borderRadius: 3,
                                         border: '2px solid',
@@ -439,6 +441,7 @@ const JiraBoard: React.FC = () => {
                                         flexShrink: 0,
                                         display: 'flex',
                                         flexDirection: 'column',
+                                        overflow: 'hidden',
                                     }}
                                 >
                                     {/* Sprint Header */}
@@ -514,7 +517,7 @@ const JiraBoard: React.FC = () => {
 
                                     {/* Issues List — Droppable */}
                                     <DroppableSprint sprintId={sprint.sprintId}>
-                                        <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 60 }}>
+                                        <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 0 }}>
                                             {sprintIssues.length === 0 ? (
                                                 <Typography variant="caption" color="text.disabled" sx={{
                                                     display: 'block', textAlign: 'center', py: 4,
@@ -562,12 +565,13 @@ const JiraBoard: React.FC = () => {
                             <Paper
                                 elevation={0}
                                 sx={{
-                                    minWidth: 300, maxWidth: 320,
+                                    minWidth: { xs: 260, sm: 280, md: 300 }, maxWidth: { xs: 280, sm: 300, md: 320 },
                                     height: '100%',
                                     borderRadius: 3, border: '2px dashed', borderColor: 'divider',
                                     bgcolor: '#FAFBFC',
                                     flexShrink: 0,
                                     display: 'flex', flexDirection: 'column',
+                                    overflow: 'hidden',
                                 }}
                             >
                                 <Box sx={{ p: 2, pb: 1 }}>
