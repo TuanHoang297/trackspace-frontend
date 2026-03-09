@@ -5,7 +5,7 @@ import {
     Tooltip, IconButton, LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import SyncIcon from '@mui/icons-material/Sync';
+
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EditIcon from '@mui/icons-material/Edit';
@@ -95,12 +95,11 @@ const JiraBoard: React.FC = () => {
     const role = user?.role || '';
     const isLeader = role === 'TEAMLEADER';
     const isMember = role === 'TEAMMEMBER';
-    const canManageConnection = isLeader;           // Only Team Leader can Connect/Sync/Disconnect
-    const canCreateIssue = isLeader || isMember;    // Only team members can create issues/sprints
-    const canUpdateStatus = isLeader || isMember;   // Only team members can update status
+    const canManageConnection = isLeader;                // Only Team Leader can Disconnect
+    const canCreateIssue = isLeader || isMember;         // Only team members can create issues/sprints
+    const canUpdateStatus = isLeader || isMember;        // Only team members can update status
 
     // State
-    const [syncing, setSyncing] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
     const [detailIssue, setDetailIssue] = useState<JiraIssueResponse | null>(null);
     const [members, setMembers] = useState<Array<{ userId: number; fullName: string }>>([]);
@@ -269,18 +268,7 @@ const JiraBoard: React.FC = () => {
         return null;
     }
 
-    const handleSync = async () => {
-        try {
-            setSyncing(true);
-            await jiraService.sync({ projectId: pid });
-            toast.success('Đồng bộ hoàn tất!');
-            refresh();
-        } catch {
-            toast.error('Đồng bộ thất bại');
-        } finally {
-            setSyncing(false);
-        }
-    };
+
 
     const handleDisconnect = async () => {
         try {
@@ -370,23 +358,12 @@ const JiraBoard: React.FC = () => {
                         </>
                     )}
                     {canManageConnection && (
-                        <>
-                            <Tooltip title="Đồng bộ từ Jira">
-                                <IconButton onClick={handleSync} disabled={syncing}
-                                    sx={{ bgcolor: 'action.hover', borderRadius: 2 }}>
-                                    <SyncIcon sx={{
-                                        animation: syncing ? 'spin 1s linear infinite' : 'none',
-                                        '@keyframes spin': { from: { transform: 'rotate(0)' }, to: { transform: 'rotate(360deg)' } },
-                                    }} />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Ngắt kết nối Jira">
-                                <IconButton onClick={() => setDisconnectOpen(true)} color="error"
-                                    sx={{ bgcolor: 'action.hover', borderRadius: 2 }}>
-                                    <LinkOffIcon />
-                                </IconButton>
-                            </Tooltip>
-                        </>
+                        <Tooltip title="Ngắt kết nối Jira">
+                            <IconButton onClick={() => setDisconnectOpen(true)} color="error"
+                                sx={{ bgcolor: 'action.hover', borderRadius: 2 }}>
+                                <LinkOffIcon />
+                            </IconButton>
+                        </Tooltip>
                     )}
                 </Box>
             </Box>
