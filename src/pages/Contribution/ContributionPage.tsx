@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
     Box, Typography, Paper, Avatar, Chip, Tooltip,
     Button, Slider, IconButton, Collapse, Skeleton,
@@ -17,8 +17,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import StarIcon from '@mui/icons-material/Star';
-import contributionService from '../../api/services/contributionService';
-import type { DashboardResponse, HeatmapResponse } from '../../types/contribution.types';
+import useContribution, { useHeatmap } from '../../hooks/useContribution';
+import type { HeatmapResponse } from '../../types/contribution.types';
 
 /* ═══════════ Design Tokens ═══════════ */
 const GRADIENTS = {
@@ -135,60 +135,22 @@ const HeatmapCalendar: React.FC<{ data: HeatmapResponse | null; loading: boolean
     );
 };
 
+/* ═══════════ Member Heatmap (uses React Query per-user) ═══════════ */
+const MemberHeatmap: React.FC<{ userId: number; projectId: number; expanded: boolean }> = ({ userId, projectId, expanded }) => {
+    const { data, isLoading } = useHeatmap(userId, projectId, expanded);
+    return <HeatmapCalendar data={data ?? null} loading={isLoading} />;
+};
+
 /* ═══════════ Main Page ═══════════ */
 const ContributionPage: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const pid = Number(projectId);
-    const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [recalculating, setRecalculating] = useState(false);
+    const { dashboard, loading, recalculating, recalculate, expandedUsers, toggleUser } = useContribution(pid);
     const [feWeight, setFeWeight] = useState(50);
     const [showConfig, setShowConfig] = useState(false);
-    const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set());
-    const [heatmapCache, setHeatmapCache] = useState<Map<number, HeatmapResponse | null>>(new Map());
-    const [heatmapLoading, setHeatmapLoading] = useState<Set<number>>(new Set());
-
-    const fetchDashboard = useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await contributionService.getDashboard(pid);
-            setDashboard(res.data.data);
-        } catch (e) {
-            console.error('Failed to load dashboard', e);
-            setDashboard(null);
-        } finally { setLoading(false); }
-    }, [pid]);
-
-    useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
     const handleRecalculate = async () => {
-        setRecalculating(true);
-        try {
-            await contributionService.recalculate(pid, feWeight / 100, 1 - feWeight / 100);
-            await fetchDashboard();
-        } finally { setRecalculating(false); }
-    };
-
-    const handleUserClick = (userId: number) => {
-        setExpandedUsers(prev => {
-            const next = new Set(prev);
-            if (next.has(userId)) { next.delete(userId); } else { next.add(userId); }
-            return next;
-        });
-        // Fetch heatmap in background if not cached
-        if (!heatmapCache.has(userId) && !heatmapLoading.has(userId)) {
-            setHeatmapLoading(prev => new Set(prev).add(userId));
-            contributionService.getHeatmap(userId, pid)
-                .then(res => {
-                    setHeatmapCache(prev => new Map(prev).set(userId, res.data.data));
-                })
-                .catch(() => {
-                    setHeatmapCache(prev => new Map(prev).set(userId, null));
-                })
-                .finally(() => {
-                    setHeatmapLoading(prev => { const n = new Set(prev); n.delete(userId); return n; });
-                });
-        }
+        await recalculate(feWeight / 100);
     };
 
     /* ─── Loading ─── */
@@ -388,12 +350,13 @@ const ContributionPage: React.FC = () => {
                     const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
                     const domain = DOMAIN_META[m.domain] || DOMAIN_META.UNKNOWN;
                     const isExpanded = expandedUsers.has(m.userId);
+                    const handleUserClick = () => toggleUser(m.userId);
                     const isTop3 = i < 3;
                     const podiumGradient = i === 0 ? GRADIENTS.gold : i === 1 ? GRADIENTS.silver : GRADIENTS.bronze;
 
                     return (
                         <Paper key={m.userId} elevation={0}
-                            onClick={() => handleUserClick(m.userId)}
+                            onClick={handleUserClick}
                             sx={{
                                 borderRadius: 3, cursor: 'pointer', overflow: 'hidden',
                                 border: '1px solid', borderColor: isExpanded ? 'rgba(59,130,246,0.4)' : 'divider',
@@ -612,7 +575,7 @@ const ContributionPage: React.FC = () => {
                                             </Paper>
                                         ))}
                                     </Box>
-                                    <HeatmapCalendar data={heatmapCache.get(m.userId) ?? null} loading={heatmapLoading.has(m.userId)} />
+                                    <MemberHeatmap userId={m.userId} projectId={pid} expanded={isExpanded} />
                                 </Box>
                             </Collapse>
                         </Paper>
