@@ -17,7 +17,7 @@ interface Props {
 const CreateUserDialog: React.FC<Props> = ({ open, onClose, onSubmit }) => {
     const [creating, setCreating] = useState(false);
     const [form, setForm] = useState<CreateUserRequest>({
-        email: '', password: '', fullName: '', role: 'LECTURER',
+        email: '', password: '', fullName: '', role: 'LECTURER', studentCode: '',
     });
 
     const handleSubmit = async () => {
@@ -28,7 +28,7 @@ const CreateUserDialog: React.FC<Props> = ({ open, onClose, onSubmit }) => {
         setCreating(true);
         try {
             await onSubmit(form);
-            setForm({ email: '', password: '', fullName: '', role: 'LECTURER' });
+            setForm({ email: '', password: '', fullName: '', role: 'LECTURER', studentCode: '' });
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
                 .response?.data?.message || 'Tạo tài khoản thất bại';
@@ -76,6 +76,12 @@ const CreateUserDialog: React.FC<Props> = ({ open, onClose, onSubmit }) => {
                             <MenuItem value="TEAMMEMBER">Thành viên</MenuItem>
                         </Select>
                     </FormControl>
+                    {(form.role === 'TEAMLEADER' || form.role === 'TEAMMEMBER') && (
+                        <TextField label="Mã sinh viên" fullWidth value={form.studentCode || ''}
+                            onChange={(e) => update('studentCode', e.target.value)}
+                            placeholder="VD: SE123456"
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                    )}
                 </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>

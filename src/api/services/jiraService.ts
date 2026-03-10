@@ -56,8 +56,8 @@ const jiraService = {
     updateStatus: (issueId: number, status: string) =>
         axiosClient.put<ApiResponse<JiraIssueResponse>>(`${BASE}/issues/${issueId}/status`, { status }),
 
-    assignIssue: (issueId: number, jiraAccountId: string, displayName: string) =>
-        axiosClient.put<ApiResponse<JiraIssueResponse>>(`${BASE}/issues/${issueId}/assign`, { jiraAccountId, displayName }),
+    assignIssue: (issueId: number, jiraAccountId: string, displayName: string, userId?: number) =>
+        axiosClient.put<ApiResponse<JiraIssueResponse>>(`${BASE}/issues/${issueId}/assign`, { jiraAccountId, displayName, userId }),
 
     getAssignableUsers: (projectId: number) =>
         axiosClient.get<ApiResponse<Array<{ accountId: string; displayName: string; emailAddress: string }>>>(`${BASE}/projects/${projectId}/assignable-users`),

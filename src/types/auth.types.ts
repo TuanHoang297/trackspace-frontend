@@ -11,6 +11,7 @@ export interface StoredUser {
     email: string;
     fullName: string;
     role: string;
+    githubLogin?: string;
 }
 
 export interface UserResponse {
@@ -29,6 +30,7 @@ export interface CreateUserRequest {
     password: string;
     fullName: string;
     role: 'LECTURER' | 'TEAMLEADER' | 'TEAMMEMBER';
+    studentCode?: string;
 }
 
 export interface UpdateUserRequest {
