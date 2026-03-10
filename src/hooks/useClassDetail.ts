@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classService from '../api/services/classService';
 import groupService from '../api/services/groupService';
 import projectService from '../api/services/projectService';
@@ -7,37 +7,30 @@ import type { GroupResponse } from '../types/group.types';
 import type { ProjectResponse } from '../types/project.types';
 
 export const useClassDetail = (classId: number) => {
-    const [students, setStudents] = useState<StudentInClassResponse[]>([]);
-    const [groups, setGroups] = useState<GroupResponse[]>([]);
-    const [projects, setProjects] = useState<ProjectResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const queryClient = useQueryClient();
 
-    const fetchData = useCallback(async (showLoading: boolean) => {
-        if (!classId) return;
-        try {
-            if (showLoading) setLoading(true);
-            const [studRes, grpRes, prjRes] = await Promise.all([
-                classService.getStudents(classId),
-                groupService.getGroups(classId),
-                projectService.getProjectsByClass(classId),
-            ]);
-            setStudents(studRes.data.data);
-            setGroups(grpRes.data.data);
-            setProjects(prjRes.data.data);
-            setError('');
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Không thể tải dữ liệu lớp');
-        } finally {
-            setLoading(false);
-        }
-    }, [classId]);
+    const { data: students = [], isLoading: studentsLoading } = useQuery({
+        queryKey: ['class', classId, 'students'],
+        queryFn: async () => { const r = await classService.getStudents(classId); return r.data.data as StudentInClassResponse[]; },
+        enabled: !!classId,
+    });
 
-    // Initial load — show skeleton
-    useEffect(() => { fetchData(true); }, [fetchData]);
+    const { data: groups = [], isLoading: groupsLoading } = useQuery({
+        queryKey: ['class', classId, 'groups'],
+        queryFn: async () => { const r = await groupService.getGroups(classId); return r.data.data as GroupResponse[]; },
+        enabled: !!classId,
+    });
 
-    // Refresh after actions — silent, no skeleton flash
-    const refresh = useCallback(() => fetchData(false), [fetchData]);
+    const { data: projects = [], isLoading: projectsLoading } = useQuery({
+        queryKey: ['class', classId, 'projects'],
+        queryFn: async () => { const r = await projectService.getProjectsByClass(classId); return r.data.data as ProjectResponse[]; },
+        enabled: !!classId,
+    });
+
+    const loading = studentsLoading || groupsLoading || projectsLoading;
+    const error = '';
+
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['class', classId] });
 
     return { students, groups, projects, loading, error, refresh };
 };

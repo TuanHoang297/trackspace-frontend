@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import jiraService from '../api/services/jiraService';
 import type { JiraConnectionResponse, JiraSprintResponse, JiraIssueResponse } from '../types/jira.types';
 
@@ -11,75 +12,114 @@ interface UseJiraReturn {
     syncing: boolean;
     error: string | null;
     refresh: () => void;
+    loadLocal: () => Promise<void>;
 }
 
 export default function useJira(projectId: number): UseJiraReturn {
-    const [connection, setConnection] = useState<JiraConnectionResponse | null>(null);
-    const [sprints, setSprints] = useState<JiraSprintResponse[]>([]);
-    const [issues, setIssues] = useState<JiraIssueResponse[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [syncing, setSyncing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [issuesOverride, setIssuesOverride] = useState<JiraIssueResponse[] | null>(null);
     const hasSynced = useRef(false);
 
-    // Load local data from DB (fast)
-    const loadLocal = useCallback(async () => {
-        if (!projectId) return;
-        try {
-            const connRes = await jiraService.getStatus(projectId);
-            const conn = connRes.data.data;
-            setConnection(conn);
-
-            if (conn?.connectionStatus === 'CONNECTED') {
-                const [sprintRes, issueRes] = await Promise.all([
-                    jiraService.getSprints(projectId),
-                    jiraService.getIssues(projectId),
-                ]);
-                setSprints(sprintRes.data.data);
-                setIssues(issueRes.data.data);
+    // ── Phase 1: Load local data FAST from DB (cached by React Query) ──
+    const { data: connection = null, isLoading: connLoading } = useQuery({
+        queryKey: ['jira', 'connection', projectId],
+        queryFn: async () => {
+            try {
+                const res = await jiraService.getStatus(projectId);
+                return res.data.data as JiraConnectionResponse;
+            } catch {
+                return null;
             }
-        } catch {
-            setConnection(null);
-            setSprints([]);
-            setIssues([]);
-        }
-    }, [projectId]);
+        },
+        enabled: !!projectId,
+    });
 
-    // Sync from Jira API then reload local data
-    const syncFromJira = useCallback(async () => {
-        if (!projectId) return;
+    const isConnected = connection?.connectionStatus === 'CONNECTED';
+
+    const { data: sprints = [], isLoading: sprintsLoading } = useQuery({
+        queryKey: ['jira', 'sprints', projectId],
+        queryFn: async () => {
+            const res = await jiraService.getSprints(projectId);
+            return res.data.data as JiraSprintResponse[];
+        },
+        enabled: !!projectId && isConnected,
+    });
+
+    const { data: fetchedIssues = [], isLoading: issuesLoading } = useQuery({
+        queryKey: ['jira', 'issues', projectId],
+        queryFn: async () => {
+            const res = await jiraService.getIssues(projectId);
+            return res.data.data as JiraIssueResponse[];
+        },
+        enabled: !!projectId && isConnected,
+    });
+
+    // Allow optimistic updates via setIssues while keeping React Query as source of truth
+    const issues = issuesOverride ?? fetchedIssues;
+    const setIssues: React.Dispatch<React.SetStateAction<JiraIssueResponse[]>> = useCallback((action) => {
+        setIssuesOverride(prev => {
+            const current = prev ?? fetchedIssues;
+            return typeof action === 'function' ? action(current) : action;
+        });
+    }, [fetchedIssues]);
+
+    // ── Phase 2: Background sync from Jira API (runs AFTER UI is already showing) ──
+    useQuery({
+        queryKey: ['jira', 'backgroundSync', projectId],
+        queryFn: async () => {
+            if (!hasSynced.current && isConnected) {
+                hasSynced.current = true;
+                setSyncing(true);
+                try {
+                    await jiraService.sync({ projectId });
+                    // Invalidate local data to refetch fresh
+                    queryClient.invalidateQueries({ queryKey: ['jira', 'sprints', projectId] });
+                    queryClient.invalidateQueries({ queryKey: ['jira', 'issues', projectId] });
+                    queryClient.invalidateQueries({ queryKey: ['jira', 'connection', projectId] });
+                    setIssuesOverride(null);
+                } finally {
+                    setSyncing(false);
+                }
+            }
+            return null;
+        },
+        enabled: !!projectId && isConnected,
+        staleTime: 60_000, // Only sync once per minute
+    });
+
+    const loading = connLoading || (isConnected && (sprintsLoading || issuesLoading));
+
+    // Manual full refresh
+    const refresh = useCallback(async () => {
         setSyncing(true);
         try {
             await jiraService.sync({ projectId });
-            await loadLocal();
-        } catch {
-            // Sync failure is non-blocking
+            setIssuesOverride(null);
+            await queryClient.invalidateQueries({ queryKey: ['jira', 'sprints', projectId] });
+            await queryClient.invalidateQueries({ queryKey: ['jira', 'issues', projectId] });
+            await queryClient.invalidateQueries({ queryKey: ['jira', 'connection', projectId] });
         } finally {
             setSyncing(false);
         }
-    }, [projectId, loadLocal]);
+    }, [projectId, queryClient]);
 
-    // On mount: load local data first (fast), then sync from Jira in background
-    useEffect(() => {
-        const init = async () => {
-            setLoading(true);
-            setError(null);
-            await loadLocal();
-            setLoading(false);
+    // Backwards-compatible loadLocal
+    const loadLocal = useCallback(async () => {
+        setIssuesOverride(null);
+        await queryClient.invalidateQueries({ queryKey: ['jira', 'sprints', projectId] });
+        await queryClient.invalidateQueries({ queryKey: ['jira', 'issues', projectId] });
+    }, [projectId, queryClient]);
 
-            // Background sync on first load
-            if (!hasSynced.current) {
-                hasSynced.current = true;
-                syncFromJira();
-            }
-        };
-        init();
-    }, [loadLocal, syncFromJira]);
-
-    // Manual refresh = sync from Jira + reload
-    const refresh = useCallback(async () => {
-        await syncFromJira();
-    }, [syncFromJira]);
-
-    return { connection, sprints, issues, setIssues, loading, syncing, error, refresh };
+    return {
+        connection,
+        sprints,
+        issues,
+        setIssues,
+        loading,
+        syncing,
+        error: null,
+        refresh,
+        loadLocal,
+    };
 }

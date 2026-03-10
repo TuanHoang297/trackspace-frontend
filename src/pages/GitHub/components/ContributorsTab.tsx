@@ -15,7 +15,6 @@ interface Props {
     onContributorClick: (userName: string) => void;
 }
 
-const PODIUM_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 const AVATAR_COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#6366F1'];
 
 const ContributorsTab: React.FC<Props> = ({ stats, totalCommits, onContributorClick }) => {
@@ -98,14 +97,36 @@ const ContributorsTab: React.FC<Props> = ({ stats, totalCommits, onContributorCl
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 {/* Rank */}
                                 <Box sx={{
-                                    width: 32, textAlign: 'center', flexShrink: 0,
+                                    width: 36, height: 36, borderRadius: 2, flexShrink: 0,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    ...(i < 3 ? {
+                                        background: i === 0
+                                            ? 'linear-gradient(135deg, #FFD700, #FFA500)'
+                                            : i === 1
+                                                ? 'linear-gradient(135deg, #C0C0C0, #A8A8A8)'
+                                                : 'linear-gradient(135deg, #CD7F32, #B8860B)',
+                                        boxShadow: i === 0
+                                            ? '0 3px 10px rgba(255,215,0,0.35)'
+                                            : i === 1
+                                                ? '0 3px 10px rgba(192,192,192,0.35)'
+                                                : '0 3px 10px rgba(205,127,50,0.35)',
+                                    } : {
+                                        bgcolor: 'rgba(148,163,184,0.06)',
+                                        border: '1.5px solid',
+                                        borderColor: 'divider',
+                                    }),
                                 }}>
                                     {i < 3 ? (
-                                        <EmojiEventsIcon sx={{ fontSize: 22, color: PODIUM_COLORS[i] }} />
+                                        <EmojiEventsIcon sx={{ fontSize: 18, color: '#fff' }} />
                                     ) : (
-                                        <Typography fontWeight={700} fontSize="0.85rem" color="text.disabled"
-                                            sx={{ fontFamily: "'Inter', sans-serif" }}>
-                                            #{i + 1}
+                                        <Typography fontWeight={800} fontSize="0.82rem"
+                                            sx={{
+                                                fontFamily: "'Inter', sans-serif",
+                                                background: 'linear-gradient(135deg, #64748B, #94A3B8)',
+                                                WebkitBackgroundClip: 'text',
+                                                WebkitTextFillColor: 'transparent',
+                                            }}>
+                                            {i + 1}
                                         </Typography>
                                     )}
                                 </Box>

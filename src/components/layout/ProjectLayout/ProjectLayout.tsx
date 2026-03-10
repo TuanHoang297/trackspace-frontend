@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box, Typography, IconButton, Skeleton,
     Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider,
@@ -8,7 +9,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
-import ProjectSidebar, { SIDEBAR_WIDTH } from './ProjectSidebar';
+import ProjectSidebar, { SIDEBAR_EXPANDED, SIDEBAR_COLLAPSED } from './ProjectSidebar';
 import projectService from '../../../api/services/projectService';
 import type { ProjectResponse } from '../../../types/project.types';
 import { getUser, logout } from '../../../utils/auth';
@@ -19,41 +20,41 @@ const ProjectLayout: React.FC = () => {
     const navigate = useNavigate();
     const pid = Number(projectId);
 
-    const [project, setProject] = useState<ProjectResponse | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [pwOpen, setPwOpen] = useState(false);
     const currentUser = getUser();
+    const drawerWidth = sidebarOpen ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
     const initials = currentUser?.fullName
         ?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
-    useEffect(() => {
-        const fetchProject = async () => {
-            try {
-                setLoading(true);
-                const res = await projectService.getProjectById(pid);
-                setProject(res.data.data);
-            } catch {
-                setProject(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (pid) fetchProject();
-    }, [pid]);
+    const { data: project = null, isLoading: loading } = useQuery({
+        queryKey: ['project', pid],
+        queryFn: async () => {
+            try { const r = await projectService.getProjectById(pid); return r.data.data as ProjectResponse; }
+            catch { return null; }
+        },
+        enabled: !!pid,
+    });
 
     // Breadcrumb "Lớp học" link should be role-aware
     const classListPath = currentUser?.role === 'LECTURER' ? '/lecturer/classes' : '/student/dashboard';
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#F8FAFC', overflow: 'hidden' }}>
-            <ProjectSidebar />
+            <ProjectSidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-            <Box sx={{ flex: 1, ml: `${SIDEBAR_WIDTH}px`, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+            <Box sx={{
+                flex: 1,
+                ml: { xs: `${SIDEBAR_COLLAPSED}px`, md: `${drawerWidth}px` },
+                display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
+                transition: 'margin-left 0.22s cubic-bezier(0.4,0,0.2,1)',
+            }}>
                 {/* Top Header Bar */}
                 <Box sx={{
-                    px: 3, py: 1.5,
+                    px: { xs: 1.5, sm: 2, md: 3 }, py: 0,
+                    minHeight: 64,
                     bgcolor: 'rgba(248,250,252,0.85)',
                     backdropFilter: 'blur(16px)',
                     borderBottom: '1px solid #E2E8F0',

@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import classService from '../../../api/services/classService';
 import { semesterService } from '../../../api/services/classService';
@@ -7,12 +8,9 @@ import type { ClassResponse, CreateClassRequest, UpdateClassRequest, SemesterRes
 import type { UserResponse } from '../../../types/auth.types';
 
 export function useClassManagement() {
-    const [classes, setClasses] = useState<ClassResponse[]>([]);
-    const [allUsers, setAllUsers] = useState<UserResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const queryClient = useQueryClient();
+
     const [searchTerm, setSearchTerm] = useState('');
-    const [semesters, setSemesters] = useState<SemesterResponse[]>([]);
     const [semesterFilter, setSemesterFilter] = useState<number | ''>('');
     const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | ''>('active');
 
@@ -28,26 +26,26 @@ export function useClassManagement() {
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [menuClass, setMenuClass] = useState<ClassResponse | null>(null);
 
+    // ── Parallel queries with React Query ──
+    const { data: classes = [], isLoading: classesLoading, error: classesError } = useQuery({
+        queryKey: ['admin', 'classes'],
+        queryFn: async () => { const r = await classService.getClasses(); return (r.data.data ?? []) as ClassResponse[]; },
+    });
+    const { data: allUsers = [], isLoading: usersLoading } = useQuery({
+        queryKey: ['admin', 'users'],
+        queryFn: async () => { const r = await adminService.getUsers(); return (r.data.data ?? []) as UserResponse[]; },
+    });
+    const { data: semesters = [], isLoading: semestersLoading } = useQuery({
+        queryKey: ['admin', 'semesters'],
+        queryFn: async () => { const r = await semesterService.getAllSemesters(); return (r.data.data ?? []) as SemesterResponse[]; },
+    });
+
+    const loading = classesLoading || usersLoading || semestersLoading;
+    const error = classesError ? ((classesError as any)?.response?.data?.message || 'Không thể tải dữ liệu') : '';
+
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
+
     const lecturers = useMemo(() => allUsers.filter(u => u.role === 'LECTURER'), [allUsers]);
-
-    const fetchData = useCallback(async () => {
-        try {
-            setLoading(true);
-            const [classesRes, usersRes, semestersRes] = await Promise.all([
-                classService.getClasses(), adminService.getUsers(), semesterService.getAllSemesters(),
-            ]);
-            setClasses(classesRes.data.data ?? []);
-            setAllUsers(usersRes.data.data ?? []);
-            setSemesters(semestersRes.data.data ?? []);
-            setError('');
-        } catch (err: unknown) {
-            const message = (err as { response?: { data?: { message?: string } } })
-                .response?.data?.message || 'Không thể tải dữ liệu';
-            setError(message);
-        } finally { setLoading(false); }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const filtered = useMemo(() => classes.filter(c => {
         const matchesSearch = (c.subjectName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,7 +62,7 @@ export function useClassManagement() {
         try {
             await classService.createClass(data);
             toast.success('Tạo lớp học thành công!');
-            fetchData();
+            invalidate();
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
                 .response?.data?.message || 'Tạo lớp học thất bại';
@@ -77,7 +75,7 @@ export function useClassManagement() {
         try {
             await classService.updateClass(classId, data);
             toast.success('Cập nhật lớp học thành công!');
-            fetchData();
+            invalidate();
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
                 .response?.data?.message || 'Cập nhật lớp học thất bại';
@@ -90,7 +88,7 @@ export function useClassManagement() {
         try {
             await classService.assignLecturer(classId, lecturerId);
             toast.success('Gán giảng viên thành công!');
-            fetchData();
+            invalidate();
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
                 .response?.data?.message || 'Gán giảng viên thất bại';
@@ -106,7 +104,7 @@ export function useClassManagement() {
             await classService.deleteClass(deleteTarget.id);
             toast.success(`Đã xóa lớp ${deleteTarget.classCode}`);
             setDeleteTarget(null);
-            fetchData();
+            invalidate();
         } catch (err: unknown) {
             const message = (err as { response?: { data?: { message?: string } } })
                 .response?.data?.message || 'Xóa lớp thất bại';
@@ -130,6 +128,6 @@ export function useClassManagement() {
         studentTarget, setStudentTarget,
         deleteTarget, setDeleteTarget, deleting, handleDelete,
         menuAnchor, menuClass, handleMenuOpen, handleMenuClose,
-        fetchData,
+        fetchData: invalidate,
     };
 }

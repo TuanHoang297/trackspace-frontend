@@ -66,9 +66,9 @@ const ClassManagement: React.FC = () => {
             {/* Filters */}
             <Card sx={{ p: 2, mb: 3, borderRadius: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
                 <TextField size="small" placeholder="Tìm kiếm theo tên hoặc mã môn..." value={h.searchTerm} onChange={(e) => h.setSearchTerm(e.target.value)}
-                    sx={{ minWidth: 300, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
+                    sx={{ minWidth: { xs: '100%', sm: 300 }, flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 2.5, bgcolor: '#F8FAFC', '&:hover': { bgcolor: '#F1F5F9' }, '&.Mui-focused': { bgcolor: '#fff' } } }}
                     InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#94A3B8' }} /></InputAdornment> }} />
-                <FormControl size="small" sx={{ minWidth: 200 }}>
+                <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 } }}>
                     <Select
                         value={h.semesterFilter}
                         onChange={(e) => h.setSemesterFilter(e.target.value as number | '')}
@@ -82,7 +82,7 @@ const ClassManagement: React.FC = () => {
                         ))}
                     </Select>
                 </FormControl>
-                <FormControl size="small" sx={{ minWidth: 170 }}>
+                <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 170 } }}>
                     <Select
                         value={h.statusFilter}
                         onChange={(e) => h.setStatusFilter(e.target.value as 'active' | 'inactive' | '')}

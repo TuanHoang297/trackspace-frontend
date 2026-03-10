@@ -5,7 +5,7 @@ import {
     Tooltip, IconButton, LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import SyncIcon from '@mui/icons-material/Sync';
+
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EditIcon from '@mui/icons-material/Edit';
@@ -70,6 +70,8 @@ const DroppableSprint: React.FC<{
             ref={setNodeRef}
             sx={{
                 flex: 1, minHeight: 0,
+                display: 'flex', flexDirection: 'column',
+                overflow: 'hidden',
                 transition: 'background-color 0.2s',
                 bgcolor: isOver ? 'rgba(59,130,246,0.06)' : 'transparent',
                 borderRadius: 2,
@@ -86,19 +88,18 @@ const JiraBoard: React.FC = () => {
     const navigate = useNavigate();
     const pid = Number(projectId);
 
-    const { connection, sprints, issues, setIssues, loading, refresh } = useJira(pid);
+    const { connection, sprints, issues, setIssues, loading, refresh, loadLocal } = useJira(pid);
 
     // Role-based permissions (Jira-style)
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const role = user?.role || '';
     const isLeader = role === 'TEAMLEADER';
     const isMember = role === 'TEAMMEMBER';
-    const canManageConnection = isLeader;           // Only Team Leader can Connect/Sync/Disconnect
-    const canCreateIssue = isLeader || isMember;    // Only team members can create issues/sprints
-    const canUpdateStatus = isLeader || isMember;   // Only team members can update status
+    const canManageConnection = isLeader;                // Only Team Leader can Disconnect
+    const canCreateIssue = isLeader || isMember;         // Only team members can create issues/sprints
+    const canUpdateStatus = isLeader || isMember;        // Only team members can update status
 
     // State
-    const [syncing, setSyncing] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
     const [detailIssue, setDetailIssue] = useState<JiraIssueResponse | null>(null);
     const [members, setMembers] = useState<Array<{ userId: number; fullName: string }>>([]);
@@ -267,18 +268,7 @@ const JiraBoard: React.FC = () => {
         return null;
     }
 
-    const handleSync = async () => {
-        try {
-            setSyncing(true);
-            await jiraService.sync({ projectId: pid });
-            toast.success('Đồng bộ hoàn tất!');
-            refresh();
-        } catch {
-            toast.error('Đồng bộ thất bại');
-        } finally {
-            setSyncing(false);
-        }
-    };
+
 
     const handleDisconnect = async () => {
         try {
@@ -298,11 +288,18 @@ const JiraBoard: React.FC = () => {
     };
 
     const handleUpdateSprint = async (data: JiraSprintRequest) => {
-        if (!editingSprint) return;
+        console.log('=== handleUpdateSprint ===', { editingSprint, data });
+        if (!editingSprint) {
+            console.error('editingSprint is NULL — skipping update!');
+            return;
+        }
         try {
-            await jiraService.updateSprint(editingSprint.sprintId, data);
+            console.log('Calling jiraService.updateSprint with sprintId:', editingSprint.sprintId);
+            const res = await jiraService.updateSprint(editingSprint.sprintId, data);
+            console.log('=== updateSprint RESPONSE ===', res.data);
             toast.success(data.status ? 'Đã cập nhật trạng thái Sprint!' : 'Cập nhật Sprint thành công!');
         } catch (err: unknown) {
+            console.error('=== updateSprint ERROR ===', err);
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
                 || 'Cập nhật Sprint thất bại';
             toast.error(msg);
@@ -328,11 +325,11 @@ const JiraBoard: React.FC = () => {
     };
 
     return (
-        <Box sx={{ p: { xs: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 2 }}>
                 <Box>
-                    <Typography variant="h5" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h5" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.5rem' } }}>
                         <Box component="span" sx={{
                             width: 8, height: 8, borderRadius: '50%',
                             bgcolor: connection?.connectionStatus === 'CONNECTED' ? '#36B37E' : '#FF5630',
@@ -346,38 +343,27 @@ const JiraBoard: React.FC = () => {
                         </Typography>
                     )}
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     {canCreateIssue && (
                         <>
                             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}
-                                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+                                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, px: { xs: 1.5, sm: 2 } }}>
                                 Tạo Issue
                             </Button>
                             <Button variant="outlined" startIcon={<AddIcon />}
                                 onClick={() => { setEditingSprint(null); setSprintDialogOpen(true); }}
-                                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+                                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, px: { xs: 1.5, sm: 2 } }}>
                                 Tạo Sprint
                             </Button>
                         </>
                     )}
                     {canManageConnection && (
-                        <>
-                            <Tooltip title="Đồng bộ từ Jira">
-                                <IconButton onClick={handleSync} disabled={syncing}
-                                    sx={{ bgcolor: 'action.hover', borderRadius: 2 }}>
-                                    <SyncIcon sx={{
-                                        animation: syncing ? 'spin 1s linear infinite' : 'none',
-                                        '@keyframes spin': { from: { transform: 'rotate(0)' }, to: { transform: 'rotate(360deg)' } },
-                                    }} />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Ngắt kết nối Jira">
-                                <IconButton onClick={() => setDisconnectOpen(true)} color="error"
-                                    sx={{ bgcolor: 'action.hover', borderRadius: 2 }}>
-                                    <LinkOffIcon />
-                                </IconButton>
-                            </Tooltip>
-                        </>
+                        <Tooltip title="Ngắt kết nối Jira">
+                            <IconButton onClick={() => setDisconnectOpen(true)} color="error"
+                                sx={{ bgcolor: 'action.hover', borderRadius: 2 }}>
+                                <LinkOffIcon />
+                            </IconButton>
+                        </Tooltip>
                     )}
                 </Box>
             </Box>
@@ -401,7 +387,7 @@ const JiraBoard: React.FC = () => {
                 >
                     <Box sx={{
                         display: 'flex',
-                        gap: 2,
+                        gap: { xs: 1.5, sm: 2 },
                         overflowX: 'auto',
                         overflowY: 'hidden',
                         flex: 1,
@@ -422,8 +408,8 @@ const JiraBoard: React.FC = () => {
                                     key={sprint.sprintId}
                                     elevation={0}
                                     sx={{
-                                        minWidth: 300,
-                                        maxWidth: 320,
+                                        minWidth: { xs: 260, sm: 280, md: 300 },
+                                        maxWidth: { xs: 280, sm: 300, md: 320 },
                                         height: '100%',
                                         borderRadius: 3,
                                         border: '2px solid',
@@ -432,6 +418,7 @@ const JiraBoard: React.FC = () => {
                                         flexShrink: 0,
                                         display: 'flex',
                                         flexDirection: 'column',
+                                        overflow: 'hidden',
                                     }}
                                 >
                                     {/* Sprint Header */}
@@ -507,7 +494,7 @@ const JiraBoard: React.FC = () => {
 
                                     {/* Issues List — Droppable */}
                                     <DroppableSprint sprintId={sprint.sprintId}>
-                                        <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 60 }}>
+                                        <Box sx={{ px: 1.5, pb: 1.5, flex: 1, overflowY: 'auto', minHeight: 0 }}>
                                             {sprintIssues.length === 0 ? (
                                                 <Typography variant="caption" color="text.disabled" sx={{
                                                     display: 'block', textAlign: 'center', py: 4,
@@ -555,12 +542,13 @@ const JiraBoard: React.FC = () => {
                             <Paper
                                 elevation={0}
                                 sx={{
-                                    minWidth: 300, maxWidth: 320,
+                                    minWidth: { xs: 260, sm: 280, md: 300 }, maxWidth: { xs: 280, sm: 300, md: 320 },
                                     height: '100%',
                                     borderRadius: 3, border: '2px dashed', borderColor: 'divider',
                                     bgcolor: '#FAFBFC',
                                     flexShrink: 0,
                                     display: 'flex', flexDirection: 'column',
+                                    overflow: 'hidden',
                                 }}
                             >
                                 <Box sx={{ p: 2, pb: 1 }}>
@@ -630,7 +618,7 @@ const JiraBoard: React.FC = () => {
             <SprintDialog
                 open={sprintDialogOpen}
                 onClose={() => { setSprintDialogOpen(false); setEditingSprint(null); }}
-                onSaved={() => { setSprintDialogOpen(false); setEditingSprint(null); refresh(); }}
+                onSaved={() => { setSprintDialogOpen(false); setEditingSprint(null); loadLocal(); }}
                 projectId={pid}
                 sprint={editingSprint}
                 onSubmit={editingSprint ? handleUpdateSprint : handleCreateSprint}

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Box, Typography, Paper, Chip, Skeleton, TextField, Button, Grid, Divider, Avatar,
 } from '@mui/material';
@@ -68,18 +69,12 @@ const QuickLink: React.FC<QuickLinkProps> = ({ icon, label, description, color, 
 const ProjectOverview: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const pid = Number(projectId);
     const { isLecturer } = useRole();
     const readOnly = !isLecturer();
 
-    const [project, setProject] = useState<ProjectResponse | null>(null);
-    const [jiraConn, setJiraConn] = useState<JiraConnectionResponse | null>(null);
-    const [ghConns, setGhConns] = useState<GitHubConnectionResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [members, setMembers] = useState<GroupMemberResponse[]>([]);
-
-    // Project Info state
-    const [info, setInfo] = useState<ProjectInfoResponse | null>(null);
+    // Edit state
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [topic, setTopic] = useState('');
@@ -88,64 +83,78 @@ const ProjectOverview: React.FC = () => {
     const [primaryActors, setPrimaryActors] = useState('');
     const [functionalRequirements, setFunctionalRequirements] = useState('');
 
-    useEffect(() => {
-        const fetchData = async () => {
+    // ── All queries run in PARALLEL (not waterfall) ──
+    const { data: project, isLoading: projectLoading } = useQuery({
+        queryKey: ['project', pid],
+        queryFn: async () => {
+            const res = await projectService.getProjectById(pid);
+            return res.data.data as ProjectResponse;
+        },
+        enabled: !!pid,
+    });
+
+    const { data: info } = useQuery({
+        queryKey: ['project', pid, 'info'],
+        queryFn: async () => {
+            const res = await projectService.getProjectInfo(pid);
+            const i = res.data.data as ProjectInfoResponse;
+            // Sync form state when data loads
+            setTopic(i.topic || '');
+            setContext(i.context || '');
+            setProblems(i.problems || '');
+            setPrimaryActors(i.primaryActors || '');
+            setFunctionalRequirements(i.functionalRequirements || '');
+            return i;
+        },
+        enabled: !!project?.hasProjectInfo,
+    });
+
+    const { data: jiraConn } = useQuery({
+        queryKey: ['jira', 'status', pid],
+        queryFn: async () => {
             try {
-                setLoading(true);
-                const projRes = await projectService.getProjectById(pid);
-                const p = projRes.data.data;
-                setProject(p);
-
-                // Fetch project info
-                if (p.hasProjectInfo) {
-                    try {
-                        const infoRes = await projectService.getProjectInfo(pid);
-                        const i = infoRes.data.data;
-                        setInfo(i);
-                        setTopic(i.topic || '');
-                        setContext(i.context || '');
-                        setProblems(i.problems || '');
-                        setPrimaryActors(i.primaryActors || '');
-                        setFunctionalRequirements(i.functionalRequirements || '');
-                    } catch {
-                        setInfo(null);
-                    }
-                } else {
-                    if (!readOnly) setEditing(true);
-                }
-
-                try {
-                    const jiraRes = await jiraService.getStatus(pid);
-                    setJiraConn(jiraRes.data.data);
-                } catch {
-                    setJiraConn(null);
-                }
-
-                try {
-                    const ghRes = await githubService.getConnections(pid);
-                    const data = ghRes.data.data;
-                    setGhConns(Array.isArray(data) ? data : data ? [data] : []);
-                } catch {
-                    setGhConns([]);
-                }
-
-                // Fetch group members
-                if (p.classId && p.groupId) {
-                    try {
-                        const membersRes = await groupService.getMembers(p.classId, p.groupId);
-                        setMembers(membersRes.data.data ?? []);
-                    } catch {
-                        setMembers([]);
-                    }
-                }
+                const res = await jiraService.getStatus(pid);
+                return res.data.data as JiraConnectionResponse;
             } catch {
-                setProject(null);
-            } finally {
-                setLoading(false);
+                return null;
             }
-        };
-        if (pid) fetchData();
-    }, [pid]);
+        },
+        enabled: !!pid,
+    });
+
+    const { data: ghConns = [] } = useQuery({
+        queryKey: ['github', 'connections', pid],
+        queryFn: async () => {
+            try {
+                const res = await githubService.getConnections(pid);
+                const data = res.data.data;
+                return Array.isArray(data) ? data : data ? [data] : [];
+            } catch {
+                return [] as GitHubConnectionResponse[];
+            }
+        },
+        enabled: !!pid,
+    });
+
+    const { data: members = [] } = useQuery({
+        queryKey: ['project', pid, 'members'],
+        queryFn: async () => {
+            if (!project?.classId || !project?.groupId) return [] as GroupMemberResponse[];
+            try {
+                const res = await groupService.getMembers(project.classId, project.groupId);
+                return res.data.data ?? [];
+            } catch {
+                return [] as GroupMemberResponse[];
+            }
+        },
+        enabled: !!project?.classId && !!project?.groupId,
+    });
+
+    // Auto-enter edit mode if no project info and user has write access
+    const shouldAutoEdit = !!project && !project.hasProjectInfo && !readOnly && !editing;
+    if (shouldAutoEdit && !editing) {
+        setEditing(true);
+    }
 
     const handleSave = async () => {
         try {
@@ -154,8 +163,11 @@ const ProjectOverview: React.FC = () => {
                 topic: project?.projectName || topic, context, problems, primaryActors, functionalRequirements,
             };
             const res = await projectService.saveProjectInfo(pid, request);
-            setInfo(res.data.data);
-            if (project) setProject({ ...project, hasProjectInfo: true });
+            // Update cache
+            queryClient.setQueryData(['project', pid, 'info'], res.data.data);
+            queryClient.setQueryData(['project', pid], (old: ProjectResponse | undefined) =>
+                old ? { ...old, hasProjectInfo: true } : old
+            );
             setEditing(false);
             toast.success('Lưu thông tin project thành công!');
         } catch (err: any) {
@@ -165,7 +177,7 @@ const ProjectOverview: React.FC = () => {
         }
     };
 
-    if (loading) {
+    if (projectLoading) {
         return (
             <Box sx={{ p: 4 }}>
                 <Skeleton width={300} height={40} sx={{ mb: 2 }} />
@@ -176,6 +188,8 @@ const ProjectOverview: React.FC = () => {
             </Box>
         );
     }
+
+    if (!project) return null;
 
     const isJiraConnected = jiraConn?.connectionStatus === 'CONNECTED';
     const activeGhConns = ghConns.filter(c => c.connectionStatus === 'CONNECTED');
@@ -362,8 +376,8 @@ const ProjectOverview: React.FC = () => {
                             </Box>
                         ) : (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                {sortedMembers.map((m) => (
-                                    <Box key={m.membershipId} sx={{
+                                {sortedMembers.map((m, idx) => (
+                                    <Box key={m.membershipId ?? idx} sx={{
                                         display: 'flex', alignItems: 'center', gap: 1.5,
                                         py: 1, px: 1.5, borderRadius: 2,
                                         '&:hover': { bgcolor: '#F8FAFC' },

@@ -19,6 +19,7 @@ export interface UserResponse {
     email: string;
     fullName: string;
     role: 'ADMIN' | 'LECTURER' | 'TEAMLEADER' | 'TEAMMEMBER';
+    studentCode?: string;
     active: boolean;
     createdAt: string;
     updatedAt: string;
@@ -30,6 +31,14 @@ export interface CreateUserRequest {
     fullName: string;
     role: 'LECTURER' | 'TEAMLEADER' | 'TEAMMEMBER';
     studentCode?: string;
+}
+
+export interface UpdateUserRequest {
+    fullName: string;
+    email: string;
+    role: 'ADMIN' | 'LECTURER' | 'TEAMLEADER' | 'TEAMMEMBER';
+    studentCode?: string;
+    password?: string;
 }
 
 export interface UpdateUserStatusRequest {

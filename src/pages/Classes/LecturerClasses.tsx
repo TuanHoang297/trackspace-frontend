@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box, Grid, Card, CardContent, CardActionArea,
     Typography, Chip, Skeleton, Alert, LinearProgress,
@@ -13,29 +14,29 @@ import type { ClassResponse, GroupResponse } from '../../api/types/types';
 
 const LecturerClasses: React.FC = () => {
     const navigate = useNavigate();
-    const [classes, setClasses] = useState<ClassResponse[]>([]);
-    const [allGroups, setAllGroups] = useState<GroupResponse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await classService.getClasses();
-                const classList = res.data.data;
-                setClasses(classList);
-                const groupResults = await Promise.all(
-                    classList.map(c => groupService.getGroups(c.id).then(r => r.data.data).catch(() => []))
-                );
-                setAllGroups(groupResults.flat());
-            } catch (err: any) {
-                setError(err.response?.data?.message || 'Không thể tải dữ liệu');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+    const { data: classes = [], isLoading: classesLoading, error: classesError } = useQuery({
+        queryKey: ['lecturer', 'classes'],
+        queryFn: async () => {
+            const res = await classService.getClasses();
+            return res.data.data as ClassResponse[];
+        },
+    });
+
+    const { data: allGroups = [], isLoading: groupsLoading } = useQuery({
+        queryKey: ['lecturer', 'allGroups'],
+        queryFn: async () => {
+            const classRes = await classService.getClasses();
+            const classList = classRes.data.data as ClassResponse[];
+            const groupResults = await Promise.all(
+                classList.map(c => groupService.getGroups(c.id).then(r => r.data.data).catch(() => []))
+            );
+            return groupResults.flat() as GroupResponse[];
+        },
+    });
+
+    const loading = classesLoading || groupsLoading;
+    const error = classesError ? ((classesError as any)?.response?.data?.message || 'Không thể tải dữ liệu') : '';
 
     if (loading) {
         return (
