@@ -22,6 +22,7 @@ import ProjectLayout from './components/layout/ProjectLayout/ProjectLayout';
 import JiraBoard from './pages/Jira/JiraBoard';
 import JiraConnect from './pages/Jira/JiraConnect';
 import GitHubPage from './pages/GitHub/GitHubPage';
+import AnalyticsPage from './pages/Analytics/AnalyticsPage';
 import StudentDashboard from './pages/Student/StudentDashboard';
 import SemesterManagement from './pages/Semesters/SemesterManagement';
 import SubjectManagement from './pages/Subjects/SubjectManagement';
@@ -100,12 +101,7 @@ function App() {
                         <Route path="/projects/:projectId/jira" element={<JiraBoard />} />
                         <Route path="/projects/:projectId/jira/connect" element={<JiraConnect />} />
                         <Route path="/projects/:projectId/github" element={<GitHubPage />} />
-                        <Route path="/projects/:projectId/contribution" element={
-                            <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>Contribution Analytics</Typography>
-                                <Typography color="text.secondary">Coming soon...</Typography>
-                            </Box>
-                        } />
+                        <Route path="/projects/:projectId/contribution" element={<AnalyticsPage />} />
                         <Route path="/projects/:projectId/srs" element={
                             <Box sx={{ p: 4, textAlign: 'center' }}>
                                 <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>SRS Document</Typography>

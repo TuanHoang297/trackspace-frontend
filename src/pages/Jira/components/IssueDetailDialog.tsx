@@ -50,7 +50,7 @@ interface Props {
 }
 
 const IssueDetailDialog: React.FC<Props> = ({
-    open, onClose, issue, onUpdated, canEdit, canUpdateStatus,
+    open, onClose, issue, onUpdated, canEdit, canUpdateStatus, members,
 }) => {
     const [statusLoading, setStatusLoading] = useState(false);
     const [assignLoading, setAssignLoading] = useState(false);
@@ -106,9 +106,13 @@ const IssueDetailDialog: React.FC<Props> = ({
         if (!accountId) return;
         const user = jiraUsers.find(u => u.accountId === accountId);
         if (!user) return;
+        // Try to find matching TrackSpace userId by fullName == displayName
+        const matchedMember = members?.find(
+            m => m.fullName.trim().toLowerCase() === user.displayName?.trim().toLowerCase()
+        );
         try {
             setAssignLoading(true);
-            await jiraService.assignIssue(issue.issueId, accountId, user.displayName);
+            await jiraService.assignIssue(issue.issueId, accountId, user.displayName, matchedMember?.userId);
             toast.success(`Đã gán cho ${user.displayName}!`);
             setSelectedAccountId(accountId);
             onUpdated();

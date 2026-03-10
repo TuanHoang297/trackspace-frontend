@@ -16,8 +16,10 @@ import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
+import GitHubIcon from '@mui/icons-material/GitHub';
 import { getUser, logout } from '../../../utils/auth';
 import ChangePasswordDialog from '../../common/ChangePasswordDialog';
+import GitHubLoginDialog from '../../common/GitHubLoginDialog';
 
 interface HeaderProps {
     onMenuClick: () => void;
@@ -28,11 +30,13 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
     const user = getUser();
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [pwOpen, setPwOpen] = React.useState(false);
+    const [ghOpen, setGhOpen] = React.useState(false);
 
     const handleMenu = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
     const handleClose = () => setAnchorEl(null);
     const handleLogout = () => { handleClose(); logout(); };
     const handleChangePw = () => { handleClose(); setPwOpen(true); };
+    const handleGithubLogin = () => { handleClose(); setGhOpen(true); };
 
     const initials = user?.fullName
         ?.split(' ')
@@ -121,6 +125,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
                         <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                         <ListItemText>Hồ sơ</ListItemText>
                     </MenuItem>
+                    <MenuItem onClick={handleGithubLogin} sx={{ borderRadius: 2, mx: 1, mb: 0.5 }}>
+                        <ListItemIcon><GitHubIcon fontSize="small" sx={{ color: '#24292e' }} /></ListItemIcon>
+                        <ListItemText>Liên kết GitHub</ListItemText>
+                    </MenuItem>
                     <MenuItem onClick={handleChangePw} sx={{ borderRadius: 2, mx: 1, mb: 0.5 }}>
                         <ListItemIcon><LockIcon fontSize="small" sx={{ color: '#8B5CF6' }} /></ListItemIcon>
                         <ListItemText>Đổi mật khẩu</ListItemText>
@@ -132,6 +140,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
                 </Menu>
 
                 <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
+                <GitHubLoginDialog open={ghOpen} onClose={() => setGhOpen(false)} />
             </Toolbar>
         </AppBar>
     );
