@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="sparkle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+  <!-- Main large 4-pointed star -->
+  <path d="M64 8 C66 40, 88 62, 120 64 C88 66, 66 88, 64 120 C62 88, 40 66, 8 64 C40 62, 62 40, 64 8Z" fill="url(#sparkle)"/>
+  <!-- Small sparkle top-right -->
+  <path d="M100 12 C101 22, 106 27, 116 28 C106 29, 101 34, 100 44 C99 34, 94 29, 84 28 C94 27, 99 22, 100 12Z" fill="url(#sparkle)" opacity="0.6"/>
+  <!-- Tiny sparkle bottom-left -->
+  <path d="M28 88 C28.5 94, 32 97, 38 98 C32 99, 28.5 102, 28 108 C27.5 102, 24 99, 18 98 C24 97, 27.5 94, 28 88Z" fill="url(#sparkle)" opacity="0.45"/>
+</svg>
