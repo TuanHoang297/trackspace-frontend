@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
     Box, Typography, Paper, Avatar, Chip, Tooltip,
-    Button, Slider, Collapse, Skeleton, Dialog, DialogContent, IconButton,
+    Button, Slider, Collapse, Skeleton, Dialog, DialogContent, IconButton, Badge,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { useParams } from 'react-router-dom';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -12,15 +13,14 @@ import CommitIcon from '@mui/icons-material/Commit';
 import AddIcon from '@mui/icons-material/Add';
 import CalculateIcon from '@mui/icons-material/Calculate';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import RemoveIcon from '@mui/icons-material/Remove';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import StarIcon from '@mui/icons-material/Star';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
-import CloseIcon from '@mui/icons-material/Close';
+
 import useContribution, { useHeatmap } from '../../hooks/useContribution';
 import type { ContributionResponse, HeatmapResponse } from '../../types/contribution.types';
 
@@ -101,30 +101,37 @@ const HeatmapCalendar: React.FC<{ data: HeatmapResponse | null; loading: boolean
             <Typography fontSize="0.6rem" color="text.secondary">Loading...</Typography>
         </Box>
     );
-    if (!data || data.entries.length === 0) return null;
+    if (!data || data.entries.length === 0) return (
+        <Box sx={{ py: 1.5, minHeight: 90, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography fontSize="0.6rem" color="text.secondary" fontStyle="italic">No activity yet</Typography>
+        </Box>
+    );
 
     const maxCommits = Math.max(...data.entries.map(e => e.commitCount), 1);
     const dateMap = new Map(data.entries.map(e => [e.date, e]));
-    const totalDays = compact ? 60 : 90;
+
+    // Start from earliest commit date, go forward 90 days
+    const sortedDates = data.entries.map(e => e.date).sort();
+    const startDate = new Date(sortedDates[0]);
+    const totalDays = compact ? 90 : 90;
+
     const days: { date: string; level: number; commits: number }[] = [];
-    for (let i = totalDays - 1; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
+    for (let i = 0; i < totalDays; i++) {
+        const d = new Date(startDate); d.setDate(startDate.getDate() + i);
         const dateStr = d.toISOString().split('T')[0];
         const entry = dateMap.get(dateStr);
         const commits = entry?.commitCount || 0;
         days.push({ date: dateStr, level: commits === 0 ? 0 : Math.ceil((commits / maxCommits) * 4), commits });
     }
-    const lvlColors = ['rgba(148,163,184,0.08)', '#9BE9A8', '#40C463', '#30A14E', '#216E39'];
-    const cellSize = compact ? 9 : 11;
-    const gap = compact ? '2px' : '3px';
+    const lvlColors = ['rgba(148,163,184,0.18)', '#9BE9A8', '#40C463', '#30A14E', '#216E39'];
+    const cellH = 10;
 
-    // Group days into weeks (columns) for proper calendar layout
+    // Group days into weeks (columns)
     const weeks: typeof days[] = [];
     let currentWeek: typeof days = [];
     days.forEach((d, idx) => {
         const dayOfWeek = new Date(d.date).getDay();
         if (idx === 0) {
-            // Pad first week
             for (let j = 0; j < dayOfWeek; j++) {
                 currentWeek.push({ date: '', level: -1, commits: 0 });
             }
@@ -152,34 +159,32 @@ const HeatmapCalendar: React.FC<{ data: HeatmapResponse | null; loading: boolean
     });
 
     return (
-        <Box>
-            {/* Month labels */}
-            <Box sx={{ display: 'flex', gap, mb: 0.3, pl: 0 }}>
-                {monthPositions.map((mp, idx) => {
-                    const nextCol = idx < monthPositions.length - 1 ? monthPositions[idx + 1].col : weeks.length;
-                    const span = nextCol - mp.col;
+        <Box sx={{ width: '100%' }}>
+            {/* Month labels — use grid to match columns */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${weeks.length}, 1fr)`, gap: '1px', mb: 0.3 }}>
+                {weeks.map((_w, wi) => {
+                    const mp = monthPositions.find(p => p.col === wi);
                     return (
-                        <Typography key={mp.label + mp.col} fontSize="0.55rem" color="text.secondary" fontWeight={600}
-                            sx={{ width: `calc(${span} * (${cellSize}px + ${gap}))`, flexShrink: 0 }}>
-                            {mp.label}
+                        <Typography key={wi} fontSize="0.5rem" color="text.secondary" fontWeight={600}>
+                            {mp ? mp.label : ''}
                         </Typography>
                     );
                 })}
             </Box>
-            {/* Heatmap grid - weeks as columns, days as rows */}
-            <Box sx={{ display: 'flex', gap }}>
+            {/* Heatmap grid — full width, columns = weeks */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${weeks.length}, 1fr)`, gap: '1px' }}>
                 {weeks.map((week, wi) => (
-                    <Box key={wi} sx={{ display: 'flex', flexDirection: 'column', gap }}>
+                    <Box key={wi} sx={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                         {week.map((d, di) => (
                             d.level === -1 ? (
-                                <Box key={di} sx={{ width: cellSize, height: cellSize }} />
+                                <Box key={di} sx={{ width: '100%', height: cellH }} />
                             ) : (
                                 <Tooltip key={d.date} title={`${d.date}: ${d.commits} commits`} arrow placement="top">
                                     <Box sx={{
-                                        width: cellSize, height: cellSize, borderRadius: '2px',
+                                        width: '100%', height: cellH, borderRadius: '2px',
                                         bgcolor: lvlColors[d.level],
                                         transition: 'transform 0.1s',
-                                        '&:hover': { transform: 'scale(1.5)' },
+                                        '&:hover': { transform: 'scale(1.3)', zIndex: 1, position: 'relative' },
                                     }} />
                                 </Tooltip>
                             )
@@ -243,75 +248,79 @@ const MemberCard: React.FC<{
         <Paper elevation={0}
             onClick={() => onOpenDetail(m)}
             sx={{
-                borderRadius: 3, overflow: 'hidden', cursor: 'pointer',
-                border: '1px solid', borderColor: (m.inactive || m.hasLowContribution) ? 'rgba(239,68,68,0.35)' : 'divider',
+                borderRadius: 4, overflow: 'hidden', cursor: 'pointer',
+                border: (m.inactive || m.hasLowContribution) ? '1px solid rgba(239,68,68,0.35)' : '1px solid rgba(226,232,240,0.4)',
                 borderLeft: (m.inactive || m.hasLowContribution) ? '3px solid #EF4444' : undefined,
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
                 '&:hover': {
-                    borderColor: (m.inactive || m.hasLowContribution) ? 'rgba(239,68,68,0.5)' : 'rgba(59,130,246,0.3)',
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+                    borderColor: (m.inactive || m.hasLowContribution) ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.4)',
+                    boxShadow: '0 12px 40px rgba(15,23,42,0.12), 0 0 0 1px rgba(99,102,241,0.1)',
                     transform: 'translateY(-4px)',
                 },
             }}
         >
-            {/* Top accent for top 3 */}
-            {isTop3 && (
-                <Box sx={{ height: 3, background: podiumGradient }} />
-            )}
-
-            <Box sx={{ p: 2 }}>
-                {/* ── Header: Medal + Avatar + Name ── */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    {/* Medal / Rank badge - LEFT of avatar */}
-                    {rank <= 3 ? (
-                        <Box sx={{
-                            width: 28, height: 28, borderRadius: 2,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: rank === 1 ? 'linear-gradient(135deg, #F59E0B, #EAB308)' :
-                                rank === 2 ? 'linear-gradient(135deg, #94A3B8, #CBD5E1)' :
-                                    'linear-gradient(135deg, #D97706, #B45309)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                        }}>
-                            <EmojiEventsIcon sx={{ fontSize: 16, color: '#fff' }} />
-                        </Box>
-                    ) : (
-                        <Box sx={{
-                            width: 28, height: 28, borderRadius: 2,
-                            bgcolor: '#F1F5F9', border: '1.5px solid', borderColor: 'divider',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                            <Typography fontSize="0.7rem" fontWeight={800} color="text.secondary">
-                                #{rank}
-                            </Typography>
-                        </Box>
-                    )}
-                    {/* Avatar */}
-                    <Avatar sx={{
-                        width: 38, height: 38,
-                        background: `linear-gradient(135deg, ${avatarColor}25, ${avatarColor}10)`,
-                        color: avatarColor,
-                        fontWeight: 700, fontSize: 13,
-                        fontFamily: "'Inter', sans-serif",
-                        border: `2px solid ${avatarColor}35`,
-                    }}>
+            {/* ── Dark Premium Header ── */}
+            <Box sx={{
+                background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+                px: 2.5, py: 1.5,
+                display: 'flex', alignItems: 'center', gap: 1.5,
+                position: 'relative', overflow: 'hidden',
+                '&::before': {
+                    content: '""', position: 'absolute',
+                    top: -30, right: -30, width: 100, height: 100,
+                    background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                },
+                '&::after': {
+                    content: '""', position: 'absolute',
+                    bottom: 0, left: 0, right: 0, height: 1,
+                    background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.3), transparent)',
+                },
+            }}>
+                {/* Avatar with glow ring */}
+                <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                    <Box sx={{ position: 'absolute', inset: -3, borderRadius: '50%', background: `linear-gradient(135deg, ${avatarColor}, #8B5CF6)`, opacity: 0.6, filter: 'blur(2px)' }} />
+                    <Avatar sx={{ width: 38, height: 38, position: 'relative', bgcolor: avatarColor + '25', color: '#fff', fontWeight: 800, fontSize: 13, border: `2.5px solid ${avatarColor}`, boxShadow: `0 0 12px ${avatarColor}40`, fontFamily: "'Inter', sans-serif" }}>
                         {getInitials(m.fullName)}
                     </Avatar>
-                    {/* Name + Domain */}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography fontWeight={700} fontSize="0.85rem" noWrap
-                            sx={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.2 }}>
-                            {m.fullName}
-                        </Typography>
-                        <Chip label={domain.label} size="small"
-                            sx={{
-                                height: 18, fontSize: '0.55rem', fontWeight: 700, mt: 0.3,
-                                bgcolor: domain.bg, color: domain.color, borderRadius: 1,
-                            }} />
-                    </Box>
                 </Box>
+                {/* Name + Domain */}
+                <Box sx={{ flex: 1, minWidth: 0, position: 'relative' }}>
+                    <Typography fontWeight={700} fontSize="0.82rem" color="#F1F5F9"
+                        sx={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.3, wordBreak: 'break-word' }}>
+                        {m.fullName}
+                    </Typography>
+                    <Chip label={domain.label} size="small"
+                        sx={{ height: 17, fontSize: '0.5rem', fontWeight: 700, mt: 0.3, bgcolor: 'rgba(99,102,241,0.15)', color: '#93C5FD', borderRadius: 1, border: '1px solid rgba(99,102,241,0.2)' }} />
+                </Box>
+                {/* Rank badge — right side */}
+                {rank <= 3 ? (
+                    <Box sx={{
+                        width: 28, height: 28, borderRadius: 2, flexShrink: 0, ml: 'auto',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: podiumGradient,
+                        boxShadow: `0 2px 10px ${rank === 1 ? 'rgba(245,158,11,0.4)' : rank === 2 ? 'rgba(148,163,184,0.3)' : 'rgba(217,119,6,0.3)'}`,
+                    }}>
+                        <EmojiEventsIcon sx={{ fontSize: 15, color: '#fff' }} />
+                    </Box>
+                ) : (
+                    <Box sx={{
+                        width: 28, height: 28, borderRadius: 2, flexShrink: 0, ml: 'auto',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        bgcolor: 'rgba(148,163,184,0.1)', border: '1.5px solid rgba(148,163,184,0.2)',
+                    }}>
+                        <Typography fontWeight={800} fontSize="0.65rem" color="rgba(148,163,184,0.8)"
+                            sx={{ fontFamily: "'JetBrains Mono', monospace" }}>#{rank}</Typography>
+                    </Box>
+                )}
+            </Box>
 
-                {/* ── Score Ring + Progress Bars ── */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            {/* ── Body ── */}
+            <Box sx={{ p: 2 }}>
+                {/* Section: Score */}
+                <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Score</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
                     <ScoreRing score={m.contributionScore} size={64} thickness={4} />
                     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <MiniProgress label="GitHub Impact" value={m.githubImpactScore} color="#3B82F6" />
@@ -319,73 +328,56 @@ const MemberCard: React.FC<{
                     </Box>
                 </Box>
 
-                {/* Divider */}
-                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 2 }} />
-
-                {/* ── Metric Chips ── */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75, mb: 2 }}>
-                    {[
-                        { icon: <CommitIcon sx={{ fontSize: 12 }} />, label: 'Commits', value: m.totalCommits, bg: '#EFF6FF', color: '#3B82F6' },
-                        { icon: <AssignmentTurnedInIcon sx={{ fontSize: 12 }} />, label: 'Tasks done', value: `${m.tasksCompleted}/${m.tasksAssigned}`, bg: '#F5F3FF', color: '#8B5CF6' },
-                        { icon: <AddIcon sx={{ fontSize: 12 }} />, label: 'Added', value: `+${m.linesAdded.toLocaleString()}`, bg: '#F0FDF4', color: '#16A34A' },
-                        { icon: <RemoveIcon sx={{ fontSize: 12 }} />, label: 'Deleted', value: `-${m.linesDeleted.toLocaleString()}`, bg: '#FEF2F2', color: '#DC2626' },
-                    ].map(chip => (
-                        <Box key={chip.label} sx={{
-                            display: 'flex', alignItems: 'center', gap: 0.5,
-                            bgcolor: chip.bg, borderRadius: 1.5, px: 1, py: 0.6,
-                        }}>
-                            <Box sx={{ color: chip.color, display: 'flex' }}>{chip.icon}</Box>
-                            <Typography fontSize="0.6rem" color={chip.color} fontWeight={600} noWrap>
-                                {chip.label}
-                            </Typography>
-                            <Typography fontSize="0.65rem" fontWeight={800} sx={{ ml: 'auto', color: chip.color, fontFamily: "'JetBrains Mono', monospace" }}>
-                                {chip.value}
-                            </Typography>
-                        </Box>
-                    ))}
-                </Box>
-
-                {/* Divider */}
                 <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 1.5 }} />
 
-                {/* ── Stats Grid ── */}
-                <Box sx={{ mb: 1.5 }}>
-                    <Typography fontSize="0.65rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        📊 Stats
-                    </Typography>
-                    <Box sx={{
-                        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.5,
-                        bgcolor: 'rgba(248,250,252,0.8)', borderRadius: 1.5, p: 1,
-                        border: '1px solid', borderColor: 'rgba(226,232,240,0.6)',
-                    }}>
-                        {[
-                            { label: 'Total', value: Math.round(m.contributionScore) },
-                            { label: 'Commits', value: m.totalCommits },
-                            { label: 'Lines', value: `${(m.linesAdded / 1000).toFixed(0)}K` },
-                            { label: 'Active', value: `${m.activeDays}d` },
-                            { label: 'Consist', value: m.consistencyFactor.toFixed(1) },
-                            { label: 'Churn', value: m.codeChurnRate.toFixed(1) },
-                        ].map(s => (
-                            <Box key={s.label} sx={{ textAlign: 'center' }}>
-                                <Typography fontSize="0.72rem" fontWeight={800}
-                                    sx={{ fontFamily: "'Inter', sans-serif", color: '#1E293B', lineHeight: 1 }}>
-                                    {s.value}
-                                </Typography>
-                                <Typography fontSize="0.5rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.2 }}>
-                                    {s.label}
-                                </Typography>
-                            </Box>
-                        ))}
+                {/* Section: Metrics + Stats */}
+                <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+                    {/* Metric Chips 2x2 */}
+                    <Box sx={{ flex: 1 }}>
+                        <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Metrics</Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.6 }}>
+                            {[
+                                { icon: <CommitIcon sx={{ fontSize: 11 }} />, label: 'Commits', value: m.totalCommits, bg: '#EFF6FF', color: '#3B82F6', border: 'rgba(59,130,246,0.15)' },
+                                { icon: <AssignmentTurnedInIcon sx={{ fontSize: 11 }} />, label: 'Tasks', value: `${m.tasksCompleted}/${m.tasksAssigned}`, bg: '#F5F3FF', color: '#8B5CF6', border: 'rgba(139,92,246,0.15)' },
+                                { icon: <AddIcon sx={{ fontSize: 11 }} />, label: 'Added', value: `+${m.linesAdded.toLocaleString()}`, bg: '#F0FDF4', color: '#16A34A', border: 'rgba(22,163,74,0.15)' },
+                                { icon: <RemoveIcon sx={{ fontSize: 11 }} />, label: 'Deleted', value: `-${m.linesDeleted.toLocaleString()}`, bg: '#FEF2F2', color: '#DC2626', border: 'rgba(220,38,38,0.15)' },
+                            ].map(chip => (
+                                <Box key={chip.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.4, bgcolor: chip.bg, borderRadius: 1.5, px: 0.8, py: 0.5, border: `1px solid ${chip.border}` }}>
+                                    <Box sx={{ color: chip.color, display: 'flex', flexShrink: 0 }}>{chip.icon}</Box>
+                                    <Typography fontSize="0.55rem" color={chip.color} fontWeight={600} noWrap>{chip.label}</Typography>
+                                    <Typography fontSize="0.62rem" fontWeight={800} sx={{ ml: 'auto', color: chip.color, fontFamily: "'JetBrains Mono', monospace" }}>{chip.value}</Typography>
+                                </Box>
+                            ))}
+                        </Box>
+                    </Box>
+
+                    {/* Stats Table 3x2 */}
+                    <Box sx={{ flex: 1 }}>
+                        <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Stats</Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderRadius: 1.5, overflow: 'hidden', border: '1px solid rgba(226,232,240,0.6)' }}>
+                            {[
+                                { label: 'Total', value: Math.round(m.contributionScore) },
+                                { label: 'Commits', value: m.totalCommits },
+                                { label: 'Lines', value: `${(m.linesAdded / 1000).toFixed(0)}K` },
+                                { label: 'Active', value: `${m.activeDays}d` },
+                                { label: 'Consist', value: m.consistencyFactor.toFixed(1) },
+                                { label: 'Churn', value: m.codeChurnRate.toFixed(1) },
+                            ].map((s, idx) => (
+                                <Box key={s.label} sx={{ textAlign: 'center', py: 0.6, bgcolor: '#F8FAFC', borderRight: (idx % 3 !== 2) ? '1px solid rgba(226,232,240,0.6)' : 'none', borderBottom: idx < 3 ? '1px solid rgba(226,232,240,0.6)' : 'none' }}>
+                                    <Typography fontSize="0.72rem" fontWeight={800} sx={{ fontFamily: "'JetBrains Mono', monospace", color: '#1E293B', lineHeight: 1 }}>{s.value}</Typography>
+                                    <Typography fontSize="0.42rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.2, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</Typography>
+                                </Box>
+                            ))}
+                        </Box>
                     </Box>
                 </Box>
 
-                {/* Divider */}
-                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 1.5 }} />
+                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 1 }} />
 
-                {/* ── Heatmap ── */}
+                {/* Section: Activity */}
+                <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Activity</Typography>
                 <MemberHeatmap userId={m.userId} projectId={projectId} compact />
             </Box>
-
         </Paper>
     );
 };
@@ -764,99 +756,7 @@ const ContributionPage: React.FC = () => {
                 }
             </Box>
 
-            {/* ══════════ Anomaly Alerts (expandable gradient banner) ══════════ */}
-            {
-                anomalies.length > 0 && (
-                    <Box sx={{ mb: 2.5 }}>
-                        <Box
-                            onClick={() => setShowAlerts(!showAlerts)}
-                            sx={{
-                                px: 2.5, py: 1.5,
-                                background: 'linear-gradient(135deg, #DC2626 0%, #EA580C 50%, #D97706 100%)',
-                                borderRadius: showAlerts ? '12px 12px 0 0' : '12px',
-                                display: 'flex', alignItems: 'center', gap: 1.5,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                '&:hover': { opacity: 0.95 },
-                            }}
-                        >
-                            <WarningAmberIcon sx={{ fontSize: 18, color: '#fff' }} />
-                            <Box sx={{ flex: 1 }}>
-                                <Typography fontSize="0.82rem" fontWeight={700} sx={{ color: '#fff' }}>
-                                    ⚠ {anomalies.length} Issues Detected
-                                </Typography>
-                                <Typography fontSize="0.65rem" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                    {showAlerts ? 'Click to collapse' : 'Click to view details'}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Box sx={{
-                                    position: 'relative',
-                                    display: 'flex', alignItems: 'center',
-                                }}>
-                                    <NotificationsIcon sx={{ fontSize: 18, color: 'rgba(255,255,255,0.8)' }} />
-                                    <Box sx={{
-                                        position: 'absolute', top: -4, right: -6,
-                                        width: 16, height: 16, borderRadius: '50%',
-                                        bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    }}>
-                                        <Typography fontSize="0.55rem" fontWeight={800} sx={{ color: '#DC2626' }}>
-                                            {anomalies.length}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                                {showAlerts ? (
-                                    <KeyboardArrowUpIcon sx={{ fontSize: 20, color: '#fff' }} />
-                                ) : (
-                                    <KeyboardArrowDownIcon sx={{ fontSize: 20, color: '#fff' }} />
-                                )}
-                            </Box>
-                        </Box>
-                        <Collapse in={showAlerts}>
-                            <Paper elevation={0} sx={{
-                                borderRadius: '0 0 12px 12px',
-                                border: '1px solid rgba(239,68,68,0.15)',
-                                borderTop: 'none',
-                                overflow: 'hidden',
-                            }}>
-                                {anomalies.map((a: string, i: number) => {
-                                    const isInactive = a.includes('INACTIVE');
-                                    const isLow = a.includes('LOW_CONTRIBUTION');
-                                    const dotColor = isInactive ? '#EF4444' : isLow ? '#F59E0B' : '#6366F1';
-                                    const badgeLabel = isInactive ? 'INACTIVE' : isLow ? 'LOW' : 'ALERT';
-                                    const badgeBg = isInactive ? 'rgba(239,68,68,0.1)' : isLow ? 'rgba(245,158,11,0.1)' : 'rgba(99,102,241,0.1)';
-                                    const badgeColor = isInactive ? '#DC2626' : isLow ? '#D97706' : '#6366F1';
-                                    return (
-                                        <Box key={i} sx={{
-                                            px: 2.5, py: 1.5,
-                                            display: 'flex', alignItems: 'center', gap: 1.5,
-                                            borderBottom: i < anomalies.length - 1 ? '1px solid' : 'none',
-                                            borderColor: 'divider',
-                                            bgcolor: '#FFFFFF',
-                                        }}>
-                                            <Box sx={{
-                                                width: 8, height: 8, borderRadius: '50%',
-                                                bgcolor: dotColor, flexShrink: 0,
-                                            }} />
-                                            <Typography fontSize="0.78rem" color="text.primary" sx={{ flex: 1 }}>
-                                                {a}
-                                            </Typography>
-                                            <Chip label={badgeLabel} size="small"
-                                                sx={{
-                                                    height: 20, fontSize: '0.55rem', fontWeight: 800,
-                                                    bgcolor: badgeBg, color: badgeColor,
-                                                    borderRadius: 1,
-                                                }} />
-                                        </Box>
-                                    );
-                                })}
-                            </Paper>
-                        </Collapse>
-                    </Box>
-                )
-            }
-
-            {/* ══════════ Team Members (Card Grid) ══════════ */}
+            {/* ══════════ Team Members Header + Notification Badge ══════════ */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <Box sx={{
                     width: 28, height: 28, borderRadius: 2,
@@ -870,17 +770,126 @@ const ContributionPage: React.FC = () => {
                 </Typography>
                 <Chip label={members.length} size="small"
                     sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(59,130,246,0.1)', color: '#3B82F6' }} />
+
+                {/* Notification bell — right side */}
+                {anomalies.length > 0 && (
+                    <Box sx={{ ml: 'auto' }}>
+                        <IconButton
+                            onClick={() => setShowAlerts(true)}
+                            sx={{
+                                position: 'relative',
+                                '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' },
+                            }}
+                        >
+                            <Badge
+                                badgeContent={anomalies.length}
+                                sx={{
+                                    '& .MuiBadge-badge': {
+                                        background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                                        color: '#fff', fontSize: '0.55rem', fontWeight: 800,
+                                        minWidth: 18, height: 18,
+                                        boxShadow: '0 0 8px rgba(239,68,68,0.4)',
+                                    },
+                                }}
+                            >
+                                <NotificationsIcon sx={{ fontSize: 20, color: '#EF4444' }} />
+                            </Badge>
+                        </IconButton>
+                    </Box>
+                )}
             </Box>
+
+            {/* ══════════ Issues Dialog ══════════ */}
+            <Dialog
+                open={showAlerts}
+                onClose={() => setShowAlerts(false)}
+                maxWidth="sm" fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                    },
+                }}
+            >
+                {/* Dark premium header */}
+                <Box sx={{
+                    px: 3, py: 2,
+                    background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+                    display: 'flex', alignItems: 'center', gap: 1.5,
+                    position: 'relative', overflow: 'hidden',
+                    '&::before': {
+                        content: '""', position: 'absolute',
+                        top: -20, left: -20, width: 80, height: 80,
+                        background: 'radial-gradient(circle, rgba(239,68,68,0.12) 0%, transparent 70%)',
+                        borderRadius: '50%',
+                    },
+                }}>
+                    <Box sx={{
+                        width: 36, height: 36, borderRadius: 2,
+                        background: 'linear-gradient(135deg, #DC2626, #EA580C)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 12px rgba(220,38,38,0.3)',
+                    }}>
+                        <WarningAmberIcon sx={{ fontSize: 19, color: '#fff' }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography fontSize="1rem" fontWeight={700} sx={{ color: '#F1F5F9', fontFamily: "'Inter', sans-serif" }}>
+                            {anomalies.length} Issues Detected
+                        </Typography>
+                        <Typography fontSize="0.7rem" sx={{ color: 'rgba(148,163,184,0.7)' }}>
+                            Review team alerts and take action
+                        </Typography>
+                    </Box>
+                    <IconButton onClick={() => setShowAlerts(false)} sx={{ color: 'rgba(148,163,184,0.6)' }}>
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+                <DialogContent sx={{ p: 0 }}>
+                    {anomalies.map((a: string, i: number) => {
+                        const isInactive = a.includes('INACTIVE');
+                        const isLow = a.includes('LOW_CONTRIBUTION');
+                        const accentColor = isInactive ? '#EF4444' : isLow ? '#F59E0B' : '#6366F1';
+                        const badgeLabel = isInactive ? 'INACTIVE' : isLow ? 'LOW' : 'ALERT';
+                        const badgeBg = isInactive ? 'rgba(239,68,68,0.06)' : isLow ? 'rgba(245,158,11,0.06)' : 'rgba(99,102,241,0.06)';
+                        return (
+                            <Box key={i} sx={{
+                                px: 3, py: 1.5,
+                                display: 'flex', alignItems: 'center', gap: 1.5,
+                                borderBottom: i < anomalies.length - 1 ? '1px solid' : 'none',
+                                borderColor: 'rgba(226,232,240,0.5)',
+                                borderLeft: `3px solid ${accentColor}`,
+                                transition: 'background 0.15s',
+                                '&:hover': { bgcolor: 'rgba(241,245,249,0.6)' },
+                            }}>
+                                <Box sx={{
+                                    width: 7, height: 7, borderRadius: '50%',
+                                    bgcolor: accentColor, flexShrink: 0,
+                                    boxShadow: `0 0 6px ${accentColor}40`,
+                                }} />
+                                <Typography fontSize="0.8rem" color="text.primary" sx={{ flex: 1, fontFamily: "'Inter', sans-serif" }}>
+                                    {a}
+                                </Typography>
+                                <Chip label={badgeLabel} size="small"
+                                    sx={{
+                                        height: 22, fontSize: '0.55rem', fontWeight: 800,
+                                        bgcolor: badgeBg, color: accentColor,
+                                        borderRadius: 1.5, border: `1px solid ${accentColor}20`,
+                                        letterSpacing: '0.05em',
+                                    }} />
+                            </Box>
+                        );
+                    })}
+                </DialogContent>
+            </Dialog>
 
             <Box sx={{
                 display: 'grid',
                 gridTemplateColumns: {
                     xs: '1fr',
                     sm: 'repeat(2, 1fr)',
-                    md: members.length <= 3 ? `repeat(${members.length}, 1fr)` : 'repeat(3, 1fr)',
-                    lg: members.length <= 4 ? `repeat(${members.length}, 1fr)` : 'repeat(4, 1fr)',
+                    md: 'repeat(3, 1fr)',
                 },
-                gap: 2, mb: 3,
+                gap: 2.5, mb: 3,
             }}>
                 {members.map((m: ContributionResponse, i: number) => (
                     <MemberCard key={m.userId} m={m} rank={i + 1} projectId={pid}
