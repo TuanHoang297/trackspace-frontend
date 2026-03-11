@@ -241,7 +241,7 @@ const MemberCard: React.FC<{
 }> = ({ m, rank, projectId, onOpenDetail }) => {
     const avatarColor = AVATAR_COLORS[(rank - 1) % AVATAR_COLORS.length];
     const domain = DOMAIN_META[m.domain] || DOMAIN_META.UNKNOWN;
-    const isTop3 = rank <= 3;
+
     const podiumGradient = rank === 1 ? GRADIENTS.gold : rank === 2 ? GRADIENTS.silver : GRADIENTS.bronze;
 
     return (
