@@ -15,7 +15,8 @@ const OAuth2RedirectPage: React.FC = () => {
       localStorage.setItem('token', token);
 
       // Fetch user info with the token
-      fetch('http://localhost:8080/api/auth/me', {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+      fetch(`${apiBase}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
