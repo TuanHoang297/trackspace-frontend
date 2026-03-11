@@ -263,20 +263,25 @@ const MemberCard: React.FC<{
                 {/* ── Header: Medal + Avatar + Name ── */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     {/* Medal / Rank badge - LEFT of avatar */}
-                    {rank === 1 ? (
-                        <Typography fontSize="1.25rem" lineHeight={1}>🥇</Typography>
-                    ) : rank === 2 ? (
-                        <Typography fontSize="1.25rem" lineHeight={1}>🥈</Typography>
-                    ) : rank === 3 ? (
-                        <Typography fontSize="1.25rem" lineHeight={1}>🥉</Typography>
+                    {rank <= 3 ? (
+                        <Box sx={{
+                            width: 28, height: 28, borderRadius: 2,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: rank === 1 ? 'linear-gradient(135deg, #F59E0B, #EAB308)' :
+                                rank === 2 ? 'linear-gradient(135deg, #94A3B8, #CBD5E1)' :
+                                    'linear-gradient(135deg, #D97706, #B45309)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        }}>
+                            <EmojiEventsIcon sx={{ fontSize: 16, color: '#fff' }} />
+                        </Box>
                     ) : (
                         <Box sx={{
-                            width: 26, height: 26, borderRadius: '50%',
-                            bgcolor: 'rgba(148,163,184,0.12)',
+                            width: 28, height: 28, borderRadius: 2,
+                            bgcolor: '#F1F5F9', border: '1.5px solid', borderColor: 'divider',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                             <Typography fontSize="0.7rem" fontWeight={800} color="text.secondary">
-                                {rank}
+                                #{rank}
                             </Typography>
                         </Box>
                     )}
@@ -314,39 +319,34 @@ const MemberCard: React.FC<{
                     </Box>
                 </Box>
 
+                {/* Divider */}
+                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 2 }} />
+
                 {/* ── Metric Chips ── */}
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75, mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <CommitIcon sx={{ fontSize: 12, color: '#64748B' }} />
-                        <Typography fontSize="0.65rem" color="text.secondary" fontWeight={600}>
-                            Commits count
-                        </Typography>
-                        <Typography fontSize="0.65rem" fontWeight={800} sx={{ ml: 'auto', color: '#1E293B' }}>
-                            {m.totalCommits}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AssignmentTurnedInIcon sx={{ fontSize: 12, color: '#64748B' }} />
-                        <Typography fontSize="0.65rem" color="text.secondary" fontWeight={600}>
-                            Tasks done
-                        </Typography>
-                        <Typography fontSize="0.65rem" fontWeight={800} sx={{ ml: 'auto', color: '#1E293B' }}>
-                            {m.tasksCompleted}/{m.tasksAssigned}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AddIcon sx={{ fontSize: 12, color: '#3FB950' }} />
-                        <Typography fontSize="0.65rem" fontWeight={700} sx={{ color: '#3FB950', fontFamily: "'JetBrains Mono', monospace" }}>
-                            {m.linesAdded.toLocaleString()} added
-                        </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <RemoveIcon sx={{ fontSize: 12, color: '#F85149' }} />
-                        <Typography fontSize="0.65rem" fontWeight={700} sx={{ color: '#F85149', fontFamily: "'JetBrains Mono', monospace" }}>
-                            {m.linesDeleted.toLocaleString()} deleted
-                        </Typography>
-                    </Box>
+                    {[
+                        { icon: <CommitIcon sx={{ fontSize: 12 }} />, label: 'Commits', value: m.totalCommits, bg: '#EFF6FF', color: '#3B82F6' },
+                        { icon: <AssignmentTurnedInIcon sx={{ fontSize: 12 }} />, label: 'Tasks done', value: `${m.tasksCompleted}/${m.tasksAssigned}`, bg: '#F5F3FF', color: '#8B5CF6' },
+                        { icon: <AddIcon sx={{ fontSize: 12 }} />, label: 'Added', value: `+${m.linesAdded.toLocaleString()}`, bg: '#F0FDF4', color: '#16A34A' },
+                        { icon: <RemoveIcon sx={{ fontSize: 12 }} />, label: 'Deleted', value: `-${m.linesDeleted.toLocaleString()}`, bg: '#FEF2F2', color: '#DC2626' },
+                    ].map(chip => (
+                        <Box key={chip.label} sx={{
+                            display: 'flex', alignItems: 'center', gap: 0.5,
+                            bgcolor: chip.bg, borderRadius: 1.5, px: 1, py: 0.6,
+                        }}>
+                            <Box sx={{ color: chip.color, display: 'flex' }}>{chip.icon}</Box>
+                            <Typography fontSize="0.6rem" color={chip.color} fontWeight={600} noWrap>
+                                {chip.label}
+                            </Typography>
+                            <Typography fontSize="0.65rem" fontWeight={800} sx={{ ml: 'auto', color: chip.color, fontFamily: "'JetBrains Mono', monospace" }}>
+                                {chip.value}
+                            </Typography>
+                        </Box>
+                    ))}
                 </Box>
+
+                {/* Divider */}
+                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 1.5 }} />
 
                 {/* ── Stats Grid ── */}
                 <Box sx={{ mb: 1.5 }}>
@@ -378,6 +378,9 @@ const MemberCard: React.FC<{
                         ))}
                     </Box>
                 </Box>
+
+                {/* Divider */}
+                <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 1.5 }} />
 
                 {/* ── Heatmap ── */}
                 <MemberHeatmap userId={m.userId} projectId={projectId} compact />
@@ -499,17 +502,17 @@ const MemberDetailDialog: React.FC<{
                         accentColor="#3B82F6" score={m.githubImpactScore}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, mb: 2 }}>
                             {[
-                                { label: 'commits', value: m.totalCommits, color: '#1E293B' },
-                                { label: 'lines added', value: `+${m.linesAdded.toLocaleString()}`, color: '#3FB950' },
-                                { label: 'lines deleted', value: `-${m.linesDeleted.toLocaleString()}`, color: '#F85149' },
-                                { label: 'bug fixes', value: m.bugFixCommits, color: '#F59E0B' },
+                                { label: 'commits', value: m.totalCommits, color: '#1E293B', bg: '#F1F5F9' },
+                                { label: 'lines added', value: `+${m.linesAdded.toLocaleString()}`, color: '#3FB950', bg: '#F0FDF4' },
+                                { label: 'lines deleted', value: `-${m.linesDeleted.toLocaleString()}`, color: '#F85149', bg: '#FEF2F2' },
+                                { label: 'bug fixes', value: m.bugFixCommits, color: '#F59E0B', bg: '#FFFBEB' },
                             ].map(s => (
-                                <Box key={s.label} sx={{ textAlign: 'center' }}>
-                                    <Typography fontWeight={800} fontSize="0.95rem"
+                                <Box key={s.label} sx={{ textAlign: 'center', bgcolor: s.bg, borderRadius: 2, py: 1, px: 0.5 }}>
+                                    <Typography fontWeight={800} fontSize="1rem"
                                         sx={{ color: s.color, fontFamily: "'Inter', sans-serif", lineHeight: 1 }}>
                                         {s.value}
                                     </Typography>
-                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.3 }}>
+                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>
                                         {s.label}
                                     </Typography>
                                 </Box>
@@ -521,22 +524,24 @@ const MemberDetailDialog: React.FC<{
                         <MemberHeatmap userId={m.userId} projectId={projectId} />
                     </DetailSection>
 
+                    <Box sx={{ borderTop: '1px solid', borderColor: 'divider' }} />
+
                     {/* Jira Execution */}
                     <DetailSection title="Jira Execution" icon={<TaskAltIcon sx={{ fontSize: 18 }} />}
                         accentColor="#10B981" score={m.jiraExecutionScore}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
                             {[
-                                { label: 'Tasks completed', value: `${m.tasksCompleted}/${m.tasksAssigned}`, color: '#1E293B' },
-                                { label: 'Completion rate', value: `${Math.round(m.taskCompletionRate)}%`, color: m.taskCompletionRate >= 70 ? '#10B981' : '#F59E0B' },
-                                { label: 'In progress', value: m.tasksInProgress, color: '#3B82F6' },
-                                { label: 'Reworks', value: m.reworkCount, color: m.reworkCount > 3 ? '#EF4444' : '#64748B' },
+                                { label: 'Tasks completed', value: `${m.tasksCompleted}/${m.tasksAssigned}`, color: '#1E293B', bg: '#F1F5F9' },
+                                { label: 'Completion rate', value: `${Math.round(m.taskCompletionRate)}%`, color: m.taskCompletionRate >= 70 ? '#10B981' : '#F59E0B', bg: m.taskCompletionRate >= 70 ? '#F0FDF4' : '#FFFBEB' },
+                                { label: 'In progress', value: m.tasksInProgress, color: '#3B82F6', bg: '#EFF6FF' },
+                                { label: 'Reworks', value: m.reworkCount, color: m.reworkCount > 3 ? '#EF4444' : '#64748B', bg: m.reworkCount > 3 ? '#FEF2F2' : '#F8FAFC' },
                             ].map(s => (
-                                <Box key={s.label} sx={{ textAlign: 'center' }}>
-                                    <Typography fontWeight={800} fontSize="0.95rem"
+                                <Box key={s.label} sx={{ textAlign: 'center', bgcolor: s.bg, borderRadius: 2, py: 1, px: 0.5 }}>
+                                    <Typography fontWeight={800} fontSize="1rem"
                                         sx={{ color: s.color, fontFamily: "'Inter', sans-serif", lineHeight: 1 }}>
                                         {s.value}
                                     </Typography>
-                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.3 }}>
+                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>
                                         {s.label}
                                     </Typography>
                                 </Box>
@@ -544,22 +549,24 @@ const MemberDetailDialog: React.FC<{
                         </Box>
                     </DetailSection>
 
+                    <Box sx={{ borderTop: '1px solid', borderColor: 'divider' }} />
+
                     {/* Consistency & Quality */}
                     <DetailSection title="Consistency & Quality" icon={<AutoAwesomeIcon sx={{ fontSize: 18 }} />}
                         accentColor="#8B5CF6">
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
                             {[
-                                { label: 'Active days', value: m.activeDays, color: '#1E293B' },
-                                { label: 'Consistency Factor', value: `×${m.consistencyFactor.toFixed(2)}`, color: '#8B5CF6' },
-                                { label: 'Smart Bonus', value: `×${m.smartCoderBonus.toFixed(2)}`, color: m.smartCoderBonus > 1.1 ? '#F59E0B' : '#64748B' },
-                                { label: 'Code Churn Rate', value: m.codeChurnRate.toFixed(2), color: m.codeChurnRate > 1.5 ? '#EF4444' : '#64748B' },
+                                { label: 'Active days', value: m.activeDays, color: '#1E293B', bg: '#F1F5F9' },
+                                { label: 'Consistency', value: `×${m.consistencyFactor.toFixed(2)}`, color: '#8B5CF6', bg: '#F5F3FF' },
+                                { label: 'Smart Bonus', value: `×${m.smartCoderBonus.toFixed(2)}`, color: m.smartCoderBonus > 1.1 ? '#F59E0B' : '#64748B', bg: m.smartCoderBonus > 1.1 ? '#FFFBEB' : '#F8FAFC' },
+                                { label: 'Churn Rate', value: m.codeChurnRate.toFixed(2), color: m.codeChurnRate > 1.5 ? '#EF4444' : '#64748B', bg: m.codeChurnRate > 1.5 ? '#FEF2F2' : '#F8FAFC' },
                             ].map(s => (
-                                <Box key={s.label} sx={{ textAlign: 'center' }}>
-                                    <Typography fontWeight={800} fontSize="0.95rem"
+                                <Box key={s.label} sx={{ textAlign: 'center', bgcolor: s.bg, borderRadius: 2, py: 1, px: 0.5 }}>
+                                    <Typography fontWeight={800} fontSize="1rem"
                                         sx={{ color: s.color, fontFamily: "'Inter', sans-serif", lineHeight: 1 }}>
                                         {s.value}
                                     </Typography>
-                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.3 }}>
+                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>
                                         {s.label}
                                     </Typography>
                                 </Box>
@@ -598,10 +605,10 @@ const ContributionPage: React.FC = () => {
         return (
             <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
                 <Skeleton variant="rounded" height={100} sx={{ mb: 3, borderRadius: 3 }} />
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
                     {[1, 2, 3, 4].map(i => <Skeleton key={i} variant="rounded" height={90} sx={{ borderRadius: 3 }} />)}
                 </Box>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 2 }}>
                     {[1, 2, 3, 4].map(i => <Skeleton key={i} variant="rounded" height={350} sx={{ borderRadius: 3 }} />)}
                 </Box>
             </Box>
@@ -870,7 +877,8 @@ const ContributionPage: React.FC = () => {
                 gridTemplateColumns: {
                     xs: '1fr',
                     sm: 'repeat(2, 1fr)',
-                    md: members.length <= 3 ? `repeat(${members.length}, 1fr)` : 'repeat(4, 1fr)',
+                    md: members.length <= 3 ? `repeat(${members.length}, 1fr)` : 'repeat(3, 1fr)',
+                    lg: members.length <= 4 ? `repeat(${members.length}, 1fr)` : 'repeat(4, 1fr)',
                 },
                 gap: 2, mb: 3,
             }}>

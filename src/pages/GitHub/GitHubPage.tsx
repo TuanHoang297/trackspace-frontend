@@ -7,6 +7,7 @@ import {
     InputAdornment,
 } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SyncIcon from '@mui/icons-material/Sync';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
@@ -36,16 +37,12 @@ const REPO_CFG = {
     BACKEND: { label: 'Backend', icon: <StorageIcon />, desc: 'Server-side repository', color: '#8B5CF6' },
 };
 
-const CONTRIBUTOR_THEMES = [
-    { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', accent: '#764ba2', light: '#F3F0FF' },
-    { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', accent: '#f5576c', light: '#FFF0F3' },
-    { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', accent: '#4facfe', light: '#EFF8FF' },
-    { bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', accent: '#43e97b', light: '#ECFDF5' },
-    { bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', accent: '#fa709a', light: '#FFF5F5' },
-    { bg: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', accent: '#a18cd1', light: '#FAF5FF' },
-];
 
-const RANK_EMOJI = ['🥇', '🥈', '🥉'];
+const RANK_GRADIENTS = [
+    'linear-gradient(135deg, #F59E0B, #EAB308)',
+    'linear-gradient(135deg, #94A3B8, #CBD5E1)',
+    'linear-gradient(135deg, #D97706, #B45309)',
+];
 
 // ── Activity Chart — modern area chart with gradient fill ──
 const CHART_H = 110;
@@ -72,7 +69,7 @@ const ActivityChart: React.FC<{ commits: GitHubCommitResponse[]; color: string }
         });
     }, [commits]);
     const max = Math.max(...data.map(d => d.count), 1);
-    const W = 280, H = CHART_H, PAD_L = 8, PAD_R = 8, PAD_T = 24, PAD_B = 20;
+    const W = 400, H = CHART_H, PAD_L = 16, PAD_R = 16, PAD_T = 22, PAD_B = 20;
     const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
     const points = data.map((d, i) => ({
         x: PAD_L + (i / (data.length - 1)) * innerW,
@@ -108,8 +105,8 @@ const ActivityChart: React.FC<{ commits: GitHubCommitResponse[]; color: string }
                     `}</style>
                 </defs>
                 {/* Background */}
-                <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} fill="#FAFBFC" rx={5} />
-                <rect x={PAD_L} y={PAD_T} width={innerW} height={innerH} fill="none" stroke="#E2E8F0" strokeWidth={0.8} rx={5} />
+                <rect x={0} y={PAD_T} width={W} height={innerH} fill="#FAFBFC" />
+                <rect x={0} y={PAD_T} width={W} height={innerH} fill="none" stroke="#E2E8F0" strokeWidth={0.5} />
                 {/* Horizontal grid lines with labels */}
                 {[0, 0.25, 0.5, 0.75, 1].map(p => (
                     <g key={`h${p}`}>
@@ -614,62 +611,110 @@ const GitHubPage: React.FC = () => {
                                 ) : (
                                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2.5 }}>
                                         {sorted.map((s, i) => {
-                                            const theme = CONTRIBUTOR_THEMES[i % CONTRIBUTOR_THEMES.length];
                                             const authorCommits = commitsByAuthor[s.githubLogin] || [];
+                                            const avatarColors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
+                                            const ac = avatarColors[i % avatarColors.length];
                                             return (
                                                 <Box key={s.userName + i} sx={{
-                                                    borderRadius: 3, overflow: 'hidden', bgcolor: '#fff',
-                                                    border: '1px solid #E2E8F0',
-                                                    transition: 'all 0.2s ease',
-                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                                                    '&:hover': { boxShadow: '0 8px 24px rgba(0,0,0,0.1)', transform: 'translateY(-3px)', borderColor: theme.accent + '50' }
+                                                    borderRadius: 4, overflow: 'hidden', bgcolor: '#fff',
+                                                    border: '1px solid rgba(226,232,240,0.6)',
+                                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                                                    '&:hover': {
+                                                        boxShadow: '0 12px 40px rgba(15,23,42,0.12)',
+                                                        transform: 'translateY(-4px)',
+                                                        borderColor: 'rgba(99,102,241,0.3)',
+                                                    }
                                                 }}>
-                                                    {/* Gradient header */}
-                                                    <Box sx={{ background: theme.bg, px: 2.5, py: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                        <Avatar sx={{ width: 44, height: 44, bgcolor: 'rgba(255,255,255,0.25)', color: '#fff', fontWeight: 800, fontSize: 16, border: '2.5px solid rgba(255,255,255,0.4)' }}>
+                                                    {/* Dark navy header */}
+                                                    <Box sx={{
+                                                        background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+                                                        px: 2.5, py: 2.5,
+                                                        display: 'flex', alignItems: 'center', gap: 1.5,
+                                                        position: 'relative',
+                                                        '&::after': {
+                                                            content: '""', position: 'absolute',
+                                                            bottom: 0, left: 0, right: 0, height: 1,
+                                                            background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.3), transparent)',
+                                                        }
+                                                    }}>
+                                                        <Avatar sx={{
+                                                            width: 44, height: 44,
+                                                            bgcolor: ac + '20', color: ac,
+                                                            fontWeight: 800, fontSize: 15,
+                                                            border: `2px solid ${ac}60`,
+                                                            boxShadow: `0 0 12px ${ac}25`,
+                                                        }}>
                                                             {getInitials(s.githubLogin || s.userName)}
                                                         </Avatar>
                                                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                            <Typography fontWeight={800} fontSize="0.95rem" color="#fff" noWrap>{s.githubLogin || s.userName}</Typography>
+                                                            <Typography fontWeight={800} fontSize="0.92rem" color="#F1F5F9" noWrap
+                                                                sx={{ fontFamily: "'Inter', sans-serif" }}>
+                                                                {s.githubLogin || s.userName}
+                                                            </Typography>
+                                                            <Typography fontSize="0.68rem" color="rgba(148,163,184,0.7)" fontWeight={500}>
+                                                                {s.totalCommits} commits · {(s.totalLinesAdded || 0).toLocaleString()} lines
+                                                            </Typography>
                                                         </Box>
                                                         {i < 3 ? (
-                                                            <Typography fontSize="1.5rem">{RANK_EMOJI[i]}</Typography>
+                                                            <Box sx={{
+                                                                width: 32, height: 32, borderRadius: 2,
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                background: RANK_GRADIENTS[i],
+                                                                boxShadow: `0 2px 10px ${i === 0 ? 'rgba(245,158,11,0.4)' : i === 1 ? 'rgba(148,163,184,0.3)' : 'rgba(217,119,6,0.3)'}`,
+                                                            }}>
+                                                                <EmojiEventsIcon sx={{ fontSize: 17, color: '#fff' }} />
+                                                            </Box>
                                                         ) : (
                                                             <Box sx={{
-                                                                px: 1.2, py: 0.4, borderRadius: 10,
-                                                                bgcolor: 'rgba(255,255,255,0.2)',
-                                                                border: '1.5px solid rgba(255,255,255,0.35)',
-                                                                backdropFilter: 'blur(8px)',
+                                                                width: 30, height: 30, borderRadius: 2,
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                bgcolor: 'rgba(148,163,184,0.1)',
+                                                                border: '1.5px solid rgba(148,163,184,0.2)',
                                                             }}>
-                                                                <Typography fontWeight={800} fontSize="0.8rem" color="#fff"
-                                                                    sx={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.2 }}>
+                                                                <Typography fontWeight={800} fontSize="0.72rem" color="rgba(148,163,184,0.8)"
+                                                                    sx={{ fontFamily: "'JetBrains Mono', monospace" }}>
                                                                     #{i + 1}
                                                                 </Typography>
                                                             </Box>
                                                         )}
                                                     </Box>
 
-                                                    {/* Stats row */}
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-around', px: 2, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
+                                                    {/* Stats row with dividers */}
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        borderBottom: '1px solid #E2E8F0',
+                                                    }}>
                                                         <Tooltip title="Click xem commits" arrow>
-                                                            <Box onClick={() => handleAuthorClick(s.githubLogin)} sx={{ textAlign: 'center', cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
-                                                                <Typography fontWeight={800} fontSize="1.2rem" color="#1E293B" fontFamily="'JetBrains Mono', monospace">{s.totalCommits}</Typography>
-                                                                <Typography fontSize="0.65rem" color="#94A3B8" fontWeight={600} sx={{ letterSpacing: '0.05em' }}>COMMITS</Typography>
+                                                            <Box onClick={() => handleAuthorClick(s.githubLogin)} sx={{
+                                                                flex: 1, textAlign: 'center', cursor: 'pointer',
+                                                                py: 2, borderRight: '1px solid #E2E8F0',
+                                                                transition: 'background 0.15s',
+                                                                '&:hover': { bgcolor: '#F8FAFC' },
+                                                            }}>
+                                                                <Typography fontWeight={800} fontSize="1.15rem" color="#1E293B"
+                                                                    fontFamily="'JetBrains Mono', monospace">{s.totalCommits}</Typography>
+                                                                <Typography fontSize="0.6rem" color="#94A3B8" fontWeight={700}
+                                                                    sx={{ letterSpacing: '0.08em' }}>COMMITS</Typography>
                                                             </Box>
                                                         </Tooltip>
-                                                        <Box sx={{ textAlign: 'center' }}>
-                                                            <Typography fontWeight={800} fontSize="1.2rem" color="#16A34A" fontFamily="'JetBrains Mono', monospace">+{(s.totalLinesAdded || 0).toLocaleString()}</Typography>
-                                                            <Typography fontSize="0.65rem" color="#94A3B8" fontWeight={600} sx={{ letterSpacing: '0.05em' }}>ADDED</Typography>
+                                                        <Box sx={{ flex: 1, textAlign: 'center', py: 2, borderRight: '1px solid #E2E8F0' }}>
+                                                            <Typography fontWeight={800} fontSize="1.15rem" color="#16A34A"
+                                                                fontFamily="'JetBrains Mono', monospace">+{(s.totalLinesAdded || 0).toLocaleString()}</Typography>
+                                                            <Typography fontSize="0.6rem" color="#94A3B8" fontWeight={700}
+                                                                sx={{ letterSpacing: '0.08em' }}>ADDED</Typography>
                                                         </Box>
-                                                        <Box sx={{ textAlign: 'center' }}>
-                                                            <Typography fontWeight={800} fontSize="1.2rem" color="#DC2626" fontFamily="'JetBrains Mono', monospace">-{(s.totalLinesDeleted || 0).toLocaleString()}</Typography>
-                                                            <Typography fontSize="0.65rem" color="#94A3B8" fontWeight={600} sx={{ letterSpacing: '0.05em' }}>DELETED</Typography>
+                                                        <Box sx={{ flex: 1, textAlign: 'center', py: 2 }}>
+                                                            <Typography fontWeight={800} fontSize="1.15rem" color="#DC2626"
+                                                                fontFamily="'JetBrains Mono', monospace">-{(s.totalLinesDeleted || 0).toLocaleString()}</Typography>
+                                                            <Typography fontSize="0.6rem" color="#94A3B8" fontWeight={700}
+                                                                sx={{ letterSpacing: '0.08em' }}>DELETED</Typography>
                                                         </Box>
                                                     </Box>
 
                                                     {/* Activity chart */}
-                                                    <Box sx={{ px: 2, py: 2.5 }}>
-                                                        <ActivityChart commits={authorCommits} color={theme.accent} />
+                                                    <Box sx={{ px: 1, pt: 1.5, pb: 0.5 }}>
+                                                        <ActivityChart commits={authorCommits} color={ac} />
                                                     </Box>
                                                 </Box>
                                             );
