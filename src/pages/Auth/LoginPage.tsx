@@ -7,6 +7,7 @@ import {
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import GoogleIcon from '@mui/icons-material/Google';
+import GitHubIcon from '@mui/icons-material/GitHub';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { API_BASE_URL } from '../../config/env';
 
@@ -118,6 +119,12 @@ const LoginPage: React.FC = () => {
     window.location.href = `${baseUrl}/oauth2/authorize/google?redirect_uri=${uri}`;
   };
 
+  const handleGitHub = () => {
+    const baseUrl = API_BASE_URL.replace('/api', '');
+    const uri = encodeURIComponent(window.location.origin + '/oauth2/redirect');
+    window.location.href = `${baseUrl}/oauth2/authorize/github?redirect_uri=${uri}`;
+  };
+
   React.useEffect(() => {
     const err = new URLSearchParams(window.location.search).get('error');
     if (err) setApiErr(decodeURIComponent(err));
@@ -208,10 +215,20 @@ const LoginPage: React.FC = () => {
             onClick={handleGoogle}
             sx={{
               borderColor: BORDER, color: DIM, textTransform: 'none',
-              fontWeight: 600, borderRadius: '12px', py: 1.2,
+              fontWeight: 600, borderRadius: '12px', py: 1.2, mb: 1.5,
               '&:hover': { borderColor: ACCENT, color: TEXT, bgcolor: 'rgba(59,130,246,0.04)' },
             }}>
             Đăng nhập với Google
+          </Button>
+
+          <Button fullWidth variant="outlined" startIcon={<GitHubIcon />}
+            onClick={handleGitHub}
+            sx={{
+              borderColor: BORDER, color: DIM, textTransform: 'none',
+              fontWeight: 600, borderRadius: '12px', py: 1.2,
+              '&:hover': { borderColor: '#24292f', color: '#24292f', bgcolor: 'rgba(36,41,47,0.04)' },
+            }}>
+            Đăng nhập với GitHub
           </Button>
         </Box>
 
