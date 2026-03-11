@@ -437,7 +437,7 @@ const ProjectOverview: React.FC = () => {
                             description="Phân tích đóng góp thành viên"
                             color="#36B37E"
                             onClick={() => navigate(`/projects/${pid}/contribution`)}
-                            status="coming-soon"
+
                         />
                         <QuickLink
                             icon={<DescriptionIcon />}
@@ -445,7 +445,7 @@ const ProjectOverview: React.FC = () => {
                             description="Tạo tài liệu SRS bằng AI"
                             color="#8B5CF6"
                             onClick={() => navigate(`/projects/${pid}/srs`)}
-                            status="coming-soon"
+
                         />
                     </Box>
                 </Grid>
