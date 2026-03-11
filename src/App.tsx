@@ -28,10 +28,6 @@ import JiraBoard from './pages/Jira/JiraBoard';
 import JiraConnect from './pages/Jira/JiraConnect';
 import GitHubPage from './pages/GitHub/GitHubPage';
 import AnalyticsPage from './pages/Analytics/AnalyticsPage';
-import StudentDashboard from './pages/Student/StudentDashboard';
-import SemesterManagement from './pages/Semesters/SemesterManagement';
-import SubjectManagement from './pages/Subjects/SubjectManagement';
-import ContributionPage from './pages/Contribution/ContributionPage';
 
 // ── Lazy: auth pages (loaded once per session) ──
 const LandingPage = lazy(() => import('./pages/Landing/LandingPage'));
@@ -105,32 +101,6 @@ function App() {
                                 <Route path="/student/dashboard" element={<StudentDashboard />} />
                             </Route>
 
-                    {/* Project Workspace — all roles */}
-                    <Route
-                        element={
-                            <ProtectedRoute allowedRoles={['LECTURER', 'TEAMLEADER', 'TEAMMEMBER']}>
-                                <ProjectLayout />
-                            </ProtectedRoute>
-                        }
-                    >
-                        <Route path="/projects/:projectId" element={<ProjectOverview />} />
-                        <Route path="/projects/:projectId/jira" element={<JiraBoard />} />
-                        <Route path="/projects/:projectId/jira/connect" element={<JiraConnect />} />
-                        <Route path="/projects/:projectId/github" element={<GitHubPage />} />
-                        <Route path="/projects/:projectId/contribution" element={<AnalyticsPage />} />
-                        <Route path="/projects/:projectId/srs" element={
-                            <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>SRS Document</Typography>
-                                <Typography color="text.secondary">Coming soon...</Typography>
-                            </Box>
-                        } />
-                        <Route path="/projects/:projectId/settings" element={
-                            <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>Cài đặt dự án</Typography>
-                                <Typography color="text.secondary">Coming soon...</Typography>
-                            </Box>
-                        } />
-                    </Route>
                             {/* Project Workspace — all roles */}
                             <Route
                                 element={
@@ -143,7 +113,7 @@ function App() {
                                 <Route path="/projects/:projectId/jira" element={<JiraBoard />} />
                                 <Route path="/projects/:projectId/jira/connect" element={<JiraConnect />} />
                                 <Route path="/projects/:projectId/github" element={<GitHubPage />} />
-                                <Route path="/projects/:projectId/contribution" element={<ContributionPage />} />
+                                <Route path="/projects/:projectId/contribution" element={<AnalyticsPage />} />
                                 <Route path="/projects/:projectId/srs" element={
                                     <Box sx={{ p: 4, textAlign: 'center' }}>
                                         <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>SRS Document</Typography>
