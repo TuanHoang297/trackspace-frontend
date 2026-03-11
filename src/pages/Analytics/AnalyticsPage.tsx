@@ -228,14 +228,6 @@ const MemberCard: React.FC<{
         }}>
             {/* ── Main row ── */}
             <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
-                {/* Rank */}
-                <Typography sx={{
-                    width: 32, textAlign: 'center', fontSize: rank < 3 ? '1.4rem' : '0.85rem',
-                    fontWeight: 700, color: rankColor, flexShrink: 0,
-                }}>
-                    {rankLabel}
-                </Typography>
-
                 {/* Avatar */}
                 <Avatar sx={{
                     width: 44, height: 44, background: gradient,
@@ -511,11 +503,11 @@ const ModelOverviewPanel: React.FC<{ feWeight: number }> = ({ feWeight }) => {
                                            justifyContent: 'center', flexShrink: 0, mt: 0.1 }}>1</Box>
                                 <Box>
                                     <Typography variant="body2" fontWeight={700} sx={{ color: '#1D4ED8', mb: 0.3 }}>
-                                        Chia riêng 2 sân chơi: Frontend và Backend
+                                        Chia riêng: Frontend và Backend
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                                         Sinh viên làm <strong>Frontend</strong> (giao diện, HTML, CSS) chỉ được xếp hạng và so sánh với
-                                        nhau — không bị so với Frontend.{' '}
+                                        Frontend.{' '}
                                         Sinh viên làm <strong>Backend</strong> (API, database, server) cũng vậy.
                                     </Typography>
                                     <Box sx={{ mt: 0.75, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -943,9 +935,6 @@ const AnalyticsPage: React.FC = () => {
                     />
                 </Box>
             )}
-
-            {/* ── Model overview ── */}
-            <ModelOverviewPanel feWeight={feWeight} />
 
             {/* ── Tabs ── */}
             <Tabs
