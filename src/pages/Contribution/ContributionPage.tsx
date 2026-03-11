@@ -237,8 +237,7 @@ const MemberCard: React.FC<{
     m: ContributionResponse;
     rank: number;
     projectId: number;
-    onOpenDetail: (m: ContributionResponse) => void;
-}> = ({ m, rank, projectId, onOpenDetail }) => {
+}> = ({ m, rank, projectId }) => {
     const avatarColor = AVATAR_COLORS[(rank - 1) % AVATAR_COLORS.length];
     const domain = DOMAIN_META[m.domain] || DOMAIN_META.UNKNOWN;
 
@@ -246,9 +245,8 @@ const MemberCard: React.FC<{
 
     return (
         <Paper elevation={0}
-            onClick={() => onOpenDetail(m)}
             sx={{
-                borderRadius: 4, overflow: 'hidden', cursor: 'pointer',
+                borderRadius: 4, overflow: 'hidden',
                 border: (m.inactive || m.hasLowContribution) ? '1px solid rgba(239,68,68,0.35)' : '1px solid rgba(226,232,240,0.4)',
                 borderLeft: (m.inactive || m.hasLowContribution) ? '3px solid #EF4444' : undefined,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -330,45 +328,73 @@ const MemberCard: React.FC<{
 
                 <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mb: 1.5 }} />
 
-                {/* Section: Metrics + Stats */}
+                {/* GitHub Impact | Jira Execution — side by side */}
                 <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
-                    {/* Metric Chips 2x2 */}
+                    {/* GitHub Impact */}
                     <Box sx={{ flex: 1 }}>
-                        <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Metrics</Typography>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.6 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                            <GitHubIcon sx={{ fontSize: 11, color: '#3B82F6' }} />
+                            <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ letterSpacing: '0.08em', textTransform: 'uppercase' }}>GitHub</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             {[
-                                { icon: <CommitIcon sx={{ fontSize: 11 }} />, label: 'Commits', value: m.totalCommits, bg: '#EFF6FF', color: '#3B82F6', border: 'rgba(59,130,246,0.15)' },
-                                { icon: <AssignmentTurnedInIcon sx={{ fontSize: 11 }} />, label: 'Tasks', value: `${m.tasksCompleted}/${m.tasksAssigned}`, bg: '#F5F3FF', color: '#8B5CF6', border: 'rgba(139,92,246,0.15)' },
-                                { icon: <AddIcon sx={{ fontSize: 11 }} />, label: 'Added', value: `+${m.linesAdded.toLocaleString()}`, bg: '#F0FDF4', color: '#16A34A', border: 'rgba(22,163,74,0.15)' },
-                                { icon: <RemoveIcon sx={{ fontSize: 11 }} />, label: 'Deleted', value: `-${m.linesDeleted.toLocaleString()}`, bg: '#FEF2F2', color: '#DC2626', border: 'rgba(220,38,38,0.15)' },
+                                { icon: <CommitIcon sx={{ fontSize: 10 }} />, label: 'Commits', value: m.totalCommits, color: '#3B82F6', bg: '#EFF6FF', border: 'rgba(59,130,246,0.15)' },
+                                { icon: <AddIcon sx={{ fontSize: 10 }} />, label: 'Added', value: `+${m.linesAdded.toLocaleString()}`, color: '#16A34A', bg: '#F0FDF4', border: 'rgba(22,163,74,0.15)' },
+                                { icon: <RemoveIcon sx={{ fontSize: 10 }} />, label: 'Deleted', value: `-${m.linesDeleted.toLocaleString()}`, color: '#DC2626', bg: '#FEF2F2', border: 'rgba(220,38,38,0.15)' },
                             ].map(chip => (
-                                <Box key={chip.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.4, bgcolor: chip.bg, borderRadius: 1.5, px: 0.8, py: 0.5, border: `1px solid ${chip.border}` }}>
+                                <Box key={chip.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.4, bgcolor: chip.bg, borderRadius: 1.5, px: 0.8, py: 0.4, border: `1px solid ${chip.border}` }}>
                                     <Box sx={{ color: chip.color, display: 'flex', flexShrink: 0 }}>{chip.icon}</Box>
-                                    <Typography fontSize="0.55rem" color={chip.color} fontWeight={600} noWrap>{chip.label}</Typography>
-                                    <Typography fontSize="0.62rem" fontWeight={800} sx={{ ml: 'auto', color: chip.color, fontFamily: "'JetBrains Mono', monospace" }}>{chip.value}</Typography>
+                                    <Typography fontSize="0.52rem" color={chip.color} fontWeight={600} noWrap>{chip.label}</Typography>
+                                    <Typography fontSize="0.6rem" fontWeight={800} sx={{ ml: 'auto', color: chip.color, fontFamily: "'JetBrains Mono', monospace" }}>{chip.value}</Typography>
                                 </Box>
                             ))}
                         </Box>
                     </Box>
 
-                    {/* Stats Table 3x2 */}
+                    {/* Divider */}
+                    <Box sx={{ width: '1px', bgcolor: 'divider', alignSelf: 'stretch', my: 0.5 }} />
+
+                    {/* Jira Execution */}
                     <Box sx={{ flex: 1 }}>
-                        <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Stats</Typography>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderRadius: 1.5, overflow: 'hidden', border: '1px solid rgba(226,232,240,0.6)' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="#10B981"><path d="M11.53 2c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35V2.84a.84.84 0 0 0-.84-.84H11.53Zm-4.67 4.66c-.01 2.4 1.95 4.35 4.35 4.36h1.78v1.72c.01 2.39 1.95 4.34 4.34 4.34V7.5a.84.84 0 0 0-.84-.84H6.86ZM2.2 11.33c0 2.4 1.96 4.35 4.35 4.35h1.78v1.72c.01 2.4 1.96 4.35 4.35 4.35v-9.58a.84.84 0 0 0-.84-.84H2.2Z" /></svg>
+                            <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ letterSpacing: '0.08em', textTransform: 'uppercase' }}>Jira</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             {[
-                                { label: 'Total', value: Math.round(m.contributionScore) },
-                                { label: 'Commits', value: m.totalCommits },
-                                { label: 'Lines', value: `${(m.linesAdded / 1000).toFixed(0)}K` },
-                                { label: 'Active', value: `${m.activeDays}d` },
-                                { label: 'Consist', value: m.consistencyFactor.toFixed(1) },
-                                { label: 'Churn', value: m.codeChurnRate.toFixed(1) },
-                            ].map((s, idx) => (
-                                <Box key={s.label} sx={{ textAlign: 'center', py: 0.6, bgcolor: '#F8FAFC', borderRight: (idx % 3 !== 2) ? '1px solid rgba(226,232,240,0.6)' : 'none', borderBottom: idx < 3 ? '1px solid rgba(226,232,240,0.6)' : 'none' }}>
-                                    <Typography fontSize="0.72rem" fontWeight={800} sx={{ fontFamily: "'JetBrains Mono', monospace", color: '#1E293B', lineHeight: 1 }}>{s.value}</Typography>
-                                    <Typography fontSize="0.42rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.2, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</Typography>
+                                { icon: <AssignmentTurnedInIcon sx={{ fontSize: 10 }} />, label: 'Tasks', value: `${m.tasksCompleted}/${m.tasksAssigned}`, color: '#8B5CF6', bg: '#F5F3FF', border: 'rgba(139,92,246,0.15)' },
+                                { icon: <StarIcon sx={{ fontSize: 10 }} />, label: 'Rate', value: `${Math.round(m.taskCompletionRate)}%`, color: m.taskCompletionRate >= 70 ? '#10B981' : '#F59E0B', bg: m.taskCompletionRate >= 70 ? '#F0FDF4' : '#FFFBEB', border: m.taskCompletionRate >= 70 ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)' },
+                                { icon: <AutoAwesomeIcon sx={{ fontSize: 10 }} />, label: 'Rework', value: m.reworkCount, color: m.reworkCount > 3 ? '#EF4444' : '#64748B', bg: m.reworkCount > 3 ? '#FEF2F2' : '#F8FAFC', border: m.reworkCount > 3 ? 'rgba(239,68,68,0.15)' : 'rgba(100,116,139,0.1)' },
+                            ].map(chip => (
+                                <Box key={chip.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.4, bgcolor: chip.bg, borderRadius: 1.5, px: 0.8, py: 0.4, border: `1px solid ${chip.border}` }}>
+                                    <Box sx={{ color: chip.color, display: 'flex', flexShrink: 0 }}>{chip.icon}</Box>
+                                    <Typography fontSize="0.52rem" color={chip.color} fontWeight={600} noWrap>{chip.label}</Typography>
+                                    <Typography fontSize="0.6rem" fontWeight={800} sx={{ ml: 'auto', color: chip.color, fontFamily: "'JetBrains Mono', monospace" }}>{chip.value}</Typography>
                                 </Box>
                             ))}
                         </Box>
+                    </Box>
+                </Box>
+
+                {/* Consistency & Quality */}
+                <Box sx={{ mb: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                        <AutoAwesomeIcon sx={{ fontSize: 11, color: '#8B5CF6' }} />
+                        <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quality</Typography>
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.5 }}>
+                        {[
+                            { label: 'Active', value: `${m.activeDays}d`, tip: 'Số ngày có hoạt động', color: '#1E293B', bg: '#F1F5F9', border: 'rgba(30,41,59,0.08)' },
+                            { label: 'Consist', value: m.consistencyFactor.toFixed(2), tip: 'Độ đều đặn (0-1)', color: '#8B5CF6', bg: '#F5F3FF', border: 'rgba(139,92,246,0.12)' },
+                            { label: 'Churn', value: m.codeChurnRate.toFixed(2), tip: 'Tỷ lệ code sửa lại', color: m.codeChurnRate > 1.5 ? '#EF4444' : '#64748B', bg: m.codeChurnRate > 1.5 ? '#FEF2F2' : '#F8FAFC', border: m.codeChurnRate > 1.5 ? 'rgba(239,68,68,0.12)' : 'rgba(100,116,139,0.08)' },
+                        ].map(s => (
+                            <Tooltip key={s.label} title={s.tip} arrow placement="top">
+                                <Box sx={{ textAlign: 'center', py: 0.5, bgcolor: s.bg, borderRadius: 1.5, border: `1px solid ${s.border}`, cursor: 'help' }}>
+                                    <Typography fontSize="0.65rem" fontWeight={800} sx={{ fontFamily: "'JetBrains Mono', monospace", color: s.color, lineHeight: 1 }}>{s.value}</Typography>
+                                    <Typography fontSize="0.4rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.2, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</Typography>
+                                </Box>
+                            </Tooltip>
+                        ))}
                     </Box>
                 </Box>
 
@@ -382,194 +408,7 @@ const MemberCard: React.FC<{
     );
 };
 
-/* ═══════════ Detail Dialog (Expanded View - Image 2) ═══════════ */
-const DetailSection: React.FC<{
-    title: string;
-    icon: React.ReactNode;
-    accentColor: string;
-    score?: number;
-    children: React.ReactNode;
-}> = ({ title, icon, accentColor, score, children }) => (
-    <Box sx={{
-        borderLeft: `3px solid ${accentColor}`,
-        pl: 2, py: 1,
-    }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ color: accentColor, display: 'flex' }}>{icon}</Box>
-                <Typography fontWeight={700} fontSize="0.88rem" sx={{ fontFamily: "'Inter', sans-serif" }}>
-                    {title}
-                </Typography>
-            </Box>
-            {score !== undefined && (
-                <Typography fontWeight={800} fontSize="0.88rem" sx={{ color: accentColor, fontFamily: "'Inter', sans-serif" }}>
-                    {Math.round(score)}/100
-                </Typography>
-            )}
-        </Box>
-        {children}
-    </Box>
-);
 
-const MemberDetailDialog: React.FC<{
-    member: ContributionResponse | null;
-    rank: number;
-    projectId: number;
-    open: boolean;
-    onClose: () => void;
-}> = ({ member, rank, projectId, open, onClose }) => {
-    if (!member) return null;
-    const m = member;
-    const avatarColor = AVATAR_COLORS[(rank - 1) % AVATAR_COLORS.length];
-    const domain = DOMAIN_META[m.domain] || DOMAIN_META.UNKNOWN;
-    const isTop3 = rank <= 3;
-    const podiumGradient = rank === 1 ? GRADIENTS.gold : rank === 2 ? GRADIENTS.silver : GRADIENTS.bronze;
-
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
-            PaperProps={{
-                sx: { borderRadius: 4, maxHeight: '85vh' },
-            }}>
-            <DialogContent sx={{ p: 0 }}>
-                {/* Close button */}
-                <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}>
-                    <CloseIcon sx={{ fontSize: 20 }} />
-                </IconButton>
-
-                {/* ── Member Overview Bar ── */}
-                <Box sx={{
-                    p: 2.5, display: 'flex', alignItems: 'center', gap: 2,
-                    borderBottom: '1px solid', borderColor: 'divider',
-                    bgcolor: 'rgba(248,250,252,0.5)',
-                }}>
-                    <Avatar sx={{
-                        width: 52, height: 52,
-                        background: `linear-gradient(135deg, ${avatarColor}25, ${avatarColor}10)`,
-                        color: avatarColor, fontWeight: 700, fontSize: 18,
-                        fontFamily: "'Inter', sans-serif",
-                        border: `2px solid ${avatarColor}35`,
-                    }}>
-                        {getInitials(m.fullName)}
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                        <Typography fontWeight={700} fontSize="1.1rem"
-                            sx={{ fontFamily: "'Inter', sans-serif" }}>
-                            {m.fullName}
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 0.5, mt: 0.3 }}>
-                            <Chip label={domain.label} size="small"
-                                sx={{ height: 20, fontSize: '0.6rem', fontWeight: 700, bgcolor: domain.bg, color: domain.color, borderRadius: 1.5 }} />
-                            {m.smartCoderBonus > 1.1 && (
-                                <Chip icon={<AutoAwesomeIcon sx={{ fontSize: '11px !important', color: '#F59E0B !important' }} />}
-                                    label="Smart Coder" size="small"
-                                    sx={{ height: 20, fontSize: '0.58rem', fontWeight: 700, bgcolor: 'rgba(245,158,11,0.1)', color: '#F59E0B', borderRadius: 1.5 }} />
-                            )}
-                        </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-                        <ScoreRing score={m.contributionScore} size={60} thickness={4} />
-                        <Box sx={{
-                            width: 32, height: 32, borderRadius: 2,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            ...(isTop3 ? {
-                                background: podiumGradient,
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                            } : {
-                                bgcolor: '#F1F5F9', border: '1.5px solid', borderColor: 'divider',
-                            }),
-                        }}>
-                            {isTop3 ? (
-                                <EmojiEventsIcon sx={{ fontSize: 16, color: '#fff' }} />
-                            ) : (
-                                <Typography fontWeight={800} fontSize="0.75rem" color="text.secondary">#{rank}</Typography>
-                            )}
-                        </Box>
-                    </Box>
-                </Box>
-
-                {/* ── Detail Sections ── */}
-                <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                    {/* GitHub Impact */}
-                    <DetailSection title="GitHub Impact" icon={<GitHubIcon sx={{ fontSize: 18 }} />}
-                        accentColor="#3B82F6" score={m.githubImpactScore}>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, mb: 2 }}>
-                            {[
-                                { label: 'commits', value: m.totalCommits, color: '#1E293B', bg: '#F1F5F9' },
-                                { label: 'lines added', value: `+${m.linesAdded.toLocaleString()}`, color: '#3FB950', bg: '#F0FDF4' },
-                                { label: 'lines deleted', value: `-${m.linesDeleted.toLocaleString()}`, color: '#F85149', bg: '#FEF2F2' },
-                                { label: 'bug fixes', value: m.bugFixCommits, color: '#F59E0B', bg: '#FFFBEB' },
-                            ].map(s => (
-                                <Box key={s.label} sx={{ textAlign: 'center', bgcolor: s.bg, borderRadius: 2, py: 1, px: 0.5 }}>
-                                    <Typography fontWeight={800} fontSize="1rem"
-                                        sx={{ color: s.color, fontFamily: "'Inter', sans-serif", lineHeight: 1 }}>
-                                        {s.value}
-                                    </Typography>
-                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>
-                                        {s.label}
-                                    </Typography>
-                                </Box>
-                            ))}
-                        </Box>
-                        <Typography fontSize="0.65rem" color="text.secondary" fontWeight={600} sx={{ mb: 0.5 }}>
-                            90 days of commit history
-                        </Typography>
-                        <MemberHeatmap userId={m.userId} projectId={projectId} />
-                    </DetailSection>
-
-                    <Box sx={{ borderTop: '1px solid', borderColor: 'divider' }} />
-
-                    {/* Jira Execution */}
-                    <DetailSection title="Jira Execution" icon={<TaskAltIcon sx={{ fontSize: 18 }} />}
-                        accentColor="#10B981" score={m.jiraExecutionScore}>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
-                            {[
-                                { label: 'Tasks completed', value: `${m.tasksCompleted}/${m.tasksAssigned}`, color: '#1E293B', bg: '#F1F5F9' },
-                                { label: 'Completion rate', value: `${Math.round(m.taskCompletionRate)}%`, color: m.taskCompletionRate >= 70 ? '#10B981' : '#F59E0B', bg: m.taskCompletionRate >= 70 ? '#F0FDF4' : '#FFFBEB' },
-                                { label: 'In progress', value: m.tasksInProgress, color: '#3B82F6', bg: '#EFF6FF' },
-                                { label: 'Reworks', value: m.reworkCount, color: m.reworkCount > 3 ? '#EF4444' : '#64748B', bg: m.reworkCount > 3 ? '#FEF2F2' : '#F8FAFC' },
-                            ].map(s => (
-                                <Box key={s.label} sx={{ textAlign: 'center', bgcolor: s.bg, borderRadius: 2, py: 1, px: 0.5 }}>
-                                    <Typography fontWeight={800} fontSize="1rem"
-                                        sx={{ color: s.color, fontFamily: "'Inter', sans-serif", lineHeight: 1 }}>
-                                        {s.value}
-                                    </Typography>
-                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>
-                                        {s.label}
-                                    </Typography>
-                                </Box>
-                            ))}
-                        </Box>
-                    </DetailSection>
-
-                    <Box sx={{ borderTop: '1px solid', borderColor: 'divider' }} />
-
-                    {/* Consistency & Quality */}
-                    <DetailSection title="Consistency & Quality" icon={<AutoAwesomeIcon sx={{ fontSize: 18 }} />}
-                        accentColor="#8B5CF6">
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
-                            {[
-                                { label: 'Active days', value: m.activeDays, color: '#1E293B', bg: '#F1F5F9' },
-                                { label: 'Consistency', value: `×${m.consistencyFactor.toFixed(2)}`, color: '#8B5CF6', bg: '#F5F3FF' },
-                                { label: 'Smart Bonus', value: `×${m.smartCoderBonus.toFixed(2)}`, color: m.smartCoderBonus > 1.1 ? '#F59E0B' : '#64748B', bg: m.smartCoderBonus > 1.1 ? '#FFFBEB' : '#F8FAFC' },
-                                { label: 'Churn Rate', value: m.codeChurnRate.toFixed(2), color: m.codeChurnRate > 1.5 ? '#EF4444' : '#64748B', bg: m.codeChurnRate > 1.5 ? '#FEF2F2' : '#F8FAFC' },
-                            ].map(s => (
-                                <Box key={s.label} sx={{ textAlign: 'center', bgcolor: s.bg, borderRadius: 2, py: 1, px: 0.5 }}>
-                                    <Typography fontWeight={800} fontSize="1rem"
-                                        sx={{ color: s.color, fontFamily: "'Inter', sans-serif", lineHeight: 1 }}>
-                                        {s.value}
-                                    </Typography>
-                                    <Typography fontSize="0.55rem" color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>
-                                        {s.label}
-                                    </Typography>
-                                </Box>
-                            ))}
-                        </Box>
-                    </DetailSection>
-                </Box>
-            </DialogContent>
-        </Dialog>
-    );
-};
 
 /* ═══════════ Main Page ═══════════ */
 const ContributionPage: React.FC = () => {
@@ -580,16 +419,9 @@ const ContributionPage: React.FC = () => {
     const [showConfig, setShowConfig] = useState(false);
     const [formulaOpen, setFormulaOpen] = useState(false);
     const [showAlerts, setShowAlerts] = useState(false);
-    const [selectedMember, setSelectedMember] = useState<ContributionResponse | null>(null);
-    const [selectedRank, setSelectedRank] = useState(0);
 
     const handleRecalculate = async () => {
         await recalculate(feWeight / 100);
-    };
-
-    const handleOpenDetail = (m: ContributionResponse, rank: number) => {
-        setSelectedMember(m);
-        setSelectedRank(rank);
     };
 
     /* ─── Loading ─── */
@@ -892,8 +724,7 @@ const ContributionPage: React.FC = () => {
                 gap: 2.5, mb: 3,
             }}>
                 {members.map((m: ContributionResponse, i: number) => (
-                    <MemberCard key={m.userId} m={m} rank={i + 1} projectId={pid}
-                        onOpenDetail={(member) => handleOpenDetail(member, i + 1)} />
+                    <MemberCard key={m.userId} m={m} rank={i + 1} projectId={pid} />
                 ))}
             </Box>
 
@@ -912,14 +743,7 @@ const ContributionPage: React.FC = () => {
                 )
             }
 
-            {/* ══════════ Detail Dialog ══════════ */}
-            <MemberDetailDialog
-                member={selectedMember}
-                rank={selectedRank}
-                projectId={pid}
-                open={!!selectedMember}
-                onClose={() => setSelectedMember(null)}
-            />
+
 
             {/* ══════════ Formula Dialog V3 ══════════ */}
             <Dialog open={formulaOpen} onClose={() => setFormulaOpen(false)}
