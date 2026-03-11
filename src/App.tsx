@@ -28,6 +28,7 @@ import JiraBoard from './pages/Jira/JiraBoard';
 import JiraConnect from './pages/Jira/JiraConnect';
 import GitHubPage from './pages/GitHub/GitHubPage';
 import ContributionPage from './pages/Contribution/ContributionPage';
+import SrsPage from './pages/Projects/SrsPage';
 
 // ── Lazy: auth pages (loaded once per session) ──
 const LandingPage = lazy(() => import('./pages/Landing/LandingPage'));
@@ -113,13 +114,8 @@ function App() {
                                 <Route path="/projects/:projectId/jira" element={<JiraBoard />} />
                                 <Route path="/projects/:projectId/jira/connect" element={<JiraConnect />} />
                                 <Route path="/projects/:projectId/github" element={<GitHubPage />} />
-                                <Route path="/projects/:projectId/contribution" element={<ContributionPage />} />
-                                <Route path="/projects/:projectId/srs" element={
-                                    <Box sx={{ p: 4, textAlign: 'center' }}>
-                                        <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>SRS Document</Typography>
-                                        <Typography color="text.secondary">Coming soon...</Typography>
-                                    </Box>
-                                } />
+                                <Route path="/projects/:projectId/contribution" element={<ContributionPage/>} />
+                                <Route path="/projects/:projectId/srs" element={<SrsPage />} />
                                 <Route path="/projects/:projectId/settings" element={
                                     <Box sx={{ p: 4, textAlign: 'center' }}>
                                         <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>Cài đặt dự án</Typography>
