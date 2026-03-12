@@ -1,5 +1,6 @@
 import type { JSONContent } from '@tiptap/core';
 import type { SrsData } from '../components/srs/SrsTemplate';
+import fptLogo from '../assets/logo-fpt.png';
 
 // --- primitive node builders ---
 const txt = (text: string): JSONContent => ({ type: 'text', text });
@@ -57,9 +58,12 @@ export function srsDataToTiptapContent(data: SrsData): JSONContent {
 
     // ─── COVER PAGE ─────────────────────────────────────────────────────────────
     nodes.push(p());
-    nodes.push({ type: 'heading', attrs: { level: 1, textAlign: 'center' }, content: [txt(data.projectName || '<<PROJECT NAME>>')] });
-    nodes.push(pCenter('Software Requirement Specification'));
+    nodes.push({ type: 'image', attrs: { src: fptLogo, alt: 'FPT University Logo', width: '200px', align: 'center' } });
     nodes.push(p());
+    nodes.push({ type: 'heading', attrs: { level: 1, textAlign: 'center' }, content: [txt(data.projectName || '<<PROJECT NAME>>')] });
+    nodes.push({ type: 'heading', attrs: { level: 5, textAlign: 'center' }, content: [txt('Software Requirement Specification')] });
+    // Push date to bottom of cover page with spacer lines
+    for (let i = 0; i < 10; i++) nodes.push(p());
     nodes.push(pCenter(data.locationDate || '– Hanoi, April 2021 –'));
     nodes.push(hr()); // visual page break after cover
 
