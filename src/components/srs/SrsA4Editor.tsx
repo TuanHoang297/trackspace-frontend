@@ -32,6 +32,8 @@ const FONT_FAMILIES = [
 const SrsA4Editor: React.FC<SrsA4EditorProps> = ({ value, onChange, readOnly = false }) => {
     const imageInputRef = useRef<HTMLInputElement>(null);
     const lastValueRef = useRef<string | Record<string, any> | null>(null);
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange; // always latest, no stale closure
     const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
 
     const editor = useEditor({
@@ -57,6 +59,12 @@ const SrsA4Editor: React.FC<SrsA4EditorProps> = ({ value, onChange, readOnly = f
         },
     });
 
+    // Sync readOnly prop into editor editable state
+    useEffect(() => {
+        if (!editor) return;
+        editor.setEditable(!readOnly);
+    }, [editor, readOnly]);
+
     // Sync external value into editor when it changes (HTML string or JSONContent object)
     useEffect(() => {
         if (!editor || value === lastValueRef.current) return;
@@ -64,13 +72,18 @@ const SrsA4Editor: React.FC<SrsA4EditorProps> = ({ value, onChange, readOnly = f
 
         if (typeof value === 'object' && value !== null) {
             editor.commands.setContent(value, { emitUpdate: false });
-            onChange?.(editor.getHTML());
+            // Defer getHTML() to after Tiptap renders — avoids stale empty string
+            requestAnimationFrame(() => {
+                if (editor) onChangeRef.current?.(editor.getHTML());
+            });
         } else if (typeof value === 'string') {
             if (value !== editor.getHTML()) {
                 editor.commands.setContent(value || '', { emitUpdate: false });
             }
         }
-    }, [value, editor, onChange]);
+    // onChange intentionally omitted — using onChangeRef to avoid re-runs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value, editor]);
 
     // Close context menu on outside click / scroll
     useEffect(() => {
