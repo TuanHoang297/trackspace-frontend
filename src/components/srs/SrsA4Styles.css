@@ -6,7 +6,7 @@
 .srs-editor-wrapper {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 180px);
+    height: calc(100vh - 100px);
     overflow-y: auto;
 }
 
@@ -46,6 +46,7 @@
 .export-mode .a4-page {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
+    background-image: none !important;
 }
 .export-mode .manual-page-break,
 .export-mode .tiptap-editor .ProseMirror hr {
@@ -98,19 +99,35 @@
     min-height: 100%;
 }
 
-/* H1: Cover page project title */
+/* H1: Cover page project title — red, large */
 .a4-page .tiptap-editor .ProseMirror h1 {
-    font-size: 22pt;
-    font-weight: bold;
-    text-align: center;
+    font-size: 26pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
     margin-top: 20px;
-    margin-bottom: 12px;
-    color: #1e293b;
+    margin-bottom: 8px;
+    color: #c00000 !important;
+}
+
+/* H5: Cover page subtitle "Software Requirement Specification" */
+.a4-page .tiptap-editor .ProseMirror h5 {
+    font-size: 13pt !important;
+    font-weight: normal !important;
+    text-align: center !important;
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #475569 !important;
+    letter-spacing: 0.02em;
+}
+
+/* Block images: center by default (e.g. FPT logo on cover page) */
+.a4-page .tiptap-editor .ProseMirror img {
+    display: block;
+    margin: 0 auto;
 }
 
 /* Tiêu đề Dự Án (Project Name) ở trang bìa: màu đỏ đô */
-.a4-page .tiptap-editor .ProseMirror .srs-title,
-.a4-page .ql-editor .srs-title { 
+.a4-page .tiptap-editor .ProseMirror .srs-title{ 
     font-size: 28pt; 
     font-weight: bold; 
     text-align: center; 
@@ -130,31 +147,31 @@
 /* 4. Các Heading cấp 1 (I. Overview, II. System Design...) : màu đỏ đậm */
 .a4-page .tiptap-editor .ProseMirror h2,
 .a4-page .ql-editor h2 { 
-    font-size: 16pt; 
-    font-weight: bold; 
+    font-size: 16pt !important; 
+    font-weight: bold !important; 
     margin-top: 15px; 
     margin-bottom: 15px; 
-    color: #c00000;
+    color: #c00000 !important;
 }
 
 /* 5. Các Heading cấp 2 (1. Introduction, 2. Business Flow...) : đen in đậm */
 .a4-page .tiptap-editor .ProseMirror h3,
 .a4-page .ql-editor h3 { 
-    font-size: 13pt; 
-    font-weight: bold; 
+    font-size: 13pt !important; 
+    font-weight: bold !important; 
     margin-top: 20px; 
     margin-bottom: 10px; 
-    color: #000000;
+    color: #000000 !important;
 }
 
 /* 6. Các Heading cấp 3 (a. b. c.) */
 .a4-page .tiptap-editor .ProseMirror h4,
 .a4-page .ql-editor h4 {
-    font-size: 12pt; 
-    font-weight: bold; 
+    font-size: 12pt !important; 
+    font-weight: bold !important; 
     margin-top: 15px; 
     margin-bottom: 5px;
-    color: #000000;
+    color: #000000 !important;
 }
 
 /* 7. Định dạng chữ của phần nội dung chữ bình thường (Body Text) */
