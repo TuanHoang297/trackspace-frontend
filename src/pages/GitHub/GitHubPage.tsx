@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import projectService from '../../api/services/projectService';
 import {
     Box, Typography, Button, TextField, Tabs, Tab, Chip,
     CircularProgress, Skeleton, IconButton, Tooltip, MenuItem, Select,
@@ -42,8 +43,29 @@ const GitHubPage: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const pid = Number(projectId);
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const { isReadOnly } = useRole();
     const readOnly = isReadOnly();
+
+    // Access guard — redirect on 403 / 404
+    const { data: accessProject, error: projectError } = useQuery({
+        queryKey: ['project', pid],
+        queryFn: async () => {
+            const res = await projectService.getProjectById(pid);
+            return res.data.data;
+        },
+        enabled: !!pid,
+        retry: false,
+    });
+    useEffect(() => {
+        if (accessProject && pid) localStorage.setItem('overview_last_project_id', String(pid));
+    }, [accessProject, pid]);
+    useEffect(() => {
+        if (!projectError) return;
+        const status = (projectError as any)?.response?.status;
+        if (status === 403) navigate('/forbidden', { replace: true, state: { type: 'forbidden' } });
+        else if (status === 404) navigate('/forbidden', { replace: true, state: { type: 'not_found' } });
+    }, [projectError, pid, navigate]);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const initialRepo = searchParams.get('repo') as RepoType | null;

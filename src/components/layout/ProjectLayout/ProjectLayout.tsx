@@ -32,10 +32,11 @@ const ProjectLayout: React.FC = () => {
     const { data: project = null, isLoading: loading } = useQuery({
         queryKey: ['project', pid],
         queryFn: async () => {
-            try { const r = await projectService.getProjectById(pid); return r.data.data as ProjectResponse; }
-            catch { return null; }
+            const r = await projectService.getProjectById(pid);
+            return r.data.data as ProjectResponse;
         },
         enabled: !!pid,
+        retry: false,
     });
 
     // Breadcrumb "Lớp học" link should be role-aware
