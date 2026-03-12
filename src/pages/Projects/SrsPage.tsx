@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    Box, Typography, Paper, Button, Skeleton, Chip, MenuItem, Select, FormControl, CircularProgress
+    Box, Typography, Paper, Button, Skeleton, Chip, MenuItem, Select, FormControl, CircularProgress, Alert, LinearProgress
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SaveIcon from '@mui/icons-material/Save';
@@ -27,6 +27,22 @@ const SrsPage: React.FC = () => {
     // string = HTML content (saved), Record<string,any> = TipTap JSONContent (fresh from AI)
     const [content, setContent] = useState<string | Record<string, any>>('');
     const [selectedVersionId, setSelectedVersionId] = useState<number | ''>('');
+    const [generateError, setGenerateError] = useState<string | null>(null);
+    const [aiProgress, setAiProgress] = useState(0);        // 0-100
+    const [aiStage, setAiStage] = useState('');              // current stage label
+    const [aiElapsed, setAiElapsed] = useState(0);          // seconds elapsed
+
+    const AI_STAGES = [
+        { at: 0,  label: 'Đang phân tích dữ liệu project và Jira...' },
+        { at: 6,  label: 'AI đang nghiên cứu yêu cầu nghiệp vụ...' },
+        { at: 12, label: 'Đang xây dựng cấu trúc SRS...' },
+        { at: 18, label: 'Đang sinh nội dung Use Cases & Functions...' },
+        { at: 22, label: 'Đang hoàn thiện tài liệu...' },
+        { at: 26, label: 'Sắp xong rồi, đang kiểm tra nội dung...' },
+    ];
+    // Dùng 30s làm mốc "expected" — progress sẽ tới 95% tại 30s,
+    // sau đó dừng chờ response thật (trường hợp chậm 35-40s vẫn ổn)
+    const ESTIMATED_SECONDS = 35;
 
     // Queries
     const { data: latestSrs, isLoading: latestLoading } = useQuery({
@@ -91,16 +107,62 @@ const SrsPage: React.FC = () => {
     // Mutations
     const generateMutation = useMutation({
         mutationFn: () => srsService.generateSrs(pid),
-        onSuccess: () => {
+        onSuccess: (response) => {
+            setGenerateError(null);
+            // Dùng thẳng data trả về từ mutation — không đợi query refetch
+            const newSrs = response.data.data as SrsDocumentResponse;
+            try {
+                let cleanedContent = newSrs.content.trim();
+                cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+                if (cleanedContent.startsWith('{') || cleanedContent.startsWith('[')) {
+                    const jsonData = JSON.parse(cleanedContent) as SrsData;
+                    setContent(srsDataToTiptapContent(jsonData));
+                } else {
+                    setContent(newSrs.content);
+                }
+            } catch (e) {
+                setContent(newSrs.content);
+            }
             toast.success('Đã tạo SRS bằng AI thành công!');
             queryClient.invalidateQueries({ queryKey: ['srs', 'latest', pid] });
             queryClient.invalidateQueries({ queryKey: ['srs', 'versions', pid] });
             setSelectedVersionId('');
         },
         onError: (err: any) => {
-            toast.error(err.response?.data?.message || 'Lỗi khi tạo SRS bằng AI');
+            const raw: string = err.response?.data?.message || '';
+            // Extract the meaningful part after "RuntimeException — " if present
+            const match = raw.match(/RuntimeException\s*[\u2014-]\s*(.+)/);
+            const userMsg = match
+                ? match[1].trim()
+                : raw || 'Không thể tạo SRS bằng AI. Vui lòng thử lại sau.';
+            setGenerateError(userMsg);
+            toast.error(userMsg, { autoClose: 8000 });
         }
     });
+
+    // Progress timer — runs while AI is generating
+    useEffect(() => {
+        if (!generateMutation.isPending) {
+            setAiProgress(0);
+            setAiElapsed(0);
+            setAiStage('');
+            return;
+        }
+        setAiProgress(0);
+        setAiElapsed(0);
+        setAiStage(AI_STAGES[0].label);
+        const start = Date.now();
+        const timer = setInterval(() => {
+            const elapsed = (Date.now() - start) / 1000;
+            setAiElapsed(Math.floor(elapsed));
+            const raw = (elapsed / ESTIMATED_SECONDS) * 97;
+            setAiProgress(Math.min(raw, 97));
+            const stage = [...AI_STAGES].reverse().find(s => elapsed >= s.at);
+            if (stage) setAiStage(stage.label);
+        }, 500);
+        return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [generateMutation.isPending]);
 
     const updateMutation = useMutation({
         mutationFn: (data: { title?: string, content: string }) => srsService.updateSrs(latestSrs!.id, data),
@@ -208,24 +270,55 @@ const SrsPage: React.FC = () => {
                     </Typography>
                     
                     {!readOnly ? (
-                        <Button 
-                            variant="contained" 
-                            size="large"
-                            startIcon={generateMutation.isPending ? <CircularProgress size={20} color="inherit" /> : <AutoFixHighIcon />}
-                            onClick={handleGenerate}
-                            disabled={generateMutation.isPending}
-                            sx={{
-                                textTransform: 'none', px: 4, py: 1.5, borderRadius: 2, fontWeight: 600,
-                                background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-                                '&:hover': { background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }
-                            }}
-                        >
-                            {generateMutation.isPending ? 'Đang tạo bằng AI...' : '🪄 Tạo SRS bằng AI'}
-                        </Button>
+                        generateMutation.isPending ? (
+                            <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto', mt: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, justifyContent: 'center' }}>
+                                    <CircularProgress size={20} sx={{ color: '#8B5CF6' }} />
+                                    <Typography fontWeight={600} sx={{ color: '#6D28D9' }}>AI đang tạo SRS...</Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={aiProgress}
+                                    sx={{
+                                        height: 8, borderRadius: 4, mb: 1.5,
+                                        bgcolor: '#EDE9FE',
+                                        '& .MuiLinearProgress-bar': { bgcolor: '#8B5CF6', borderRadius: 4 }
+                                    }}
+                                />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                    <Typography variant="caption" color="text.secondary">{aiStage}</Typography>
+                                    <Typography variant="caption" color="text.secondary">{aiElapsed}s / ~{ESTIMATED_SECONDS}s</Typography>
+                                </Box>
+                            </Box>
+                        ) : (
+                            <Button
+                                variant="contained"
+                                size="large"
+                                startIcon={<AutoFixHighIcon />}
+                                onClick={handleGenerate}
+                                sx={{
+                                    textTransform: 'none', px: 4, py: 1.5, borderRadius: 2, fontWeight: 600,
+                                    background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+                                    '&:hover': { background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }
+                                }}
+                            >
+                                🪴 Tạo SRS bằng AI
+                            </Button>
+                        )
                     ) : (
                         <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
                             Chỉ sinh viên trong nhóm mới có quyền tạo SRS.
                         </Typography>
+                    )}
+                    {generateError && (
+                        <Alert
+                            severity="error"
+                            sx={{ mt: 3, textAlign: 'left', borderRadius: 2 }}
+                            onClose={() => setGenerateError(null)}
+                        >
+                            <strong>AI không thể tạo SRS</strong><br />
+                            {generateError}
+                        </Alert>
                     )}
                 </Paper>
             </Box>
@@ -234,6 +327,34 @@ const SrsPage: React.FC = () => {
 
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: 'auto' }}>
+            {generateMutation.isPending && (
+                <Paper elevation={0} sx={{ mb: 2, p: 2.5, borderRadius: 2, border: '1px solid #DDD6FE', bgcolor: '#F5F3FF' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                        <CircularProgress size={18} sx={{ color: '#8B5CF6' }} />
+                        <Typography fontWeight={600} sx={{ color: '#6D28D9', fontSize: '0.9rem' }}>AI đang tạo lại SRS...</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>{aiElapsed}s / ~{ESTIMATED_SECONDS}s</Typography>
+                    </Box>
+                    <LinearProgress
+                        variant="determinate"
+                        value={aiProgress}
+                        sx={{
+                            height: 6, borderRadius: 3, mb: 1,
+                            bgcolor: '#EDE9FE',
+                            '& .MuiLinearProgress-bar': { bgcolor: '#8B5CF6', borderRadius: 3 }
+                        }}
+                    />
+                    <Typography variant="caption" color="text.secondary">{aiStage}</Typography>
+                </Paper>
+            )}
+            {generateError && (
+                <Alert
+                    severity="error"
+                    sx={{ mb: 2, borderRadius: 2 }}
+                    onClose={() => setGenerateError(null)}
+                >
+                    <strong>AI không thể tạo SRS</strong> — {generateError}
+                </Alert>
+            )}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', mb: 3, gap: 2 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
