@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -84,14 +84,28 @@ const ProjectOverview: React.FC = () => {
     const [functionalRequirements, setFunctionalRequirements] = useState('');
 
     // ── All queries run in PARALLEL (not waterfall) ──
-    const { data: project, isLoading: projectLoading } = useQuery({
+    const { data: project, isLoading: projectLoading, error: projectError } = useQuery({
         queryKey: ['project', pid],
         queryFn: async () => {
             const res = await projectService.getProjectById(pid);
             return res.data.data as ProjectResponse;
         },
         enabled: !!pid,
+        retry: false,
     });
+
+    // Save last valid project ID so ForbiddenPage can navigate back
+    useEffect(() => {
+        if (project && pid) localStorage.setItem('overview_last_project_id', String(pid));
+    }, [project, pid]);
+
+    // Redirect on 403 / 404
+    useEffect(() => {
+        if (!projectError) return;
+        const status = (projectError as any)?.response?.status;
+        if (status === 403) navigate('/forbidden', { replace: true, state: { type: 'forbidden' } });
+        else if (status === 404) navigate('/forbidden', { replace: true, state: { type: 'not_found' } });
+    }, [projectError, pid, navigate]);
 
     const { data: info } = useQuery({
         queryKey: ['project', pid, 'info'],

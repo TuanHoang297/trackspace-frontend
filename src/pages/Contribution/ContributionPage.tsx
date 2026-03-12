@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box, Typography, Paper, Avatar, Chip, Tooltip,
     Button, Slider, Collapse, Skeleton, Dialog, DialogContent, IconButton, Badge,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
@@ -22,6 +22,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 
 import useContribution, { useHeatmap } from '../../hooks/useContribution';
+import { useRole } from '../../hooks/useRole';
 import type { ContributionResponse, HeatmapResponse } from '../../types/contribution.types';
 
 /* ═══════════ Design Tokens ═══════════ */
@@ -57,7 +58,8 @@ const ScoreRing: React.FC<{ score: number; size?: number; thickness?: number }> 
     const radius = (size - thickness) / 2;
     const circumference = 2 * Math.PI * radius;
     const progress = (Math.min(score, 100) / 100) * circumference;
-    const color = score >= 75 ? '#10B981' : score >= 50 ? '#F59E0B' : score >= 25 ? '#EF4444' : '#94A3B8';
+    // Thresholds calibrated for % contribution values (all members sum to 100%)
+    const color = score >= 30 ? '#10B981' : score >= 20 ? '#F59E0B' : score >= 10 ? '#EF4444' : '#94A3B8';
 
     return (
         <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
@@ -87,7 +89,7 @@ const ScoreRing: React.FC<{ score: number; size?: number; thickness?: number }> 
                 </Typography>
                 <Typography fontSize={size * 0.11} color="text.secondary" fontWeight={600}
                     sx={{ lineHeight: 1, mt: 0.2, letterSpacing: '0.02em' }}>
-                    0-100
+                    %
                 </Typography>
             </Box>
         </Box>
@@ -237,7 +239,8 @@ const MemberCard: React.FC<{
     m: ContributionResponse;
     rank: number;
     projectId: number;
-}> = ({ m, rank, projectId }) => {
+    contributionPercent: number;
+}> = ({ m, rank, projectId, contributionPercent }) => {
     const avatarColor = AVATAR_COLORS[(rank - 1) % AVATAR_COLORS.length];
     const domain = DOMAIN_META[m.domain] || DOMAIN_META.UNKNOWN;
 
@@ -319,7 +322,7 @@ const MemberCard: React.FC<{
                 {/* Section: Score */}
                 <Typography fontSize="0.5rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Score</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
-                    <ScoreRing score={m.contributionScore} size={64} thickness={4} />
+                    <ScoreRing score={contributionPercent} size={64} thickness={4} />
                     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
                         <MiniProgress label="GitHub Impact" value={m.githubImpactScore} color="#3B82F6" />
                         <MiniProgress label="Jira Execution" value={m.jiraExecutionScore} color="#10B981" />
@@ -364,7 +367,7 @@ const MemberCard: React.FC<{
                             {[
                                 { icon: <AssignmentTurnedInIcon sx={{ fontSize: 10 }} />, label: 'Tasks', value: `${m.tasksCompleted}/${m.tasksAssigned}`, color: '#8B5CF6', bg: '#F5F3FF', border: 'rgba(139,92,246,0.15)' },
                                 { icon: <StarIcon sx={{ fontSize: 10 }} />, label: 'Rate', value: `${Math.round(m.taskCompletionRate)}%`, color: m.taskCompletionRate >= 70 ? '#10B981' : '#F59E0B', bg: m.taskCompletionRate >= 70 ? '#F0FDF4' : '#FFFBEB', border: m.taskCompletionRate >= 70 ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)' },
-                                { icon: <AutoAwesomeIcon sx={{ fontSize: 10 }} />, label: 'Rework', value: m.reworkCount, color: m.reworkCount > 3 ? '#EF4444' : '#64748B', bg: m.reworkCount > 3 ? '#FEF2F2' : '#F8FAFC', border: m.reworkCount > 3 ? 'rgba(239,68,68,0.15)' : 'rgba(100,116,139,0.1)' },
+                                { icon: <AutoAwesomeIcon sx={{ fontSize: 10 }} />, label: 'Overdue', value: m.overdueTaskCount, color: m.overdueTaskCount > 0 ? '#EF4444' : '#16A34A', bg: m.overdueTaskCount > 0 ? '#FEF2F2' : '#F0FDF4', border: m.overdueTaskCount > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(22,163,74,0.15)' },
                             ].map(chip => (
                                 <Box key={chip.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.4, bgcolor: chip.bg, borderRadius: 1.5, px: 0.8, py: 0.4, border: `1px solid ${chip.border}` }}>
                                     <Box sx={{ color: chip.color, display: 'flex', flexShrink: 0 }}>{chip.icon}</Box>
@@ -414,7 +417,18 @@ const MemberCard: React.FC<{
 const ContributionPage: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const pid = Number(projectId);
-    const { dashboard, loading, recalculating, recalculate } = useContribution(pid);
+    const navigate = useNavigate();
+    const { dashboard, loading, error, recalculating, recalculate } = useContribution(pid);
+    const { isLecturer } = useRole();
+
+    // Redirect on 403 / 404
+    useEffect(() => {
+        if (!error) return;
+        const status = (error as any)?.response?.status;
+        if (status === 403) navigate('/forbidden', { replace: true, state: { type: 'forbidden' } });
+        else if (status === 404) navigate('/forbidden', { replace: true, state: { type: 'not_found' } });
+    }, [error, pid, navigate]);
+
     const [feWeight, setFeWeight] = useState(50);
     const [showConfig, setShowConfig] = useState(false);
     const [formulaOpen, setFormulaOpen] = useState(false);
@@ -454,6 +468,11 @@ const ContributionPage: React.FC = () => {
     const members = dashboard.memberContributions || [];
     const anomalies = dashboard.detectedAnomalies || [];
 
+    // ── Áp dụng công thức: Contribution% = (Score_u / S_total) × 100 ──
+    const totalRawScore = members.reduce((sum, m) => sum + m.contributionScore, 0);
+    const getPercent = (score: number) =>
+        totalRawScore > 0 ? Math.round((score / totalRawScore) * 1000) / 10 : 0;
+
     return (
         <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: 'auto' }}>
 
@@ -481,6 +500,7 @@ const ContributionPage: React.FC = () => {
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
+                        {isLecturer() && (
                         <Button size="small" onClick={() => setFormulaOpen(true)}
                             sx={{
                                 color: 'rgba(255,255,255,0.8)', textTransform: 'none', fontWeight: 600,
@@ -490,6 +510,7 @@ const ContributionPage: React.FC = () => {
                             }}>
                             <CalculateIcon sx={{ fontSize: 14, mr: 0.5 }} /> Formula
                         </Button>
+                        )}
                         <Button size="small" onClick={() => setShowConfig(!showConfig)}
                             sx={{
                                 color: 'rgba(255,255,255,0.8)', textTransform: 'none', fontWeight: 600,
@@ -724,7 +745,7 @@ const ContributionPage: React.FC = () => {
                 gap: 2.5, mb: 3,
             }}>
                 {members.map((m: ContributionResponse, i: number) => (
-                    <MemberCard key={m.userId} m={m} rank={i + 1} projectId={pid} />
+                    <MemberCard key={m.userId} m={m} rank={i + 1} projectId={pid} contributionPercent={getPercent(m.contributionScore)} />
                 ))}
             </Box>
 
@@ -745,7 +766,7 @@ const ContributionPage: React.FC = () => {
 
 
 
-            {/* ══════════ Formula Dialog V3 ══════════ */}
+            {/* ══════════ Formula Dialog — Giảng viên Friendly ══════════ */}
             <Dialog open={formulaOpen} onClose={() => setFormulaOpen(false)}
                 maxWidth="sm" fullWidth
                 PaperProps={{
@@ -754,7 +775,7 @@ const ContributionPage: React.FC = () => {
                         boxShadow: '0 25px 60px rgba(0,0,0,0.18)',
                     }
                 }}>
-                {/* Dark Header */}
+                {/* Header */}
                 <Box sx={{
                     px: 3, py: 2.5, display: 'flex', alignItems: 'center', gap: 1.5,
                     background: 'linear-gradient(135deg, #0F172A 0%, #1E2A4A 100%)',
@@ -769,11 +790,11 @@ const ContributionPage: React.FC = () => {
                     </Box>
                     <Box sx={{ flex: 1 }}>
                         <Typography fontWeight={800} fontSize="1.05rem"
-                            sx={{ fontFamily: "'Inter', sans-serif", color: '#fff' }}>
-                            Scoring Formula
+                            sx={{ color: '#fff' }}>
+                            Cách tính điểm đóng góp
                         </Typography>
                         <Typography fontSize="0.68rem" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                            How contribution score is calculated
+                            Hệ thống đánh giá tự động dựa trên GitHub + Jira
                         </Typography>
                     </Box>
                     <IconButton size="small" onClick={() => setFormulaOpen(false)}
@@ -782,102 +803,141 @@ const ContributionPage: React.FC = () => {
                     </IconButton>
                 </Box>
 
-                <DialogContent sx={{ p: 3, bgcolor: '#FAFBFC' }}>
-                    {/* Dark Formula Card */}
-                    <Box sx={{
-                        p: 2.5, borderRadius: 3, mb: 3,
-                        background: 'linear-gradient(135deg, #0F172A, #1E293B)',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        position: 'relative', overflow: 'hidden',
-                    }}>
-                        {/* Subtle glow */}
-                        <Box sx={{
-                            position: 'absolute', top: -20, right: -20,
-                            width: 80, height: 80, borderRadius: '50%',
-                            background: 'radial-gradient(circle, rgba(99,102,241,0.15), transparent)',
-                        }} />
-                        <Typography fontSize="0.6rem" fontWeight={700} letterSpacing="0.12em"
-                            sx={{ color: 'rgba(148,163,184,0.7)', mb: 1, textTransform: 'uppercase' }}>
-                            Formula
-                        </Typography>
-                        <Typography fontSize="0.72rem" fontWeight={700}
-                            sx={{
-                                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                                color: '#E2E8F0', lineHeight: 1.8,
-                                whiteSpace: 'nowrap', overflow: 'hidden',
-                            }}>
-                            <Box component="span" sx={{ color: '#93C5FD' }}>Score</Box>
-                            {' = ('}
-                            <Box component="span" sx={{ color: '#60A5FA' }}>GitHub</Box>
-                            {' × 50% + '}
-                            <Box component="span" sx={{ color: '#34D399' }}>Jira</Box>
-                            {' × 50%) × '}
-                            <Box component="span" sx={{ color: '#A78BFA' }}>Consistency</Box>
-                            {' × (1 − '}
-                            <Box component="span" sx={{ color: '#F87171' }}>Churn</Box>
-                            {') + Bonus'}
-                        </Typography>
-                    </Box>
+                <DialogContent sx={{ p: 3, bgcolor: '#F8FAFC' }}>
 
                     {/* Section label */}
-                    <Typography fontSize="0.68rem" fontWeight={700} color="text.secondary"
-                        sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        Score Components
+                    <Typography fontSize="0.7rem" fontWeight={700} color="text.secondary"
+                        sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        2 tiêu chí đánh giá chính
                     </Typography>
 
-                    {/* Component Cards with left border accent */}
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
-                        {[
-                            { label: 'GitHub Impact', desc: 'Commits, Lines Added/Deleted, Bug Fixes', color: '#3B82F6', weight: '50%', icon: <GitHubIcon sx={{ fontSize: 20 }} /> },
-                            { label: 'Jira Execution', desc: 'Task Completion Rate, Rework Count', color: '#10B981', weight: '50%', icon: <TaskAltIcon sx={{ fontSize: 20 }} /> },
-                            { label: 'Consistency', desc: 'Active Days / Total Days (multiplier)', color: '#8B5CF6', weight: '×', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} /> },
-                            { label: 'Code Churn', desc: 'High churn = penalty on score', color: '#EF4444', weight: '−', icon: <WarningAmberIcon sx={{ fontSize: 20 }} /> },
-                        ].map(f => (
-                            <Box key={f.label} sx={{
-                                p: 2, borderRadius: 2.5,
-                                bgcolor: '#FFFFFF',
-                                border: '1px solid', borderColor: 'rgba(226,232,240,0.8)',
-                                borderLeft: `3px solid ${f.color}`,
-                                transition: 'all 0.2s',
-                                '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.06)', transform: 'translateY(-1px)' },
-                            }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.75 }}>
-                                    <Box sx={{
-                                        width: 38, height: 38, borderRadius: '50%',
-                                        bgcolor: f.color + '10',
-                                        color: f.color,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    }}>
-                                        {f.icon}
-                                    </Box>
-                                    <Typography fontSize="0.9rem" fontWeight={700} sx={{ flex: 1, fontFamily: "'Inter', sans-serif" }}>
-                                        {f.label}
-                                    </Typography>
-                                    <Chip label={f.weight} size="small"
-                                        sx={{
-                                            height: 24, fontWeight: 800, fontSize: '0.75rem',
-                                            bgcolor: f.color + '12', color: f.color,
-                                            borderRadius: 1.5,
-                                        }} />
+                    {/* Two Pillars — GitHub & Jira */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5, mb: 2 }}>
+
+                        {/* GitHub */}
+                        <Box sx={{
+                            p: 2, borderRadius: 2.5, bgcolor: '#fff',
+                            border: '1px solid rgba(226,232,240,0.8)',
+                            borderTop: '3px solid #3B82F6',
+                        }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
+                                <GitHubIcon sx={{ fontSize: 18, color: '#3B82F6' }} />
+                                <Typography fontWeight={700} fontSize="0.88rem">GitHub</Typography>
+                                <Chip label="50%" size="small" sx={{
+                                    ml: 'auto', bgcolor: '#EFF6FF', color: '#3B82F6',
+                                    fontWeight: 800, fontSize: '0.72rem', height: 22,
+                                }} />
+                            </Box>
+                            {[
+                                'Số commit (bỏ qua merge commit)',
+                                'Số dòng code — nén bằng log để chống spam',
+                                'Commit fix bug → nhân x2 hoặc x3',
+                                'Commit đều hằng ngày → nhân thêm điểm',
+                            ].map((item, i) => (
+                                <Box key={i} sx={{ display: 'flex', gap: 0.75, mb: 0.6 }}>
+                                    <Typography sx={{ color: '#3B82F6', fontSize: '0.75rem', flexShrink: 0 }}>✓</Typography>
+                                    <Typography fontSize="0.75rem" color="text.secondary">{item}</Typography>
                                 </Box>
-                                <Typography fontSize="0.78rem" color="text.secondary" sx={{ pl: 6.25 }}>
-                                    {f.desc}
+                            ))}
+                        </Box>
+
+                        {/* Jira */}
+                        <Box sx={{
+                            p: 2, borderRadius: 2.5, bgcolor: '#fff',
+                            border: '1px solid rgba(226,232,240,0.8)',
+                            borderTop: '3px solid #10B981',
+                        }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
+                                <TaskAltIcon sx={{ fontSize: 18, color: '#10B981' }} />
+                                <Typography fontWeight={700} fontSize="0.88rem">Jira</Typography>
+                                <Chip label="50%" size="small" sx={{
+                                    ml: 'auto', bgcolor: '#F0FDF4', color: '#10B981',
+                                    fontWeight: 800, fontSize: '0.72rem', height: 22,
+                                }} />
+                            </Box>
+                            {[
+                                { text: '% task hoàn thành (Done / Tổng giao)', plus: true },
+                                { text: 'Làm nhiều task, code gọn → thưởng thêm', plus: true },
+                                { text: 'Task trễ hạn → bị trừ điểm Jira', plus: false },
+                            ].map((item, i) => (
+                                <Box key={i} sx={{ display: 'flex', gap: 0.75, mb: 0.6 }}>
+                                    <Typography sx={{ color: item.plus ? '#10B981' : '#EF4444', fontSize: '0.75rem', flexShrink: 0 }}>
+                                        {item.plus ? '✓' : '✗'}
+                                    </Typography>
+                                    <Typography fontSize="0.75rem" color="text.secondary">{item.text}</Typography>
+                                </Box>
+                            ))}
+                            {/* Penalty table */}
+                            <Box sx={{ mt: 1.25, p: 1, borderRadius: 1.5, bgcolor: '#FEF2F2', border: '1px solid #FECACA' }}>
+                                <Typography fontSize="0.65rem" fontWeight={700} color="#EF4444" mb={0.5}>
+                                    Mức trừ khi có task trễ hạn:
                                 </Typography>
+                                {[
+                                    { label: '0 task trễ', val: 'Không trừ', green: true },
+                                    { label: '1 task trễ', val: '−15%', green: false },
+                                    { label: '2 task trễ', val: '−30%', green: false },
+                                    { label: '3+ task trễ', val: '−50%', green: false },
+                                ].map((row, i) => (
+                                    <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.2 }}>
+                                        <Typography fontSize="0.65rem" color="text.secondary">{row.label}</Typography>
+                                        <Typography fontSize="0.65rem" fontWeight={700} color={row.green ? '#10B981' : '#EF4444'}>{row.val}</Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        </Box>
+                    </Box>
+
+                    {/* Quy trình tổng hợp */}
+                    <Box sx={{
+                        p: 2.5, borderRadius: 2.5, mb: 2,
+                        background: 'linear-gradient(135deg, #1E293B, #0F172A)',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                    }}>
+                        <Typography fontSize="0.68rem" fontWeight={700}
+                            sx={{ color: 'rgba(148,163,184,0.8)', mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                            Quy trình tổng hợp điểm
+                        </Typography>
+                        {[
+                            { step: '1', text: 'Tính điểm GitHub và Jira riêng cho từng thành viên', color: '#60A5FA' },
+                            { step: '2', text: 'Kết hợp:  Điểm = GitHub × 50% + Jira × 50%', color: '#A78BFA' },
+                            { step: '3', text: '% đóng góp = Điểm của bạn ÷ Tổng điểm cả nhóm × 100', color: '#34D399' },
+                        ].map((s) => (
+                            <Box key={s.step} sx={{ display: 'flex', gap: 1.25, mb: 1, alignItems: 'flex-start' }}>
+                                <Box sx={{
+                                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                                    bgcolor: s.color + '20', border: `1.5px solid ${s.color}`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                    <Typography fontSize="0.65rem" fontWeight={800} sx={{ color: s.color }}>{s.step}</Typography>
+                                </Box>
+                                <Typography fontSize="0.78rem" sx={{ color: '#CBD5E1', mt: '2px' }}>{s.text}</Typography>
                             </Box>
                         ))}
                     </Box>
 
-                    {/* Got it button */}
+                    {/* Key note */}
+                    <Box sx={{
+                        p: 1.75, borderRadius: 2, bgcolor: '#FFFBEB',
+                        border: '1px solid #FDE68A', display: 'flex', gap: 1, alignItems: 'flex-start',
+                    }}>
+                        <Typography sx={{ fontSize: '1rem', flexShrink: 0, lineHeight: 1 }}>💡</Typography>
+                        <Typography fontSize="0.75rem" color="#92400E">
+                            <strong>Tổng % của cả nhóm luôn bằng 100%.</strong>{' '}
+                            Thành viên code đều đặn, hoàn thành task đúng hạn và có fix bug sẽ có % cao hơn.
+                        </Typography>
+                    </Box>
+
+                    {/* Button */}
                     <Button fullWidth onClick={() => setFormulaOpen(false)}
                         sx={{
-                            mt: 3, py: 1.25,
-                            textTransform: 'none', fontWeight: 700, fontSize: '0.85rem',
+                            mt: 2.5, py: 1.25,
+                            textTransform: 'none', fontWeight: 700, fontSize: '0.9rem',
                             borderRadius: 2.5, color: '#fff',
                             background: 'linear-gradient(135deg, #3B82F6, #6366F1)',
                             boxShadow: '0 4px 15px rgba(99,102,241,0.3)',
                             '&:hover': { boxShadow: '0 6px 20px rgba(99,102,241,0.5)' },
                         }}>
-                        Got it
+                        Đã hiểu
                     </Button>
                 </DialogContent>
             </Dialog>

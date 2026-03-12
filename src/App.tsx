@@ -28,6 +28,7 @@ import JiraBoard from './pages/Jira/JiraBoard';
 import JiraConnect from './pages/Jira/JiraConnect';
 import GitHubPage from './pages/GitHub/GitHubPage';
 import ContributionPage from './pages/Contribution/ContributionPage';
+import ForbiddenPage from './pages/ScreenFlow/ForbiddenPage';
 
 // ── Lazy: auth pages (loaded once per session) ──
 const LandingPage = lazy(() => import('./pages/Landing/LandingPage'));
@@ -60,6 +61,7 @@ function App() {
                             <Route path="/" element={<LandingPage />} />
                             <Route path="/login" element={<LoginPage />} />
                             <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
+                            <Route path="/forbidden" element={<ForbiddenPage />} />
 
 
                             {/* Admin routes */}
