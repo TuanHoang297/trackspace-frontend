@@ -23,8 +23,12 @@ const ResizableImageView: React.FC<NodeViewProps> = ({ node, updateAttributes, s
         document.addEventListener('mouseup', onMouseUp);
     };
 
+    const wrapperStyle: React.CSSProperties = node.attrs.align === 'center'
+        ? { display: 'flex', justifyContent: 'center', position: 'relative', lineHeight: 0, width: '100%' }
+        : { display: 'inline-block', position: 'relative', lineHeight: 0 };
+
     return (
-        <NodeViewWrapper style={{ display: 'inline-block', position: 'relative', lineHeight: 0 }}>
+        <NodeViewWrapper style={wrapperStyle}>
             <img
                 ref={imgRef}
                 src={node.attrs.src}
@@ -71,6 +75,11 @@ export const ResizableImage = Image.extend({
                 parseHTML: (el) => el.style.width || el.getAttribute('width') || null,
                 renderHTML: (attrs) =>
                     attrs.width ? { style: `width: ${attrs.width}; max-width: 100%;` } : {},
+            },
+            align: {
+                default: null,
+                parseHTML: (el) => el.getAttribute('data-align') || null,
+                renderHTML: (attrs) => attrs.align ? { 'data-align': attrs.align } : {},
             },
         };
     },
