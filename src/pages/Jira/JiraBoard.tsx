@@ -11,14 +11,15 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EditIcon from '@mui/icons-material/Edit';
 
 import useJira from '../../hooks/useJira';
+import { useQuery } from '@tanstack/react-query';
 import jiraService from '../../api/services/jiraService';
+import projectService from '../../api/services/projectService';
 import { toast } from 'react-toastify';
 import IssueCard from './components/IssueCard';
 import CreateIssueDialog from './components/CreateIssueDialog';
 import IssueDetailDialog from './components/IssueDetailDialog';
 import SprintDialog from './components/SprintDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
-import projectService from '../../api/services/projectService';
 import groupService from '../../api/services/groupService';
 import type { JiraIssueResponse, JiraSprintResponse, JiraSprintRequest } from '../../types/jira.types';
 import {
@@ -89,6 +90,26 @@ const JiraBoard: React.FC = () => {
     const pid = Number(projectId);
 
     const { connection, sprints, issues, setIssues, loading, refresh, loadLocal } = useJira(pid);
+
+    // Access guard — redirect on 403 / 404
+    const { data: accessProject, error: projectError } = useQuery({
+        queryKey: ['project', pid],
+        queryFn: async () => {
+            const res = await projectService.getProjectById(pid);
+            return res.data.data;
+        },
+        enabled: !!pid,
+        retry: false,
+    });
+    useEffect(() => {
+        if (accessProject && pid) localStorage.setItem('overview_last_project_id', String(pid));
+    }, [accessProject, pid]);
+    useEffect(() => {
+        if (!projectError) return;
+        const status = (projectError as any)?.response?.status;
+        if (status === 403) navigate('/forbidden', { replace: true, state: { type: 'forbidden' } });
+        else if (status === 404) navigate('/forbidden', { replace: true, state: { type: 'not_found' } });
+    }, [projectError, pid, navigate]);
 
     // Role-based permissions (Jira-style)
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -219,25 +240,13 @@ const JiraBoard: React.FC = () => {
         }
     };
 
-    // Fetch group members for assignee dropdown
+    // Fetch group members for assignee dropdown — reuse accessProject already fetched
     useEffect(() => {
-        const fetchMembers = async () => {
-            try {
-                const projRes = await projectService.getProjectById(pid);
-                const project = projRes.data.data;
-                if (project?.classId && project?.groupId) {
-                    const memRes = await groupService.getMembers(project.classId, project.groupId);
-                    setMembers((memRes.data.data || []).map(m => ({
-                        userId: m.userId,
-                        fullName: m.fullName,
-                    })));
-                }
-            } catch {
-                // Members loading is best-effort
-            }
-        };
-        if (pid) fetchMembers();
-    }, [pid]);
+        if (!accessProject?.classId || !accessProject?.groupId) return;
+        groupService.getMembers(accessProject.classId, accessProject.groupId)
+            .then(res => setMembers((res.data.data || []).map(m => ({ userId: m.userId, fullName: m.fullName }))))
+            .catch(() => { /* best-effort */ });
+    }, [accessProject]);
     const [disconnectOpen, setDisconnectOpen] = useState(false);
 
     // Sort: ACTIVE → CLOSED → FUTURE, then by sprintId ascending
@@ -261,12 +270,14 @@ const JiraBoard: React.FC = () => {
         [issues]
     );
 
-    // Not connected — redirect to connect page
+    // Not connected — redirect to connect page only when project is confirmed valid
     const isConnected = connection?.connectionStatus === 'CONNECTED';
-    if (!loading && (!connection || !isConnected)) {
-        navigate(`/projects/${pid}/jira/connect`, { replace: true });
-        return null;
-    }
+    useEffect(() => {
+        if (!accessProject) return; // wait for access check to resolve first
+        if (!loading && (!connection || !isConnected)) {
+            navigate(`/projects/${pid}/jira/connect`, { replace: true });
+        }
+    }, [accessProject, loading, connection, isConnected, pid, navigate]);
 
 
 
@@ -323,6 +334,9 @@ const JiraBoard: React.FC = () => {
         if (!d) return '';
         return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
     };
+
+    // Don't render board content while access check is pending or redirect is pending
+    if (!accessProject || (!loading && (!connection || !isConnected))) return null;
 
     return (
         <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

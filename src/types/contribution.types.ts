@@ -21,7 +21,8 @@ export interface ContributionResponse {
     tasksCompleted: number;
     tasksInProgress: number;
     taskCompletionRate: number;
-    reworkCount: number;
+    /** Number of tasks past their due date and not yet completed */
+    overdueTaskCount: number;
     jiraExecutionScore: number;
 
     // Code Churn

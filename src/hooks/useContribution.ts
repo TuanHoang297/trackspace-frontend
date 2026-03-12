@@ -28,7 +28,7 @@ export default function useContribution(projectId: number) {
     const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set());
 
     // ── Dashboard ──
-    const { data: dashboard = null, isLoading: loading } = useQuery({
+    const { data: dashboard = null, isLoading: loading, error } = useQuery({
         queryKey: contributionKeys.dashboard(projectId),
         queryFn: async () => {
             const res = await contributionService.getDashboard(projectId);
@@ -36,7 +36,7 @@ export default function useContribution(projectId: number) {
         },
         enabled: !!projectId,
         staleTime: 30_000,
-        retry: 1,
+        retry: false,
     });
 
     // ── Recalculate ──
@@ -65,6 +65,7 @@ export default function useContribution(projectId: number) {
     return {
         dashboard,
         loading,
+        error,
         recalculating: recalculateMutation.isPending,
         recalculate,
         expandedUsers,
