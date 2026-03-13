@@ -1,0 +1,268 @@
+/* SrsA4Styles.css */
+
+/* ========================================================
+   SCROLL WRAPPER — toolbar sticks inside this container
+======================================================== */
+.srs-editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.a4-container {
+    background-color: #f3f4f6;
+    padding: 30px 0;
+    display: flex;
+    justify-content: center;
+    flex: 1;
+}
+
+.a4-page {
+    background-color: white;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 2.54cm;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+    margin: 0 auto;
+}
+
+/* Page break: simulate Word-like gap between two pages in the editor */
+.a4-page .ql-editor hr.manual-page-break,
+.a4-page .tiptap-editor .ProseMirror hr {
+    page-break-after: always !important;
+    break-after: page !important;
+    display: block;
+    border: none;
+    /* Dark strip height + vertical margin = visual gap between two A4 pages */
+    height: 0.5cm;
+    margin: 2.54cm -2.54cm;   /* extend to full page width, match A4 padding */
+    background-color: #475569;
+    pointer-events: none;
+}
+
+/* Export mode: padding-top/bottom replaced by html2pdf margin; hr becomes invisible */
+.export-mode .a4-page {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    background-image: none !important;
+}
+.export-mode .manual-page-break,
+.export-mode .tiptap-editor .ProseMirror hr {
+    background-color: transparent !important;
+    margin: 0 !important;
+    height: 0 !important;
+}
+
+/* Định dạng thanh công cụ tùy chỉnh khi ở chế độ xem */
+.srs-custom-toolbar {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    background-color: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    flex-wrap: wrap;
+}
+
+/* Dùng class này để tự động ẩn Toolbar đi khi nhấn xuất PDF */
+.export-mode .srs-custom-toolbar {
+    display: none !important;
+}
+
+/* ========================================================
+   CÁC QUY TẮC TUỲ CHỈNH FONT VÀ MÀU CHỮ Ở ĐÂY
+   Font gốc khuyên dùng cho văn bản là 'Times New Roman'
+======================================================== */
+/* TipTap editor base */
+.a4-page .tiptap-editor .ProseMirror {
+    padding: 0 !important;
+    font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    min-height: 100%;
+    outline: none;
+}
+
+/* Legacy ql-editor support */
+.a4-page .ql-editor {
+    padding: 0 !important;
+    font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    min-height: 100%;
+}
+
+/* H1: Cover page project title — red, large */
+.a4-page .tiptap-editor .ProseMirror h1 {
+    font-size: 26pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    color: #c00000 !important;
+}
+
+/* H5: Cover page subtitle "Software Requirement Specification" */
+.a4-page .tiptap-editor .ProseMirror h5 {
+    font-size: 13pt !important;
+    font-weight: normal !important;
+    text-align: center !important;
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #475569 !important;
+    letter-spacing: 0.02em;
+}
+
+/* Block images: center by default (e.g. FPT logo on cover page) */
+.a4-page .tiptap-editor .ProseMirror img {
+    display: block;
+    margin: 0 auto;
+}
+
+/* Tiêu đề Dự Án (Project Name) ở trang bìa: màu đỏ đô */
+.a4-page .tiptap-editor .ProseMirror .srs-title{ 
+    font-size: 28pt; 
+    font-weight: bold; 
+    text-align: center; 
+    margin-bottom: 20px; 
+    color: #c00000; 
+}
+
+/* Tiêu đề phụ (Software Requirement Spec): màu đỏ đô cỡ nhỏ hơn */
+.a4-page .tiptap-editor .ProseMirror .srs-subtitle,
+.a4-page .ql-editor .srs-subtitle {
+     font-size: 22pt; 
+     font-weight: bold; 
+     text-align: center; 
+     color: #c00000; 
+}
+
+/* 4. Các Heading cấp 1 (I. Overview, II. System Design...) : màu đỏ đậm */
+.a4-page .tiptap-editor .ProseMirror h2,
+.a4-page .ql-editor h2 { 
+    font-size: 16pt !important; 
+    font-weight: bold !important; 
+    margin-top: 15px; 
+    margin-bottom: 15px; 
+    color: #c00000 !important;
+}
+
+/* 5. Các Heading cấp 2 (1. Introduction, 2. Business Flow...) : đen in đậm */
+.a4-page .tiptap-editor .ProseMirror h3,
+.a4-page .ql-editor h3 { 
+    font-size: 13pt !important; 
+    font-weight: bold !important; 
+    margin-top: 20px; 
+    margin-bottom: 10px; 
+    color: #000000 !important;
+}
+
+/* 6. Các Heading cấp 3 (a. b. c.) */
+.a4-page .tiptap-editor .ProseMirror h4,
+.a4-page .ql-editor h4 {
+    font-size: 12pt !important; 
+    font-weight: bold !important; 
+    margin-top: 15px; 
+    margin-bottom: 5px;
+    color: #000000 !important;
+}
+
+/* 7. Định dạng chữ của phần nội dung chữ bình thường (Body Text) */
+.a4-page .tiptap-editor .ProseMirror p,
+.a4-page .ql-editor p {
+    text-align: justify;
+    margin-bottom: 10px;
+}
+
+/* ========================================================
+   ĐỊNH DẠNG CHO BẢNG BIỂU (TABLES)
+======================================================== */
+
+/* Legacy srs-table */
+.a4-page .ql-editor table.srs-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+.a4-page .ql-editor table.srs-table tr { page-break-inside: avoid; }
+.a4-page .ql-editor table.srs-table th,
+.a4-page .ql-editor table.srs-table td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; }
+.a4-page .ql-editor table.srs-table th { background-color: #f3f4f6; font-weight: bold; color: #000; }
+
+/* TipTap table */
+.a4-page .tiptap-editor .ProseMirror table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    table-layout: fixed;
+}
+.a4-page .tiptap-editor .ProseMirror table tr {
+    page-break-inside: avoid;
+}
+.a4-page .tiptap-editor .ProseMirror table th,
+.a4-page .tiptap-editor .ProseMirror table td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+    min-width: 30px;
+    position: relative;
+    box-sizing: border-box;
+}
+.a4-page .tiptap-editor .ProseMirror table th {
+    background-color: #f3f4f6;
+    font-weight: bold;
+    color: #000;
+}
+/* Selected cell highlight */
+.a4-page .tiptap-editor .ProseMirror table .selectedCell:after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(59, 130, 246, 0.12);
+    pointer-events: none;
+}
+/* Column resize handle */
+.a4-page .tiptap-editor .ProseMirror table .column-resize-handle {
+    position: absolute;
+    right: -2px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #93c5fd;
+    cursor: col-resize;
+}
+/* TipTap image */
+.a4-page .tiptap-editor .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 8px 0;
+    border-radius: 2px;
+}
+.a4-page .tiptap-editor .ProseMirror img.ProseMirror-selectednode {
+    outline: 2px solid #3b82f6;
+}
+/* Blockquote */
+.a4-page .tiptap-editor .ProseMirror blockquote {
+    border-left: 3px solid #cbd5e1;
+    margin-left: 20px;
+    padding-left: 12px;
+    color: #64748b;
+}
+/* Code block */
+.a4-page .tiptap-editor .ProseMirror pre {
+    background: #f1f5f9;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 10pt;
+    overflow-x: auto;
+}
+/* Link */
+.a4-page .tiptap-editor .ProseMirror a {
+    color: #2563eb;
+    text-decoration: underline;
+}

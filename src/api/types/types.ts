@@ -4,3 +4,4 @@ export * from '../../types/auth.types';
 export * from '../../types/class.types';
 export * from '../../types/group.types';
 export * from '../../types/project.types';
+export * from '../../types/srs.types';
