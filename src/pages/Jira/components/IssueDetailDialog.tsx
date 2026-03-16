@@ -62,6 +62,7 @@ const IssueDetailDialog: React.FC<Props> = ({
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('');
     const [dueDate, setDueDate] = useState('');
+    const [editIssueType, setEditIssueType] = useState('');
     const [dirty, setDirty] = useState(false);
 
     const [jiraUsers, setJiraUsers] = useState<JiraUser[]>([]);
@@ -73,6 +74,7 @@ const IssueDetailDialog: React.FC<Props> = ({
             setDescription(issue.description || '');
             setPriority(issue.priority || 'Medium');
             setDueDate(issue.dueDate?.slice(0, 10) || '');
+            setEditIssueType(issue.issueType || 'TASK');
             setSelectedAccountId(issue.jiraAccountId || '');
             setDirty(false);
         }
@@ -148,7 +150,7 @@ const IssueDetailDialog: React.FC<Props> = ({
         setSaving(true);
         try {
             await jiraService.updateIssue(issue.issueId, {
-                projectId: issue.projectId, issueType: issue.issueType,
+                projectId: issue.projectId, issueType: editIssueType || issue.issueType,
                 summary: summary.trim(), description: description.trim() || undefined,
                 priority: priority || undefined, dueDate: dueDate || undefined,
             });
@@ -166,9 +168,24 @@ const IssueDetailDialog: React.FC<Props> = ({
             <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
                 <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', pb: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {typeIcon}
+                        {canEdit ? (
+                            <TextField select size="small" value={editIssueType}
+                                onChange={e => { setEditIssueType(e.target.value); markDirty(); }}
+                                sx={{ minWidth: 100, '& .MuiSelect-select': { fontWeight: 600, fontSize: '0.8rem' } }}>
+                                {['TASK', 'STORY', 'BUG', 'EPIC', 'SUBTASK'].map(t => (
+                                    <MenuItem key={t} value={t}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            {TYPE_ICONS[t] || TYPE_ICONS.TASK}
+                                            <span>{t}</span>
+                                        </Box>
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        ) : (
+                            <>{typeIcon}</>            
+                        )}
                         <Typography variant="caption" fontWeight={700} color="text.secondary">{issue.issueKey}</Typography>
-                        <Chip label={issue.issueType} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }} />
+                        {!canEdit && <Chip label={issue.issueType} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }} />}
                     </Box>
                     <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
                 </DialogTitle>
@@ -273,10 +290,10 @@ const IssueDetailDialog: React.FC<Props> = ({
                         )}
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        {canEdit && dirty && (
+                        {canEdit && (
                             <Button variant="contained" onClick={handleSave} disabled={saving || !summary.trim()}
-                                startIcon={<SaveIcon />} sx={{ borderRadius: 2, textTransform: 'none' }}>
-                                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+                                startIcon={<SaveIcon />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+                                {saving ? 'Đang lưu...' : 'Cập nhật'}
                             </Button>
                         )}
                         <Button onClick={onClose} variant="outlined" color="inherit" sx={{ borderRadius: 2, textTransform: 'none' }}>Đóng</Button>

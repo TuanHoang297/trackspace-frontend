@@ -19,10 +19,11 @@ interface Props {
     projectId: number;
     sprints: JiraSprintResponse[];
     members?: Array<{ userId: number; fullName: string }>;
+    defaultSprintId?: number | null;
 }
 
 const CreateIssueDialog: React.FC<Props> = ({
-    open, onClose, onCreated, projectId, sprints, members = [],
+    open, onClose, onCreated, projectId, sprints, members = [], defaultSprintId,
 }) => {
     const [form, setForm] = useState<Partial<JiraIssueRequest>>({
         projectId,
@@ -30,8 +31,16 @@ const CreateIssueDialog: React.FC<Props> = ({
         priority: 'Medium',
         summary: '',
         description: '',
+        sprintId: defaultSprintId ?? undefined,
     });
     const [loading, setLoading] = useState(false);
+
+    // Sync defaultSprintId when dialog opens
+    React.useEffect(() => {
+        if (open && defaultSprintId !== undefined && defaultSprintId !== null) {
+            setForm(prev => ({ ...prev, sprintId: defaultSprintId }));
+        }
+    }, [open, defaultSprintId]);
 
     const handleChange = (field: keyof JiraIssueRequest, value: unknown) => {
         setForm(prev => ({ ...prev, [field]: value }));
