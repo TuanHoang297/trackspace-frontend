@@ -1,6 +1,31 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../config/env';
 
+const sanitizeToken = (token: string | null): string | null => {
+    if (!token) return null;
+    let t = token.trim();
+    if (!t || t === 'null' || t === 'undefined') return null;
+    if (t.startsWith('Bearer ')) t = t.slice(7).trim();
+    if (t.startsWith('"') && t.endsWith('"')) t = t.slice(1, -1);
+    return t || null;
+};
+
+const resolveToken = (): string | null => {
+    const localToken = sanitizeToken(localStorage.getItem('token'));
+    if (localToken) return localToken;
+
+    const sessionToken = sanitizeToken(sessionStorage.getItem('token'));
+    if (sessionToken) return sessionToken;
+
+    const urlToken = sanitizeToken(new URLSearchParams(window.location.search).get('token'));
+    if (urlToken) {
+        localStorage.setItem('token', urlToken);
+        return urlToken;
+    }
+
+    return null;
+};
+
 const axiosClient = axios.create({
     baseURL: API_BASE_URL,
     headers: {
@@ -11,7 +36,7 @@ const axiosClient = axios.create({
 // Request interceptor: attach JWT token
 axiosClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = resolveToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }

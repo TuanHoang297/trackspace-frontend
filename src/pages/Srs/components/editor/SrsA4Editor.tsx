@@ -60,6 +60,8 @@ export interface SrsA4EditorHandle {
     fillNthTableAfterPos: (pos: number, n: number, tableHTML: string) => void;
     insertHTMLAfterPos: (pos: number, html: string) => void;
     insertHTMLAfterHeading: (headingText: string, html: string) => void;
+    replaceFirstBulletListAfterPos: (pos: number, html: string) => void;
+    removeEmptyBulletLists: () => void;
     hideAiButtonNearPos: (pos: number) => void;
 }
 
@@ -253,6 +255,51 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
                 // Fallback: append at end
                 editor.chain().focus().insertContentAt(doc.content.size, html).run();
             }
+        },
+
+        replaceFirstBulletListAfterPos: (pos: number, html: string) => {
+            if (!editor) return;
+            skipRestoreRef.current = true;
+            setTimeout(() => { skipRestoreRef.current = false; }, 500);
+            const doc = editor.state.doc;
+            const maxPos = doc.content.size;
+            let listStart = -1;
+            let listEnd = -1;
+
+            doc.nodesBetween(Math.min(pos, maxPos), maxPos, (node, nodePos) => {
+                if (listStart !== -1) return false;
+                if (node.type.name === 'bulletList' && nodePos >= pos) {
+                    listStart = nodePos;
+                    listEnd = nodePos + node.nodeSize;
+                    return false;
+                }
+            });
+
+            if (listStart !== -1 && listEnd !== -1) {
+                editor.chain().focus().deleteRange({ from: listStart, to: listEnd }).insertContentAt(listStart, html).run();
+            } else {
+                editor.chain().focus().insertContentAt(maxPos, html).run();
+            }
+        },
+
+        removeEmptyBulletLists: () => {
+            if (!editor) return;
+            const doc = editor.state.doc;
+            const ranges: Array<{ from: number; to: number }> = [];
+
+            doc.descendants((node, nodePos) => {
+                if (node.type.name === 'bulletList' && !node.textContent.trim()) {
+                    ranges.push({ from: nodePos, to: nodePos + node.nodeSize });
+                }
+            });
+
+            if (ranges.length === 0) return;
+
+            let tr = editor.state.tr;
+            ranges.reverse().forEach((r) => {
+                tr = tr.delete(r.from, r.to);
+            });
+            editor.view.dispatch(tr);
         },
 
         hideAiButtonNearPos: (pos: number) => {

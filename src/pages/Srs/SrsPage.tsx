@@ -8,7 +8,7 @@ import { useSrsData } from './hooks/useSrsData';
 import { useSrsAiProgress } from './hooks/useSrsAiProgress';
 import {
     buildUseCaseTable, buildScreenDetailsTable, buildAuthorizationTable,
-    buildDbSchemaTable, uploadFileAndGetUrl, buildFunctionalRequirementsHTML
+    buildDbSchemaTable, uploadFileAndGetUrl, buildFunctionalRequirementsHTML, normalizeFunctionalRequirements
 } from './utils/srsTableBuilders';
 import SrsEmptyState from './components/SrsEmptyState';
 import SrsHeaderBar from './components/SrsHeaderBar';
@@ -26,6 +26,15 @@ const esc = (s: any) =>
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+
+const escWithBreaks = (s: any) => esc(s).replace(/\r?\n/g, '<br/>');
+
+const formatDetailsWithNumberedBreaks = (s: any) => {
+    const text = String(s ?? '').replace(/\r\n/g, '\n');
+    // Put numbered points on new lines for readability: ... 1. ... 2. ...
+    const normalized = text.replace(/([^\n])\s+(\d+\.\s)/g, '$1\n$2');
+    return escWithBreaks(normalized);
+};
 
 const normalizeSrsBaseTitle = (title: string, versionNumber: number): string => {
     const normalized = String(title ?? '')
@@ -46,6 +55,122 @@ const normalizeSrsBaseTitle = (title: string, versionNumber: number): string => 
 const buildSrsExportFileName = (title: string, versionNumber: number, extension: 'pdf' | 'docx'): string => {
     const baseTitle = normalizeSrsBaseTitle(title, versionNumber);
     return `SRS_${baseTitle}_v${versionNumber}.${extension}`;
+};
+
+const tryParseJson = (raw: string): any => {
+    const text = String(raw ?? '').trim();
+    if (!text) return {};
+    try {
+        return JSON.parse(text);
+    } catch {
+        const cleaned = text
+            .replace(/^```json\s*/i, '')
+            .replace(/^```\s*/i, '')
+            .replace(/\s*```$/, '');
+        return JSON.parse(cleaned);
+    }
+};
+
+const buildFuncReqsFromScreenDetails = (details: any[]): any[] => {
+    const groups = new Map<string, { name: string; functions: { name: string }[] }>();
+    details.forEach((d: any) => {
+        const featureName = String(d?.feature || 'General').trim() || 'General';
+        const screenName = String(d?.screen || d?.name || d?.title || '').trim();
+        if (!screenName) return;
+        if (!groups.has(featureName)) {
+            groups.set(featureName, { name: featureName, functions: [] });
+        }
+        groups.get(featureName)!.functions.push({ name: screenName });
+    });
+    return Array.from(groups.values());
+};
+
+const extractMockupFields = (raw: string): { trigger: string; description: string; details: string } => {
+    const text = String(raw ?? '').trim();
+    let parsed: any = {};
+    try {
+        parsed = tryParseJson(text);
+    } catch {
+        parsed = {};
+    }
+
+    const trigger =
+        parsed?.trigger ||
+        parsed?.function_trigger ||
+        parsed?.functionTrigger ||
+        parsed?.function?.trigger ||
+        parsed?.function?.functionTrigger ||
+        '';
+
+    const description =
+        parsed?.description ||
+        parsed?.function_description ||
+        parsed?.functionDescription ||
+        parsed?.function?.description ||
+        parsed?.function?.functionDescription ||
+        '';
+
+    const details =
+        parsed?.details ||
+        parsed?.function_details ||
+        parsed?.functionDetails ||
+        parsed?.function?.details ||
+        parsed?.function?.functionDetails ||
+        '';
+
+    if (trigger || description || details) {
+        return {
+            trigger: String(trigger || ''),
+            description: String(description || ''),
+            details: String(details || ''),
+        };
+    }
+
+    // Fallback: flatten any JSON string values when keys are unexpected.
+    const collectStrings = (value: any): string[] => {
+        if (value == null) return [];
+        if (typeof value === 'string') {
+            const s = value.trim();
+            return s ? [s] : [];
+        }
+        if (Array.isArray(value)) {
+            return value.flatMap(collectStrings);
+        }
+        if (typeof value === 'object') {
+            return Object.values(value).flatMap(collectStrings);
+        }
+        return [];
+    };
+
+    const collected = collectStrings(parsed);
+    if (collected.length > 0) {
+        return {
+            trigger: collected[0] || '',
+            description: collected[1] || collected[0] || '',
+            details: collected.slice(2).join(' ').trim() || collected[1] || collected[0] || '',
+        };
+    }
+
+    // Fallback: parse plain text output from Gemini
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const pick = (regex: RegExp) => {
+        const line = lines.find((l) => regex.test(l));
+        return line ? line.replace(regex, '').trim() : '';
+    };
+
+    const t = pick(/^[-*\d.)\s]*function\s*trigger\s*:\s*/i);
+    const d = pick(/^[-*\d.)\s]*function\s*description\s*:\s*/i);
+    const de = pick(/^[-*\d.)\s]*function\s*details?\s*:\s*/i);
+
+    const finalTrigger = t || '';
+    const finalDescription = d || '';
+    const finalDetails = de || text || '';
+
+    return {
+        trigger: finalTrigger || '[AI chưa nhận diện được trigger rõ ràng từ ảnh] ',
+        description: finalDescription || '[AI chưa nhận diện được mô tả rõ ràng từ ảnh] ',
+        details: finalDetails || '[AI chưa trích xuất được chi tiết chức năng từ ảnh] ',
+    };
 };
 
 const SrsPage: React.FC = () => {
@@ -107,7 +232,7 @@ const SrsPage: React.FC = () => {
                     toast.success('Đã chèn ảnh Use Case và điền bảng mô tả!', { autoClose: 4000 });
 
                 } else if (imageType === 'screenflow') {
-                    const parsed = JSON.parse(raw);
+                    const parsed = tryParseJson(raw);
                     const details = parsed.screenDetails || parsed.screen_details || [];
                     const auths = parsed.authorizations || parsed.user_authorization || [];
 
@@ -122,13 +247,18 @@ const SrsPage: React.FC = () => {
                     }
 
                     // Generate Section III skeleton from functionalRequirements
-                    const funcReqs = parsed.functionalRequirements || [];
+                    let funcReqs = normalizeFunctionalRequirements(parsed);
+                    if (funcReqs.length === 0 && Array.isArray(details) && details.length > 0) {
+                        funcReqs = buildFuncReqsFromScreenDetails(details);
+                    }
                     console.log('[Screen Flow] functionalRequirements from AI:', funcReqs);
                     if (funcReqs.length > 0) {
                         const sectionHTML = buildFunctionalRequirementsHTML(funcReqs);
                         setTimeout(() => {
                             editor.insertHTMLAfterHeading('III. Functional Requirements', sectionHTML);
                         }, 300);
+                    } else {
+                        toast.warning('Ảnh đã phân tích nhưng chưa suy ra được Functional Requirements. Bạn thử ảnh Screen Flow rõ hơn nhé.');
                     }
 
                     setTimeout(() => srsData.persistDraftNow(), 350);
@@ -143,15 +273,17 @@ const SrsPage: React.FC = () => {
                     toast.success('Đã điền bảng Table Descriptions!', { autoClose: 4000 });
 
                 } else if (imageType === 'mockup') {
-                    const parsed = JSON.parse(raw);
+                    const extracted = extractMockupFields(raw);
                     const funcHTML = `
-                        <ul>
-                            <li><strong>Function trigger:</strong> ${esc(parsed.trigger)}</li>
-                            <li><strong>Function description:</strong> ${esc(parsed.description)}</li>
-                        </ul>
-                        <p><strong>Function Details:</strong> ${esc(parsed.details)}</p>
+                        <div>
+                            <p><strong>Function trigger:</strong> ${escWithBreaks(extracted.trigger)}</p>
+                            <p><strong>Function description:</strong> ${escWithBreaks(extracted.description)}</p>
+                            <p><strong>Function Details:</strong> ${formatDetailsWithNumberedBreaks(extracted.details)}</p>
+                        </div>
                     `;
-                    editor.insertHTMLAfterPos(pos, funcHTML);
+                    editor.replaceFirstBulletListAfterPos(pos, funcHTML);
+                    // Remove orphan bullet markers left by old placeholder list blocks.
+                    setTimeout(() => editor.removeEmptyBulletLists(), 0);
                     setTimeout(() => srsData.persistDraftNow(), 0);
                     toast.success('Đã chèn ảnh Mockup và điền mô tả chức năng!', { autoClose: 4000 });
                 }
@@ -159,6 +291,10 @@ const SrsPage: React.FC = () => {
             } catch (err: any) {
                 if (loadingToastId) toast.dismiss(loadingToastId);
                 console.error('[AI Vision] Error:', err);
+                if (err.response?.status === 401) {
+                    toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để dùng AI Vision.', { autoClose: 6000 });
+                    return;
+                }
                 const msg = err.response?.data?.message || 'Lỗi khi phân tích ảnh';
                 toast.error(msg, { autoClose: 6000 });
             }
@@ -336,7 +472,6 @@ const SrsPage: React.FC = () => {
                 isUpdating={srsData.updateMutation.isPending}
                 onGenerate={srsData.handleGenerate}
                 onSave={srsData.handleSave}
-                onReload={srsData.handleReload}
                 onExportPdf={() => handleExport('pdf')}
                 onExportDocx={() => handleExport('docx')}
             />
