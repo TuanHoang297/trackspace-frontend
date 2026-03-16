@@ -15,10 +15,8 @@ interface SrsEmptyStateProps {
     aiElapsed: number;
     showSupplement: boolean;
     setShowSupplement: (v: boolean) => void;
-    businessRules: string;
-    setBusinessRules: (v: string) => void;
-    nonScreenFunctions: string;
-    setNonScreenFunctions: (v: string) => void;
+    supplementInfo: string;
+    setSupplementInfo: (v: string) => void;
     onGenerate: () => void;
     generateError: string | null;
     setGenerateError: (v: string | null) => void;
@@ -27,7 +25,7 @@ interface SrsEmptyStateProps {
 const SrsEmptyState: React.FC<SrsEmptyStateProps> = ({
     readOnly, isPending, aiProgress, aiStage, aiElapsed,
     showSupplement, setShowSupplement,
-    businessRules, setBusinessRules, nonScreenFunctions, setNonScreenFunctions,
+    supplementInfo, setSupplementInfo,
     onGenerate, generateError, setGenerateError,
 }) => (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 900, mx: 'auto' }}>
@@ -57,10 +55,9 @@ const SrsEmptyState: React.FC<SrsEmptyStateProps> = ({
                         </Box>
                         <SrsSupplementForm
                             show={showSupplement}
-                            businessRules={businessRules}
-                            setBusinessRules={setBusinessRules}
-                            nonScreenFunctions={nonScreenFunctions}
-                            setNonScreenFunctions={setNonScreenFunctions}
+                            onClose={() => setShowSupplement(false)}
+                            supplementInfo={supplementInfo}
+                            setSupplementInfo={setSupplementInfo}
                             variant="empty"
                         />
                         <Box sx={{ textAlign: 'center' }}>

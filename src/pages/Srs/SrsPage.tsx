@@ -269,10 +269,8 @@ const SrsPage: React.FC = () => {
                 aiElapsed={aiElapsed}
                 showSupplement={showSupplement}
                 setShowSupplement={setShowSupplement}
-                businessRules={srsData.businessRules}
-                setBusinessRules={srsData.setBusinessRules}
-                nonScreenFunctions={srsData.nonScreenFunctions}
-                setNonScreenFunctions={srsData.setNonScreenFunctions}
+                supplementInfo={srsData.supplementInfo}
+                setSupplementInfo={srsData.setSupplementInfo}
                 onGenerate={srsData.handleGenerate}
                 generateError={srsData.generateError}
                 setGenerateError={srsData.setGenerateError}
@@ -305,10 +303,9 @@ const SrsPage: React.FC = () => {
             {!readOnly && srsData.isLatest && (
                 <SrsSupplementForm
                     show={showSupplement}
-                    businessRules={srsData.businessRules}
-                    setBusinessRules={srsData.setBusinessRules}
-                    nonScreenFunctions={srsData.nonScreenFunctions}
-                    setNonScreenFunctions={srsData.setNonScreenFunctions}
+                    onClose={() => setShowSupplement(false)}
+                    supplementInfo={srsData.supplementInfo}
+                    setSupplementInfo={srsData.setSupplementInfo}
                     variant="inline"
                 />
             )}

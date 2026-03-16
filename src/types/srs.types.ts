@@ -10,9 +10,7 @@ export interface SrsDocumentResponse {
 }
 
 export interface SrsGenerateRequest {
-    businessRules?: string;
-    nonScreenFunctions?: string;
-    notes?: string;
+    additionalInfo?: string;
 }
 
 export interface SrsUpdateRequest {

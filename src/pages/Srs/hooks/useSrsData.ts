@@ -20,8 +20,7 @@ export function useSrsData() {
     const [generateError, setGenerateError] = useState<string | null>(null);
 
     // Supplement form state
-    const [businessRules, setBusinessRules] = useState('');
-    const [nonScreenFunctions, setNonScreenFunctions] = useState('');
+    const [supplementInfo, setSupplementInfo] = useState('');
 
     // ─── QUERIES ───────────────────────────────────────────────────────────────
     const { data: latestSrs, isLoading: latestLoading } = useQuery({
@@ -80,8 +79,7 @@ export function useSrsData() {
     // ─── MUTATIONS ─────────────────────────────────────────────────────────────
     const generateMutation = useMutation({
         mutationFn: () => srsService.generateSrs(pid, {
-            businessRules: businessRules.trim() || undefined,
-            nonScreenFunctions: nonScreenFunctions.trim() || undefined,
+            additionalInfo: supplementInfo.trim() || undefined,
         }),
         onSuccess: (response) => {
             setGenerateError(null);
@@ -160,9 +158,7 @@ export function useSrsData() {
         handleGenerate,
         handleSave,
         // Supplement form
-        businessRules,
-        setBusinessRules,
-        nonScreenFunctions,
-        setNonScreenFunctions,
+        supplementInfo,
+        setSupplementInfo,
     };
 }
