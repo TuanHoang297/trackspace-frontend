@@ -8,7 +8,7 @@ import { useSrsData } from './hooks/useSrsData';
 import { useSrsAiProgress } from './hooks/useSrsAiProgress';
 import {
     buildUseCaseTable, buildScreenDetailsTable, buildAuthorizationTable,
-    buildDbSchemaTable, fileToBase64, buildFunctionalRequirementsHTML
+    buildDbSchemaTable, uploadFileAndGetUrl, buildFunctionalRequirementsHTML
 } from './utils/srsTableBuilders';
 import SrsEmptyState from './components/SrsEmptyState';
 import SrsHeaderBar from './components/SrsHeaderBar';
@@ -19,7 +19,34 @@ import SrsA4Editor from './components/editor/SrsA4Editor';
 import type { SrsVisionRequest } from '../../types/srs.types';
 import srsService from '../../api/services/srsService';
 
-const esc = (s: any) => String(s ?? '');
+const esc = (s: any) =>
+    String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+const normalizeSrsBaseTitle = (title: string, versionNumber: number): string => {
+    const normalized = String(title ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .replace(/^\s*SRS\s*[-_:|]*\s*/i, '')
+        .replace(new RegExp(`(?:\s*[-_:|()]?\s*)v${versionNumber}\s*$`, 'i'), '')
+        .replace(/(?:\s*[-_:|()]?\s*)v\d+\s*$/i, '')
+        .replace(/[^A-Za-z0-9]+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+    return normalized || 'Document';
+};
+
+const buildSrsExportFileName = (title: string, versionNumber: number, extension: 'pdf' | 'docx'): string => {
+    const baseTitle = normalizeSrsBaseTitle(title, versionNumber);
+    return `SRS_${baseTitle}_v${versionNumber}.${extension}`;
+};
 
 const SrsPage: React.FC = () => {
     const { isLecturer } = useRole();
@@ -29,6 +56,15 @@ const SrsPage: React.FC = () => {
 
     const srsData = useSrsData();
     const { aiProgress, aiStage, aiElapsed } = useSrsAiProgress(srsData.generateMutation.isPending);
+
+    const uploadImageToCloudinary = async (file: File): Promise<string> => {
+        const uploadRes = await srsService.uploadImage(file);
+        const imageUrl = uploadRes.data.data?.url;
+        if (!imageUrl) {
+            throw new Error('Upload ảnh không trả về URL');
+        }
+        return imageUrl;
+    };
 
     // ─── AI Vision handler ──────────────────────────────────────────────────────
     const handleDescribeImage = async (imageType: SrsVisionRequest['type'], insertPos?: number) => {
@@ -42,13 +78,13 @@ const SrsPage: React.FC = () => {
 
             let loadingToastId: any = null;
             try {
-                const base64 = await fileToBase64(file);
+                const imageUrl = await uploadFileAndGetUrl(file, uploadImageToCloudinary);
                 const pos = insertPos ?? 0;
                 const editor = srsData.editorRef.current;
                 if (!editor) return;
 
                 // Step 1: Insert image + hide button immediately
-                editor.insertImageAfterPos(pos, base64);
+                editor.insertImageAfterPos(pos, imageUrl);
                 editor.hideAiButtonNearPos(pos);
 
                 // Step 2: Show loading toast
@@ -56,7 +92,7 @@ const SrsPage: React.FC = () => {
 
                 // Step 3: Call AI Vision API
                 const res = await srsService.describeImage(srsData.pid, {
-                    image: base64,
+                    image: imageUrl,
                     type: imageType,
                 });
                 const raw: string = res.data.data;
@@ -67,6 +103,7 @@ const SrsPage: React.FC = () => {
                     const parsed = JSON.parse(raw);
                     const tableHTML = buildUseCaseTable(Array.isArray(parsed) ? parsed : []);
                     editor.fillNthTableAfterPos(pos, 0, tableHTML);
+                    setTimeout(() => srsData.persistDraftNow(), 0);
                     toast.success('Đã chèn ảnh Use Case và điền bảng mô tả!', { autoClose: 4000 });
 
                 } else if (imageType === 'screenflow') {
@@ -94,12 +131,15 @@ const SrsPage: React.FC = () => {
                         }, 300);
                     }
 
+                    setTimeout(() => srsData.persistDraftNow(), 350);
+
                     toast.success('Đã chèn ảnh và điền bảng Screen Details + User Authorization + Functional Requirements!', { autoClose: 4000 });
 
                 } else if (imageType === 'db_schema') {
                     const parsed = JSON.parse(raw);
                     const tableHTML = buildDbSchemaTable(Array.isArray(parsed) ? parsed : []);
                     editor.fillNthTableAfterPos(pos, 0, tableHTML);
+                    setTimeout(() => srsData.persistDraftNow(), 0);
                     toast.success('Đã điền bảng Table Descriptions!', { autoClose: 4000 });
 
                 } else if (imageType === 'mockup') {
@@ -112,6 +152,7 @@ const SrsPage: React.FC = () => {
                         <p><strong>Function Details:</strong> ${esc(parsed.details)}</p>
                     `;
                     editor.insertHTMLAfterPos(pos, funcHTML);
+                    setTimeout(() => srsData.persistDraftNow(), 0);
                     toast.success('Đã chèn ảnh Mockup và điền mô tả chức năng!', { autoClose: 4000 });
                 }
 
@@ -138,7 +179,7 @@ const SrsPage: React.FC = () => {
             }
             element.classList.add('export-mode');
 
-            const fileName = `SRS_${srsData.activeSrs.title.replace(/\s+/g, '_')}_v${srsData.activeSrs.versionNumber}.pdf`;
+            const fileName = buildSrsExportFileName(srsData.activeSrs.title, srsData.activeSrs.versionNumber, 'pdf');
             const opt: any = {
                 margin:       [25, 0, 25, 0],
                 filename:     fileName,
@@ -171,7 +212,7 @@ const SrsPage: React.FC = () => {
             toast.info('Đang tạo file DOCX...');
             try {
                 let editorHtml = srsData.editorRef.current?.getHTML() ?? '';
-                const fileName = `SRS_${srsData.activeSrs.title.replace(/\s+/g, '_')}_v${srsData.activeSrs.versionNumber}.doc`;
+                const fileName = buildSrsExportFileName(srsData.activeSrs.title, srsData.activeSrs.versionNumber, 'docx');
 
                 // Convert URL images to base64 for Word compatibility
                 const tempDiv = document.createElement('div');
@@ -295,6 +336,7 @@ const SrsPage: React.FC = () => {
                 isUpdating={srsData.updateMutation.isPending}
                 onGenerate={srsData.handleGenerate}
                 onSave={srsData.handleSave}
+                onReload={srsData.handleReload}
                 onExportPdf={() => handleExport('pdf')}
                 onExportDocx={() => handleExport('docx')}
             />
@@ -328,6 +370,8 @@ const SrsPage: React.FC = () => {
                     ref={srsData.editorRef}
                     value={srsData.content}
                     readOnly={readOnly || !srsData.isLatest}
+                    onImageUpload={uploadImageToCloudinary}
+                    onImageInserted={() => srsData.persistDraftNow()}
                     onAiAction={(actionType, insertPos) => handleDescribeImage(actionType as any, insertPos)}
                 />
             </Box>

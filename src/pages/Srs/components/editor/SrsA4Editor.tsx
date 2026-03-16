@@ -18,17 +18,45 @@ import SrsEditorToolbar from './SrsEditorToolbar';
 import SrsEditorContextMenu from './SrsEditorContextMenu';
 import './SrsA4Styles.css';
 
+const EMPTY_CELL_HTML = '<td><p></p></td>';
+
+const buildEmptyTableHTML = (headers: string[]): string => (
+    `<table><tr>${headers.map(header => `<th>${header}</th>`).join('')}</tr><tr>${headers.map(() => EMPTY_CELL_HTML).join('')}</tr></table>`
+);
+
+const isImageNode = (node: any): boolean => (
+    node?.type?.name === 'image' || node?.type?.name === 'resizableImage'
+);
+
+const hasImageAfterButton = (doc: any, startPos: number): boolean => {
+    let offset = 0;
+    for (let index = 0; index < doc.childCount; index++) {
+        const node = doc.child(index);
+        const nodeStart = offset;
+        offset += node.nodeSize;
+
+        if (nodeStart < startPos) continue;
+        if (isImageNode(node)) return true;
+        if (node.type.name === 'paragraph' && !node.textContent.trim()) continue;
+        return false;
+    }
+
+    return false;
+};
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface SrsA4EditorProps {
     value: string | Record<string, any>;
     onChange?: (content: string) => void;
     readOnly?: boolean;
+    onImageUpload?: (file: File) => Promise<string>;
+    onImageInserted?: () => void;
     onAiAction?: (actionType: string, insertPos: number) => void;
 }
 
 export interface SrsA4EditorHandle {
     getHTML: () => string;
-    insertImageAfterPos: (pos: number, base64Src: string) => void;
+    insertImageAfterPos: (pos: number, imageSrc: string) => void;
     fillNthTableAfterPos: (pos: number, n: number, tableHTML: string) => void;
     insertHTMLAfterPos: (pos: number, html: string) => void;
     insertHTMLAfterHeading: (headingText: string, html: string) => void;
@@ -36,7 +64,7 @@ export interface SrsA4EditorHandle {
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
-const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, onChange, readOnly = false, onAiAction }, ref) => {
+const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, onChange, readOnly = false, onImageUpload, onImageInserted, onAiAction }, ref) => {
     const imageInputRef = useRef<HTMLInputElement>(null);
     const viewportRef = useRef<HTMLDivElement>(null);
     const onChangeRef = useRef(onChange);
@@ -74,7 +102,10 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
         content: '',
         editable: !readOnly,
         onUpdate: ({ editor: ed }) => {
-            onChangeRef.current?.(ed.getHTML());
+            const html = ed.getHTML();
+            setTimeout(() => {
+                onChangeRef.current?.(html);
+            }, 0);
 
             if (skipRestoreRef.current) return;
 
@@ -85,12 +116,7 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
                 if (node.type.name === 'aiActionButton' && node.attrs.done) {
                     const nextPos = pos + node.nodeSize;
                     if (nextPos < doc.content.size) {
-                        const nextNode = doc.nodeAt(nextPos);
-                        const isImage = nextNode && (
-                            nextNode.type.name === 'image' ||
-                            nextNode.type.name === 'resizableImage'
-                        );
-                        if (!isImage) buttonsToRestore.push({ pos, node });
+                        if (!hasImageAfterButton(doc, nextPos)) buttonsToRestore.push({ pos, node });
                     } else {
                         buttonsToRestore.push({ pos, node });
                     }
@@ -108,12 +134,12 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
                     for (const { pos, node } of buttonsToRestore) {
                         const actionType = node.attrs.actionType;
                         const emptyTables: Record<string, string[]> = {
-                            usecase: ['<table><tr><th>ID</th><th>Feature</th><th>Use Case</th><th>Use Case Description</th></tr><tr><td></td><td></td><td></td><td></td></tr></table>'],
+                            usecase: [buildEmptyTableHTML(['ID', 'Feature', 'Use Case', 'Use Case Description'])],
                             screenflow: [
-                                '<table><tr><th>#</th><th>Feature</th><th>Screen</th><th>Description</th></tr><tr><td></td><td></td><td></td><td></td></tr></table>',
-                                '<table><tr><th>Screen</th><th>ADMIN</th><th>LECTURER</th><th>TEAMLEADER</th><th>TEAMMEMBER</th></tr><tr><td></td><td></td><td></td><td></td><td></td></tr></table>',
+                                buildEmptyTableHTML(['#', 'Feature', 'Screen', 'Description']),
+                                buildEmptyTableHTML(['Screen', 'ADMIN', 'LECTURER', 'TEAMLEADER', 'TEAMMEMBER']),
                             ],
-                            db_schema: ['<table><tr><th>No</th><th>Table</th><th>Description</th></tr><tr><td></td><td></td><td></td></tr></table>'],
+                            db_schema: [buildEmptyTableHTML(['No', 'Table', 'Description'])],
                         };
                         const tables = emptyTables[actionType] || [];
                         tables.forEach((tableHTML, idx) => {
@@ -149,19 +175,21 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
     useImperativeHandle(ref, () => ({
         getHTML: () => editor?.getHTML() ?? '',
 
-        insertImageAfterPos: (pos: number, base64Src: string) => {
+        insertImageAfterPos: (pos: number, imageSrc: string) => {
             if (!editor) return;
             const maxPos = editor.state.doc.content.size;
             const safePos = Math.min(pos, maxPos);
             try {
-                const $pos = editor.state.doc.resolve(safePos);
-                const insertAt = Math.min($pos.after(Math.max(1, $pos.depth)), maxPos);
+                const anchorNode = editor.state.doc.nodeAt(safePos);
+                const insertAt = anchorNode?.type.name === 'aiActionButton'
+                    ? Math.min(safePos + anchorNode.nodeSize, maxPos)
+                    : safePos;
                 editor.chain().focus().insertContentAt(insertAt, {
-                    type: 'image', attrs: { src: base64Src },
+                    type: 'image', attrs: { src: imageSrc },
                 }).run();
             } catch {
                 editor.chain().focus().insertContentAt(maxPos, {
-                    type: 'image', attrs: { src: base64Src },
+                    type: 'image', attrs: { src: imageSrc },
                 }).run();
             }
         },
@@ -249,7 +277,9 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
     // ── Sync readOnly ──────────────────────────────────────────────────────────
     useEffect(() => {
         if (!editor) return;
-        editor.setEditable(!readOnly);
+        setTimeout(() => {
+            editor.setEditable(!readOnly);
+        }, 0);
     }, [editor, readOnly]);
 
     // ── Content sync ───────────────────────────────────────────────────────────
@@ -258,11 +288,13 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
         const key = getContentKey(value);
         if (key === contentKeyRef.current) return;
         contentKeyRef.current = key;
-        if (typeof value === 'object' && value !== null) {
-            editor.commands.setContent(value, { emitUpdate: false });
-        } else if (typeof value === 'string') {
-            editor.commands.setContent(value, { emitUpdate: false });
-        }
+        setTimeout(() => {
+            if (typeof value === 'object' && value !== null) {
+                editor.commands.setContent(value, { emitUpdate: false });
+            } else if (typeof value === 'string') {
+                editor.commands.setContent(value, { emitUpdate: false });
+            }
+        }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value, editor]);
 
@@ -305,17 +337,30 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
         setCtxMenu({ x: e.clientX, y: e.clientY });
     }, [readOnly]);
 
-    const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !editor) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const src = ev.target?.result as string;
+
+        try {
+            let src: string;
+            if (onImageUpload) {
+                src = await onImageUpload(file);
+            } else {
+                src = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => resolve(ev.target?.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
             editor.chain().focus().setImage({ src }).run();
-        };
-        reader.readAsDataURL(file);
+            setTimeout(() => onImageInserted?.(), 0);
+        } catch (err) {
+            console.error('Image upload failed', err);
+        }
+
         e.target.value = '';
-    }, [editor]);
+    }, [editor, onImageUpload, onImageInserted]);
 
     const handleSetLink = useCallback(() => {
         if (!editor) return;

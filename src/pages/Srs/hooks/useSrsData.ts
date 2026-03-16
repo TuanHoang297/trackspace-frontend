@@ -54,6 +54,8 @@ export function useSrsData() {
     const activeSrs = selectedVersionId ? versions.find(v => v.id === selectedVersionId) : latestSrs;
     const isLatest = !selectedVersionId || selectedVersionId === latestSrs?.id;
 
+    const getDraftKey = (srsId: number) => `srs_draft_${pid}_${srsId}`;
+
     // ─── SYNC CONTENT ──────────────────────────────────────────────────────────
     useEffect(() => {
         if (!activeSrs || !activeSrs.content) {
@@ -74,7 +76,15 @@ export function useSrsData() {
             console.error("Lỗi parse data: ", e);
             setContent(activeSrs.content);
         }
-    }, [activeSrs]);
+
+        // If there is a local draft for latest version, restore it after server content
+        if (isLatest && activeSrs?.id) {
+            const draft = localStorage.getItem(getDraftKey(activeSrs.id));
+            if (draft && draft.trim()) {
+                setContent(draft);
+            }
+        }
+    }, [activeSrs, isLatest]);
 
     // ─── MUTATIONS ─────────────────────────────────────────────────────────────
     const generateMutation = useMutation({
@@ -117,6 +127,9 @@ export function useSrsData() {
     const updateMutation = useMutation({
         mutationFn: (data: { title?: string, content: string }) => srsService.updateSrs(latestSrs!.id, data),
         onSuccess: () => {
+            if (latestSrs?.id) {
+                localStorage.removeItem(getDraftKey(latestSrs.id));
+            }
             toast.success('Đã lưu version mới thành công!');
             queryClient.invalidateQueries({ queryKey: ['srs', 'latest', pid] });
             queryClient.invalidateQueries({ queryKey: ['srs', 'versions', pid] });
@@ -140,6 +153,20 @@ export function useSrsData() {
         updateMutation.mutate({ content: html });
     };
 
+    const persistDraftNow = () => {
+        if (!activeSrs?.id || !isLatest) return;
+        const html = editorRef.current?.getHTML() ?? '';
+        if (!html.trim()) return;
+        localStorage.setItem(getDraftKey(activeSrs.id), html);
+    };
+
+    const handleReload = async () => {
+        await queryClient.invalidateQueries({ queryKey: ['srs', 'latest', pid] });
+        await queryClient.invalidateQueries({ queryKey: ['srs', 'versions', pid] });
+        setSelectedVersionId('');
+        toast.success('Đã reload dữ liệu SRS mới nhất');
+    };
+
     return {
         pid,
         editorRef,
@@ -157,6 +184,8 @@ export function useSrsData() {
         updateMutation,
         handleGenerate,
         handleSave,
+        handleReload,
+        persistDraftNow,
         // Supplement form
         supplementInfo,
         setSupplementInfo,

@@ -29,6 +29,22 @@ const srsService = {
             request
         ),
 
+    // Upload image to Cloudinary and get public URL
+    uploadImage: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        return axiosClient.post<ApiResponse<{ url: string; publicId: string }>>(
+            `/srs/images/upload`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+    },
+
     // Edit (Update) SRS bằng tay
     updateSrs: (srsId: number, data: SrsUpdateRequest) =>
         axiosClient.put<ApiResponse<SrsDocumentResponse>>(`/srs/${srsId}`, data),

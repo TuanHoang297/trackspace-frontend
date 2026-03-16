@@ -1,17 +1,25 @@
 // Pure utility functions for building HTML table strings from AI Vision JSON data.
 
-const esc = (s: any) => String(s ?? '');
+const esc = (s: any) =>
+    String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+const cell = (value: any): string => `<p>${esc(value)}</p>`;
 
 /** Build use case table HTML from JSON array */
 export const buildUseCaseTable = (arr: any[]): string =>
     `<table><tr><th>ID</th><th>Feature</th><th>Use Case</th><th>Use Case Description</th></tr>${
-        arr.map(uc => `<tr><td>${esc(uc.id)}</td><td>${esc(uc.feature)}</td><td>${esc(uc.name || uc.use_case)}</td><td>${esc(uc.description)}</td></tr>`).join('')
+        arr.map(uc => `<tr><td>${cell(uc.id)}</td><td>${cell(uc.feature)}</td><td>${cell(uc.name || uc.use_case)}</td><td>${cell(uc.description)}</td></tr>`).join('')
     }</table>`;
 
 /** Build screen details table HTML */
 export const buildScreenDetailsTable = (arr: any[]): string =>
     `<table><tr><th>#</th><th>Feature</th><th>Screen</th><th>Description</th></tr>${
-        arr.map((s, i) => `<tr><td>${i + 1}</td><td>${esc(s.feature)}</td><td>${esc(s.screen || s.name)}</td><td>${esc(s.description)}</td></tr>`).join('')
+        arr.map((s, i) => `<tr><td>${cell(i + 1)}</td><td>${cell(s.feature)}</td><td>${cell(s.screen || s.name)}</td><td>${cell(s.description)}</td></tr>`).join('')
     }</table>`;
 
 /** Build user authorization table HTML — dynamic roles from permissions keys */
@@ -35,8 +43,8 @@ export const buildAuthorizationTable = (arr: any[]): string => {
     return `<table><tr><th>Screen</th>${roles.map(r => `<th>${esc(r)}</th>`).join('')}</tr>${
         arr.map(a => {
             const p = a.permissions || {};
-            return `<tr><td>${esc(a.screenName || a.screen)}</td>${
-                roles.map(r => `<td>${toX(p[r])}</td>`).join('')
+            return `<tr><td>${cell(a.screenName || a.screen)}</td>${
+                roles.map(r => `<td>${cell(toX(p[r]))}</td>`).join('')
             }</tr>`;
         }).join('')
     }</table>`;
@@ -45,7 +53,7 @@ export const buildAuthorizationTable = (arr: any[]): string => {
 /** Build db table descriptions HTML */
 export const buildDbSchemaTable = (arr: any[]): string =>
     `<table><tr><th>No</th><th>Table</th><th>Description</th></tr>${
-        arr.map((t, i) => `<tr><td>${esc(t.no ?? i + 1)}</td><td>${esc(t.table || t.name)}</td><td>${esc(t.description)}</td></tr>`).join('')
+        arr.map((t, i) => `<tr><td>${cell(t.no ?? i + 1)}</td><td>${cell(t.table || t.name)}</td><td>${cell(t.description)}</td></tr>`).join('')
     }</table>`;
 
 /** Build Section III Functional Requirements skeleton HTML with mockup AI action buttons */
@@ -69,12 +77,8 @@ export const buildFunctionalRequirementsHTML = (funcReqs: any[]): string => {
     return html;
 };
 
-/** Convert a File to base64 data URL */
-export const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-    });
-};
+/** Upload file to storage and return public URL */
+export const uploadFileAndGetUrl = async (
+    file: File,
+    uploader: (file: File) => Promise<string>
+): Promise<string> => uploader(file);

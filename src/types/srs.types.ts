@@ -19,7 +19,7 @@ export interface SrsUpdateRequest {
 }
 
 export interface SrsVisionRequest {
-    image: string; // base64
+    image: string; // Cloudinary URL or base64 data URL
     type: 'usecase' | 'screenflow' | 'db_schema' | 'mockup';
     context?: string;
 }
