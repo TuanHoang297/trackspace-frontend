@@ -1,14 +1,16 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Box, Typography, Button, Chip, Paper, Skeleton,
+    Box, Typography, Button, Chip, Paper, Skeleton, MenuItem,
     Tooltip, IconButton, LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-
+import SyncIcon from '@mui/icons-material/Sync';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EditIcon from '@mui/icons-material/Edit';
+import FlagIcon from '@mui/icons-material/Flag';
 
 import useJira from '../../hooks/useJira';
 import { useQuery } from '@tanstack/react-query';
@@ -89,7 +91,7 @@ const JiraBoard: React.FC = () => {
     const navigate = useNavigate();
     const pid = Number(projectId);
 
-    const { connection, sprints, issues, setIssues, loading, refresh, loadLocal } = useJira(pid);
+    const { connection, sprints, issues, setIssues, loading, syncing, refresh, loadLocal } = useJira(pid);
 
     // Access guard — redirect on 403 / 404
     const { data: accessProject, error: projectError } = useQuery({
@@ -122,7 +124,9 @@ const JiraBoard: React.FC = () => {
 
     // State
     const [createOpen, setCreateOpen] = useState(false);
+    const [createDefaultSprintId, setCreateDefaultSprintId] = useState<number | null>(null);
     const [detailIssue, setDetailIssue] = useState<JiraIssueResponse | null>(null);
+    const [filterAssigneeId, setFilterAssigneeId] = useState<number | 'unassigned' | ''>('');
     const [members, setMembers] = useState<Array<{ userId: number; fullName: string }>>([]);
 
     // Sprint CRUD state
@@ -249,6 +253,13 @@ const JiraBoard: React.FC = () => {
     }, [accessProject]);
     const [disconnectOpen, setDisconnectOpen] = useState(false);
 
+    // Filter issues by assignee
+    const filteredIssues = useMemo(() => {
+        if (filterAssigneeId === '') return issues;
+        if (filterAssigneeId === 'unassigned') return issues.filter(i => !i.assigneeId);
+        return issues.filter(i => i.assigneeId === filterAssigneeId);
+    }, [issues, filterAssigneeId]);
+
     // Sort: ACTIVE → CLOSED → FUTURE, then by sprintId ascending
     const sprintColumns = useMemo(() => {
         const statusOrder: Record<string, number> = { ACTIVE: 0, CLOSED: 1, FUTURE: 2 };
@@ -260,14 +271,14 @@ const JiraBoard: React.FC = () => {
         });
         return sorted.map(sprint => ({
             sprint,
-            issues: issues.filter(i => i.sprintId === sprint.sprintId),
+            issues: filteredIssues.filter(i => i.sprintId === sprint.sprintId),
         }));
-    }, [sprints, issues]);
+    }, [sprints, filteredIssues]);
 
     // Backlog = issues without sprint
     const backlogIssues = useMemo(
-        () => issues.filter(i => !i.sprintId),
-        [issues]
+        () => filteredIssues.filter(i => !i.sprintId),
+        [filteredIssues]
     );
 
     // Not connected — redirect to connect page only when project is confirmed valid
@@ -358,9 +369,29 @@ const JiraBoard: React.FC = () => {
                     )}
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    {/* Member Filter */}
+                    <TextField
+                        select size="small"
+                        value={filterAssigneeId}
+                        onChange={e => {
+                            const v = e.target.value;
+                            setFilterAssigneeId(v === '' ? '' : v === 'unassigned' ? 'unassigned' : Number(v));
+                        }}
+                        sx={{ minWidth: 160, '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.85rem' } }}
+                        InputProps={{ startAdornment: <FilterListIcon sx={{ fontSize: 18, mr: 0.5, color: 'text.secondary' }} /> }}
+                    >
+                        <MenuItem value="">Tất cả thành viên</MenuItem>
+                        <MenuItem value="unassigned">Chưa gán</MenuItem>
+                        {members.map(m => (
+                            <MenuItem key={m.userId} value={m.userId}>{m.fullName}</MenuItem>
+                        ))}
+                    </TextField>
+
+                    {/* Create Actions */}
                     {canCreateIssue && (
                         <>
-                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}
+                            <Button variant="contained" startIcon={<AddIcon />}
+                                onClick={() => { setCreateDefaultSprintId(null); setCreateOpen(true); }}
                                 sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, px: { xs: 1.5, sm: 2 } }}>
                                 Tạo Issue
                             </Button>
@@ -371,6 +402,22 @@ const JiraBoard: React.FC = () => {
                             </Button>
                         </>
                     )}
+
+                    {/* Divider */}
+                    <Box sx={{ width: '1px', height: 28, bgcolor: 'divider', mx: 0.5 }} />
+
+                    {/* Sync */}
+                    <Tooltip title="Đồng bộ dữ liệu từ Jira">
+                        <IconButton
+                            onClick={() => refresh()}
+                            disabled={syncing}
+                            sx={{ bgcolor: 'action.hover', borderRadius: 2 }}
+                        >
+                            <SyncIcon sx={{ fontSize: 20, animation: syncing ? 'spin 1s linear infinite' : 'none', '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } } }} />
+                        </IconButton>
+                    </Tooltip>
+
+                    {/* Disconnect */}
                     {canManageConnection && (
                         <Tooltip title="Ngắt kết nối Jira">
                             <IconButton onClick={() => setDisconnectOpen(true)} color="error"
@@ -473,15 +520,26 @@ const JiraBoard: React.FC = () => {
                                             </Box>
                                         </Box>
 
-                                        {/* Dates */}
-                                        {(sprint.startDate || sprint.endDate) && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                                                <CalendarTodayIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {formatDate(sprint.startDate)} — {formatDate(sprint.endDate)}
+                                        {/* Sprint Goal */}
+                                        {sprint.sprintGoal && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                                <FlagIcon sx={{ fontSize: 12, color: '#F59E0B', flexShrink: 0 }} />
+                                                <Typography variant="caption" color="text.secondary" sx={{
+                                                    fontStyle: 'italic',
+                                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                                }}>
+                                                    {sprint.sprintGoal}
                                                 </Typography>
                                             </Box>
                                         )}
+
+                                        {/* Dates — always render for consistent spacing */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1, visibility: (sprint.startDate || sprint.endDate) ? 'visible' : 'hidden' }}>
+                                            <CalendarTodayIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
+                                            <Typography variant="caption" color="text.secondary">
+                                                {formatDate(sprint.startDate)} — {formatDate(sprint.endDate)}
+                                            </Typography>
+                                        </Box>
 
                                         {/* Progress */}
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -536,7 +594,7 @@ const JiraBoard: React.FC = () => {
                                             <Button
                                                 fullWidth size="small"
                                                 startIcon={<AddIcon />}
-                                                onClick={() => setCreateOpen(true)}
+                                                onClick={() => { setCreateDefaultSprintId(sprint.sprintId); setCreateOpen(true); }}
                                                 sx={{
                                                     textTransform: 'none', color: 'text.secondary',
                                                     justifyContent: 'flex-start', fontWeight: 500,
@@ -619,6 +677,8 @@ const JiraBoard: React.FC = () => {
                 onCreated={() => { setCreateOpen(false); refresh(); }}
                 projectId={pid}
                 sprints={sprints}
+                members={members}
+                defaultSprintId={createDefaultSprintId}
             />
             <IssueDetailDialog
                 open={!!detailIssue}
