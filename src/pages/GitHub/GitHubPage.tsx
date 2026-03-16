@@ -89,6 +89,7 @@ const GitHubPage: React.FC = () => {
     const [branchCommits, setBranchCommits] = useState<GitHubCommitResponse[] | null>(null);
     const [branchLoading, setBranchLoading] = useState(false);
     const initDone = useRef(false);
+    const authorFilterApplied = useRef(false);
 
     // ── Connections cached by React Query ──
     const { data: connections = [], isLoading: loading } = useQuery({
@@ -145,7 +146,7 @@ const GitHubPage: React.FC = () => {
         else if (!readOnly) { setUrl(''); setToken(''); setView('connect'); }
         else { toast.info('Sinh viên cần kết nối repo này để theo dõi commits.'); }
     };
-    const handleBack = () => { setView('overview'); setSelectedRepo(null); setTab(0); setBranchFilter('all'); setAuthorFilter('all'); setSearchParams({}, { replace: true }); };
+    const handleBack = () => { authorFilterApplied.current = false; setView('overview'); setSelectedRepo(null); setTab(0); setBranchFilter('all'); setAuthorFilter('all'); setSearchParams({}, { replace: true }); };
     const handleConnect = async () => {
         if (!url || !token || !selectedRepo) { toast.error('Nhập Repository URL và Token'); return; }
         try {
@@ -176,6 +177,22 @@ const GitHubPage: React.FC = () => {
     };
 
     const handleAuthorClick = (githubLogin: string) => { setAuthorFilter(githubLogin); setBranchFilter('all'); setTab(1); };
+
+    // Auto-apply author filter from URL param ?authorId=X (e.g. from Contribution drawer)
+    useEffect(() => {
+        const authorId = searchParams.get('authorId');
+        if (!authorId || stats.length === 0 || authorFilterApplied.current) return;
+        const match = stats.find(s => String(s.userId) === authorId);
+        if (match) {
+            setAuthorFilter(match.githubLogin);
+            setTab(1);
+            authorFilterApplied.current = true;
+            // Clean authorId from URL, keep repo
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('authorId');
+            setSearchParams(newParams, { replace: true });
+        }
+    }, [stats, searchParams, setSearchParams]);
 
     const timeAgo = (d: string | null) => {
         if (!d) return 'Never';

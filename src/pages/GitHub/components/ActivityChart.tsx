@@ -35,6 +35,7 @@ const ActivityChart: React.FC<Props> = ({ commits, color = '#1F6FEB', periodFilt
         const weeks = periodFilter === 'last_month' ? 5 : periodFilter === 'last_3_months' ? 13 : 8;
         const WEEK = 7 * 86400000;
         const startTs = now - weeks * WEEK;
+        const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         return Array.from({ length: weeks }, (_, i) => {
             const wStart = new Date(startTs + i * WEEK);
             const wEnd = new Date(startTs + (i + 1) * WEEK);
@@ -43,8 +44,11 @@ const ActivityChart: React.FC<Props> = ({ commits, color = '#1F6FEB', periodFilt
                 const t = new Date(c.commitDate).getTime();
                 return t >= wStart.getTime() && t < wEnd.getTime();
             }).length;
-            const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return { count, label: `${wStart.getDate()} ${m[wStart.getMonth()]}` };
+            return {
+                count,
+                label: `${wStart.getDate()} ${m[wStart.getMonth()]}`,
+                weekOf: `Week of ${wStart.getDate()} ${m[wStart.getMonth()]}, ${wStart.getFullYear()}`,
+            };
         });
     }, [filteredCommits, periodFilter]);
 
@@ -60,7 +64,7 @@ const ActivityChart: React.FC<Props> = ({ commits, color = '#1F6FEB', periodFilt
     const barActualW = barW - barGap;
 
     return (
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 120, display: 'block' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 120, display: 'block', overflow: 'visible' }}>
             {/* Horizontal grid lines at 0, 5, 10, 15, 20 */}
             {[0, 5, 10, 15, 20].map(tick => {
                 const y = PAD_T + innerH - (tick / yMax) * innerH;
@@ -102,22 +106,42 @@ const ActivityChart: React.FC<Props> = ({ commits, color = '#1F6FEB', periodFilt
                             <rect x={x} y={y} width={barActualW} height={barH}
                                 fill={isHovered ? HOVER_COLOR : color} rx={1} />
                         )}
-                        {isHovered && (
-                            <g>
-                                <rect x={x + barActualW / 2 - 16} y={Math.max(y - 20, 0)} width={32} height={16}
-                                    rx={4} fill={TOOLTIP_BG} />
-                                <text x={x + barActualW / 2} y={Math.max(y - 20, 0) + 11.5}
-                                    textAnchor="middle" fontSize={9} fill={TOOLTIP_TEXT}
-                                    fontFamily="'JetBrains Mono', monospace" fontWeight={700}>
-                                    {d.count}
-                                </text>
-                            </g>
-                        )}
                         <text x={x + barActualW / 2} y={H - 4} textAnchor="middle" fontSize={7} fill={LABEL_COLOR}
                             fontFamily="Inter, sans-serif" fontWeight={500}>{d.label}</text>
                     </g>
                 );
             })}
+
+            {/* Tooltip — rendered AFTER bars so it's always on top */}
+            {hoverIdx !== null && (() => {
+                const d = data[hoverIdx];
+                const x = PAD_L + hoverIdx * barW + barGap / 2;
+                const barH = d.count > 0 ? Math.max((d.count / yMax) * innerH, 2) : 0;
+                const barTop = PAD_T + innerH - barH;
+                const tooltipW = 140;
+                const tooltipH = 32;
+                const tooltipX = Math.min(Math.max(x + barActualW / 2 - tooltipW / 2, 2), W - tooltipW - 2);
+                const tooltipY = Math.max(barTop - tooltipH - 6, 2);
+                const centerX = tooltipX + tooltipW / 2;
+                return (
+                    <g>
+                        <rect x={tooltipX} y={tooltipY} width={tooltipW} height={tooltipH}
+                            rx={6} fill={TOOLTIP_BG} stroke={isDark ? '#30363D' : '#D0D7DE'} strokeWidth={0.5} />
+                        <text x={centerX} y={tooltipY + 13}
+                            textAnchor="middle" fontSize={8} fill={TOOLTIP_TEXT}
+                            fontFamily="Inter, sans-serif" fontWeight={500}>
+                            {d.weekOf}
+                        </text>
+                        <rect x={centerX - 30} y={tooltipY + 18} width={8} height={8}
+                            rx={2} fill={color} />
+                        <text x={centerX - 18} y={tooltipY + 26}
+                            textAnchor="start" fontSize={8} fill={TOOLTIP_TEXT}
+                            fontFamily="'JetBrains Mono', monospace" fontWeight={600}>
+                            Commits  {d.count}
+                        </text>
+                    </g>
+                );
+            })()}
 
             {/* "Contributions" label — rotated on right side */}
             <text
