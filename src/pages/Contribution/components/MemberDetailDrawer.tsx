@@ -44,50 +44,6 @@ interface MemberDetailDrawerProps {
     teamAverages: TeamAverages;
 }
 
-/* ── Comparison Bar (wider version for dialog) ── */
-const CompareBar: React.FC<{
-    label: string; memberVal: number; teamVal: number; color: string; suffix?: string;
-}> = ({ label, memberVal, teamVal, color, suffix = '' }) => {
-    const maxVal = Math.max(memberVal, teamVal, 1);
-    const format = (v: number) => v % 1 !== 0 ? v.toFixed(1) : Math.round(v).toLocaleString();
-
-    return (
-        <Box sx={{ mb: 1.5 }}>
-            <Typography fontSize="0.78rem" color="text.secondary" fontWeight={600} sx={{ mb: 0.5 }}>
-                {label}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.4 }}>
-                <Typography fontSize="0.7rem" fontWeight={600} color={color} sx={{ width: 60 }}>Member</Typography>
-                <Box sx={{ flex: 1, height: 8, borderRadius: 4, bgcolor: `${color}12`, overflow: 'hidden' }}>
-                    <Box sx={{
-                        height: '100%', borderRadius: 4,
-                        background: `linear-gradient(90deg, ${color}, ${color}CC)`,
-                        width: `${(memberVal / maxVal) * 100}%`,
-                        transition: 'width 0.8s ease',
-                    }} />
-                </Box>
-                <Typography fontSize="0.78rem" fontWeight={800}
-                    sx={{ width: 60, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", color }}>
-                    {format(memberVal)}{suffix}
-                </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography fontSize="0.7rem" fontWeight={600} color="text.secondary" sx={{ width: 60 }}>Team Avg</Typography>
-                <Box sx={{ flex: 1, height: 8, borderRadius: 4, bgcolor: 'rgba(148,163,184,0.08)', overflow: 'hidden' }}>
-                    <Box sx={{
-                        height: '100%', borderRadius: 4, bgcolor: '#CBD5E1',
-                        width: `${(teamVal / maxVal) * 100}%`,
-                        transition: 'width 0.8s ease',
-                    }} />
-                </Box>
-                <Typography fontSize="0.78rem" fontWeight={700}
-                    sx={{ width: 60, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", color: '#94A3B8' }}>
-                    {format(teamVal)}{suffix}
-                </Typography>
-            </Box>
-        </Box>
-    );
-};
 
 /* ── Stat Card (for GitHub/Jira details) ── */
 const StatCard: React.FC<{
