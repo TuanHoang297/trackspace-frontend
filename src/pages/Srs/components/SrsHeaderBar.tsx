@@ -5,7 +5,6 @@ import {
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SaveIcon from '@mui/icons-material/Save';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
@@ -28,13 +27,12 @@ interface SrsHeaderBarProps {
     onSave: () => void;
     onExportPdf: () => void;
     onExportDocx: () => void;
-    onReload: () => void;
 }
 
 const SrsHeaderBar: React.FC<SrsHeaderBarProps> = ({
     activeSrs, latestSrs, versions, selectedVersionId, setSelectedVersionId,
     isLatest, readOnly, showSupplement, setShowSupplement,
-    isGenerating, isUpdating, onGenerate, onSave, onReload, onExportPdf, onExportDocx,
+    isGenerating, isUpdating, onGenerate, onSave, onExportPdf, onExportDocx,
 }) => {
     const [exportAnchor, setExportAnchor] = useState<null | HTMLElement>(null);
 
@@ -115,20 +113,6 @@ const SrsHeaderBar: React.FC<SrsHeaderBarProps> = ({
                 )}
 
                 {/* Export dropdown */}
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
-                    onClick={onReload}
-                    disabled={isGenerating || isUpdating}
-                    sx={{
-                        textTransform: 'none', borderRadius: 1.5, fontWeight: 600, fontSize: '0.8rem',
-                        borderColor: '#E2E8F0', color: '#1E293B',
-                        '&:hover': { borderColor: '#CBD5E1', bgcolor: '#F8FAFC' }
-                    }}
-                >
-                    Reload SRS
-                </Button>
                 <Button
                     variant="outlined"
                     size="small"

@@ -10,6 +10,33 @@ const esc = (s: any) =>
 
 const cell = (value: any): string => `<p>${esc(value)}</p>`;
 
+const normalizeFunctions = (feature: any): any[] => {
+    const raw = feature?.functions || feature?.functionList || feature?.items || feature?.screens || [];
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .map((f: any) => ({
+            name: f?.name || f?.functionName || f?.screen || f?.title || f?.id || '',
+        }))
+        .filter((f: any) => String(f.name).trim().length > 0);
+};
+
+export const normalizeFunctionalRequirements = (input: any): any[] => {
+    const source = Array.isArray(input)
+        ? input
+        : Array.isArray(input?.functionalRequirements)
+            ? input.functionalRequirements
+            : Array.isArray(input?.functional_requirements)
+                ? input.functional_requirements
+                : [];
+
+    return source
+        .map((f: any) => ({
+            name: f?.name || f?.feature || f?.module || f?.title || 'Feature',
+            functions: normalizeFunctions(f),
+        }))
+        .filter((f: any) => f.functions.length > 0);
+};
+
 /** Build use case table HTML from JSON array */
 export const buildUseCaseTable = (arr: any[]): string =>
     `<table><tr><th>ID</th><th>Feature</th><th>Use Case</th><th>Use Case Description</th></tr>${
@@ -58,8 +85,9 @@ export const buildDbSchemaTable = (arr: any[]): string =>
 
 /** Build Section III Functional Requirements skeleton HTML with mockup AI action buttons */
 export const buildFunctionalRequirementsHTML = (funcReqs: any[]): string => {
+    const normalized = normalizeFunctionalRequirements(funcReqs);
     let html = '';
-    funcReqs.forEach((feature, fIdx) => {
+    normalized.forEach((feature, fIdx) => {
         html += `<h3>${fIdx + 1}. ${esc(feature.name || '<<Feature Name>>')}</h3>`;
         const functions = feature.functions || [];
         functions.forEach((func: any, fnIdx: number) => {

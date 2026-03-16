@@ -26,7 +26,25 @@ export const AiActionButton = Node.create({
     },
 
     parseHTML() {
-        return [{ tag: 'div[data-ai-action]' }];
+        return [
+            {
+                tag: 'div[data-ai-action]',
+                getAttrs: (element) => {
+                    if (!(element instanceof HTMLElement)) return false;
+
+                    const actionType = element.getAttribute('data-ai-action') || 'usecase';
+                    const doneAttr = element.getAttribute('data-done') || 'false';
+                    const button = element.querySelector('.srs-ai-action-btn');
+                    const label = button?.textContent?.trim() || '📷 Upload';
+
+                    return {
+                        actionType,
+                        done: doneAttr === 'true',
+                        label,
+                    };
+                },
+            },
+        ];
     },
 
     renderHTML({ HTMLAttributes }) {
