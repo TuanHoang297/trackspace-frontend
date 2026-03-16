@@ -29,7 +29,7 @@ import JiraConnect from './pages/Jira/JiraConnect';
 import GitHubPage from './pages/GitHub/GitHubPage';
 import ContributionPage from './pages/Contribution/ContributionPage';
 import ForbiddenPage from './pages/ScreenFlow/ForbiddenPage';
-import SrsPage from './pages/Projects/SrsPage';
+import SrsPage from './pages/Srs/SrsPage';
 
 // ── Lazy: auth pages (loaded once per session) ──
 const LandingPage = lazy(() => import('./pages/Landing/LandingPage'));

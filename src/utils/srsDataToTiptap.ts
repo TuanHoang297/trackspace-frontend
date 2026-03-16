@@ -1,18 +1,24 @@
 import type { JSONContent } from '@tiptap/core';
-import type { SrsData } from '../components/srs/SrsTemplate';
+import type { SrsData } from '../pages/Srs/components/editor/SrsTemplate';
 import fptLogo from '../assets/logo-fpt.png';
 
-// --- primitive node builders ---
-const txt = (text: string): JSONContent => ({ type: 'text', text });
-const bold = (text: string): JSONContent => ({ type: 'text', text, marks: [{ type: 'bold' }] });
+// --- primitive node builders (defensive: coerce everything to string) ---
+const safe = (v: any): string => (v == null ? '' : String(v));
+const txt = (text: any): JSONContent => ({ type: 'text', text: safe(text) || ' ' }); // TipTap rejects empty text nodes
+const bold = (text: any): JSONContent => ({ type: 'text', text: safe(text) || ' ', marks: [{ type: 'bold' }] });
+const blueTxt = (text: any): JSONContent => ({ type: 'text', text: safe(text) || ' ', marks: [{ type: 'textStyle', attrs: { color: '#2563eb' } }, { type: 'italic' }] });
 
-function p(text?: string): JSONContent {
-    return { type: 'paragraph', content: text ? [txt(text)] : undefined };
+function p(text?: any): JSONContent {
+    const s = safe(text);
+    return { type: 'paragraph', content: s ? [txt(s)] : undefined };
 }
-function pCenter(text: string): JSONContent {
+function pBlue(text: any): JSONContent {
+    return { type: 'paragraph', content: [blueTxt(text)] };
+}
+function pCenter(text: any): JSONContent {
     return { type: 'paragraph', attrs: { textAlign: 'center' }, content: [txt(text)] };
 }
-function h(level: 1 | 2 | 3 | 4 | 5 | 6, text: string): JSONContent {
+function h(level: 1 | 2 | 3 | 4 | 5 | 6, text: any): JSONContent {
     return { type: 'heading', attrs: { level }, content: [txt(text)] };
 }
 function hr(): JSONContent {
@@ -20,11 +26,11 @@ function hr(): JSONContent {
 }
 
 // --- table helpers ---
-function th(text: string): JSONContent {
+function th(text: any): JSONContent {
     return { type: 'tableHeader', attrs: {}, content: [{ type: 'paragraph', content: [bold(text)] }] };
 }
-function td(text: string): JSONContent {
-    return { type: 'tableCell', attrs: {}, content: [p(text)] };
+function td(text: any): JSONContent {
+    return { type: 'tableCell', attrs: {}, content: [p(safe(text))] };
 }
 function tdNodes(nodes: JSONContent[]): JSONContent {
     return { type: 'tableCell', attrs: {}, content: nodes.length ? nodes : [p()] };
@@ -47,6 +53,14 @@ function bulletList(items: string[]): JSONContent {
 // Ensure a table has at least one data row so TipTap doesn't error
 function ensureDataRow(rows: JSONContent[], emptyRow: JSONContent): JSONContent[] {
     return rows.length <= 1 ? [...rows, emptyRow] : rows;
+}
+
+// --- AI action button (hidden on PDF export) ---
+function aiAction(actionType: string, label: string): JSONContent {
+    return {
+        type: 'aiActionButton',
+        attrs: { actionType, label },
+    };
 }
 
 /**
@@ -74,14 +88,24 @@ export function srsDataToTiptapContent(data: SrsData): JSONContent {
     nodes.push(h(3, '1. Introduction'));
     nodes.push(p(data.introduction?.overview || '[High-level overview of the product, environment, users, constraints...]'));
     nodes.push(p(data.introduction?.context || '[Context diagram and boundary connections...]'));
+    nodes.push(pBlue('[Context diagram here]'));
 
     // 2. Business Main Flows
     nodes.push(h(3, '2. Business Main Flows'));
-    nodes.push(p(data.businessMainFlows?.description || '[Shows all the business main-flows...]'));
-    (data.businessMainFlows?.flows ?? []).forEach((flow, idx) => {
-        nodes.push(h(4, `2.${idx + 1}. ${flow.title ?? `Main-flow 0${idx + 1}`}`));
-        nodes.push(p(flow.diagramPlaceholder ?? '[Swimlane diagram for main-flow here]'));
-    });
+    nodes.push(pBlue(data.businessMainFlows?.description || '[This part shows all the business main-flows have to be implemented to get the Goal of your Project. You can draw the Swimlane diagram for the business main-flows]'));
+    const flows = data.businessMainFlows?.flows ?? [];
+    if (flows.length > 0) {
+        flows.forEach((flow, idx) => {
+            nodes.push(h(4, `2.${idx + 1}. ${flow.title ?? `Main-flow 0${idx + 1}`}`));
+            nodes.push(pBlue(flow.diagramPlaceholder ?? `[Swimlane diagram for main-flow 0${idx + 1} here]`));
+        });
+    } else {
+        // Default 3 main-flows
+        for (let i = 1; i <= 3; i++) {
+            nodes.push(h(4, `2.${i}. Main-flow 0${i}`));
+            nodes.push(pBlue(`[Swimlane diagram for main-flow 0${i} here]`));
+        }
+    }
 
     // 3. Business Rules
     nodes.push(h(3, '3. Business Rules'));
@@ -98,9 +122,8 @@ export function srsDataToTiptapContent(data: SrsData): JSONContent {
 
     // 4. Use Cases
     nodes.push(h(3, '4. Use Cases'));
-    nodes.push(p(data.useCases?.description ?? '[A use case describes a sequence of interactions...]'));
     nodes.push(h(4, '4.1. Use Case Diagram(s)'));
-    nodes.push(p(data.useCases?.diagramInfo ?? '[Provide the UC diagram(s) here]'));
+    nodes.push(aiAction('usecase', '📷 Upload Image'));
     nodes.push(h(4, '4.2. Descriptions'));
     const ucRows = ensureDataRow(
         [
@@ -116,7 +139,7 @@ export function srsDataToTiptapContent(data: SrsData): JSONContent {
     // 5. System Functions
     nodes.push(h(3, '5. System Functions'));
     nodes.push(h(4, '5.1. Screen Flow'));
-    nodes.push(p(data.systemFunctions?.screenFlow ?? '[This part shows the system screens and relationship...]'));
+    nodes.push(aiAction('screenflow', '📷 Upload Image'));
 
     nodes.push(h(4, '5.2. Screen Details'));
     const sdRows = ensureDataRow(
@@ -131,37 +154,51 @@ export function srsDataToTiptapContent(data: SrsData): JSONContent {
     nodes.push(table(sdRows));
 
     nodes.push(h(4, '5.3. User Authorization'));
-    const roles = data.systemFunctions?.roles ?? [];
+    const rawRoles = data.systemFunctions?.roles ?? [];
+    // Gemini may return ["ADMIN","LECTURER"] (strings) or [{name:"Admin",id:"admin"}] (objects)
+    const roleNames: string[] = rawRoles.map((r: any) => typeof r === 'string' ? r : (r.name ?? ''));
+    const rawAuth = data.systemFunctions?.authorizations ?? [];
+    // authorizations may be string[] (placeholder) or object[] ({screenName, permissions})
+    const authObjects = rawAuth.filter((a: any) => typeof a === 'object' && a !== null && a.screenName);
     const authRows = ensureDataRow(
         [
-            tr(th('Screen'), ...roles.map(r => th(r.name))),
-            ...(data.systemFunctions?.authorizations ?? []).map(auth =>
+            tr(th('Screen'), ...roleNames.map(name => th(name))),
+            ...authObjects.map((auth: any) =>
                 tr(
                     td(auth.screenName ?? '<<Screen Name>>'),
-                    ...roles.map(role => td(auth.permissions?.[role.id] ? 'X' : ''))
+                    ...roleNames.map((_name: string, idx: number) => td(auth.permissions?.[idx] ? 'X' : ''))
                 )
             ),
         ],
-        tr(td(''), ...roles.map(() => td('')))
+        tr(td(''), ...roleNames.map(() => td('')))
     );
     nodes.push(table(authRows));
 
     nodes.push(h(4, '5.4. Non-Screen Functions'));
-    nodes.push(p('[Provide the descriptions for the non-screen system functions, i.e batch/cron job, service, API, etc.]'));
+    const nsfRows = ensureDataRow(
+        [
+            tr(th('#'), th('Feature'), th('System Function'), th('Description')),
+            ...(data.systemFunctions?.nonScreenFunctions ?? []).map((nsf, idx) =>
+                tr(td(String(idx + 1)), td(nsf.feature ?? ''), td(nsf.name ?? ''), td(nsf.description ?? ''))
+            ),
+        ],
+        tr(td(''), td(''), td(''), td(''))
+    );
+    nodes.push(table(nsfRows));
 
     // ─── II. SYSTEM HIGH LEVEL DESIGN ───────────────────────────────────────────
     nodes.push(hr());
     nodes.push(h(2, 'II. System High Level Design'));
 
     nodes.push(h(3, '1. Conceptual Entity Relationship Diagram'));
-    nodes.push(p(data.highLevelDesign?.conceptualERD ?? '<<Draw the Conceptual Entity Relationship Diagram here...>>'));
+    nodes.push(pBlue(data.highLevelDesign?.conceptualERD || '<<Draw the Conceptual Entity Relationship Diagram here showing all entities and relationship here...>>'));
 
     nodes.push(h(3, '2. Logical Entity Relationship Diagram'));
-    nodes.push(p(data.highLevelDesign?.logicalERD ?? '<<Draw the Logical Entity Relationship Diagram here...>>'));
+    nodes.push(pBlue(data.highLevelDesign?.logicalERD || '<<Draw the Logical Entity Relationship Diagram here showing all entities, relationship of all entities, attributes, primary key, foreign key of each entity here...>>'));
 
     nodes.push(h(3, '3. Database Design'));
     nodes.push(h(4, 'a. Database Schema'));
-    nodes.push(p(data.highLevelDesign?.dbSchema ?? '[Provide the tables relationship like example below]'));
+    nodes.push(aiAction('db_schema', '📷 Upload Image'));
 
     nodes.push(h(4, 'b. Table Descriptions'));
     const dbRows = ensureDataRow(
@@ -192,14 +229,19 @@ export function srsDataToTiptapContent(data: SrsData): JSONContent {
         (feature.functions ?? []).forEach((func, fnIdx) => {
             const letter = String.fromCharCode(97 + fnIdx);
             nodes.push(h(4, `${letter}. ${func.name ?? '<<Function Name>>'}`));
+            nodes.push(aiAction('mockup', '📷 Upload Image'));
             nodes.push(bulletList([
-                `Function trigger: ${func.trigger ?? 'how this function is triggered...'}`,
-                `Function description: ${func.description ?? 'actors/roles, purpose...'}`,
-                `Screen layout: ${func.layoutInfo ?? 'mockup prototype of the screen...'}`,
+                `Function trigger: ${func.trigger ?? ''}`,
+                `Function description: ${func.description ?? ''}`,
+                `Function Details: ${func.details ?? ''}`,
             ]));
-            nodes.push(p(`Function Details: ${func.details ?? 'provide explanation for the data, validation, business logics...'}`));
         });
     });
+
+    // If no functionalRequirements data, show placeholder
+    if (!data.functionalRequirements || data.functionalRequirements.length === 0) {
+        nodes.push(p('[This section will be auto-generated when you upload the Screen Flow diagram in section 5.1 above]'));
+    }
 
     return { type: 'doc', content: nodes };
 }

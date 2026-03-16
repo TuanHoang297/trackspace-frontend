@@ -1,0 +1,309 @@
+/* SrsA4Styles.css — A4 page-card editor with pagination */
+
+/* ========================================================
+   SCROLL WRAPPER — toolbar sticks inside this container
+======================================================== */
+.srs-editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ── Sticky toolbar ─────────────────────────────────────── */
+.srs-custom-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 12px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    align-items: center;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.export-mode .srs-custom-toolbar {
+    display: none !important;
+}
+
+/* ========================================================
+   A4 CONTAINER — gray background, scrollable
+======================================================== */
+.a4-container {
+    background: #d5d8dc;
+    overflow-y: auto;
+    flex: 1;
+    padding: 24px 0;
+}
+
+/* ── Pages viewport: holds editor content ───── */
+.a4-pages-viewport {
+    width: 794px;          /* 210mm at 96dpi */
+    margin: 0 auto;
+    position: relative;
+    background: white;
+    box-shadow:
+        0 1px 3px rgba(0,0,0,0.08),
+        0 4px 12px rgba(0,0,0,0.05);
+    min-height: 1123px;    /* at least 1 A4 page */
+}
+
+/* Page cards are no longer used — editor is a single continuous white area */
+
+/* ── ProseMirror editor — sits on top of page cards ────── */
+.a4-pages-viewport .tiptap-editor {
+    position: relative;
+    z-index: 1;
+}
+
+.a4-pages-viewport .tiptap-editor .ProseMirror {
+    padding: 96px 76px;      /* ~25mm top/bottom, ~20mm left/right */
+    font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    min-height: 1123px;
+    outline: none;
+    background: transparent;  /* Page white comes from .a4-page-card */
+    cursor: text;
+}
+
+/* ========================================================
+   PAGE BREAK ─ manual page break via <hr>
+   Looks like a gap between two pages (matching the original design)
+======================================================== */
+.a4-pages-viewport .tiptap-editor .ProseMirror hr {
+    display: block;
+    border: none;
+    height: 40px;
+    margin: 96px -76px;              /* fills the full page width including padding */
+    background-color: #d5d8dc;       /* matches .a4-container background */
+    pointer-events: none;
+    position: relative;
+    z-index: 2;
+    /* Shadows to simulate gap between two page cards */
+    box-shadow:
+        inset 0 8px 6px -6px rgba(0,0,0,0.08),
+        inset 0 -8px 6px -6px rgba(0,0,0,0.08);
+}
+
+/* Avoid breaking inside these elements */
+.a4-pages-viewport .tiptap-editor .ProseMirror p,
+.a4-pages-viewport .tiptap-editor .ProseMirror h1,
+.a4-pages-viewport .tiptap-editor .ProseMirror h2,
+.a4-pages-viewport .tiptap-editor .ProseMirror h3,
+.a4-pages-viewport .tiptap-editor .ProseMirror h4,
+.a4-pages-viewport .tiptap-editor .ProseMirror h5,
+.a4-pages-viewport .tiptap-editor .ProseMirror li {
+    break-inside: avoid;
+}
+
+/* ========================================================
+   EXPORT MODE — clean up for PDF generation
+   Note: .export-mode is added to .a4-pages-viewport (#srs-pdf-content)
+======================================================== */
+.export-mode.a4-pages-viewport {
+    box-shadow: none !important;
+}
+.export-mode .tiptap-editor .ProseMirror {
+    background: white !important;
+}
+.export-mode .tiptap-editor .ProseMirror hr {
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    /* Keep page-break-after so html2pdf.js creates a new page */
+    page-break-after: always !important;
+    break-after: page !important;
+}
+.export-mode .tiptap-editor .ProseMirror [data-pagination-margin] {
+    margin-top: 0 !important;
+}
+/* Hide AI buttons and page cards/numbers in export */
+.export-mode .a4-page-card { display: none !important; }
+.export-mode .a4-page-number { display: none !important; }
+
+/* ========================================================
+   HEADING STYLES
+======================================================== */
+/* H1: Cover page project title — red, large */
+.a4-pages-viewport .tiptap-editor .ProseMirror h1 {
+    font-size: 28pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    color: #c00000 !important;
+}
+
+/* H5: Cover page subtitle */
+.a4-pages-viewport .tiptap-editor .ProseMirror h5 {
+    font-size: 22pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #c00000 !important;
+    letter-spacing: 0.02em;
+}
+
+/* Block images: center by default */
+.a4-pages-viewport .tiptap-editor .ProseMirror img {
+    display: block;
+    margin: 0 auto;
+}
+
+/* H2: Section headings — red */
+.a4-pages-viewport .tiptap-editor .ProseMirror h2 {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    color: #c00000 !important;
+}
+
+/* H3: Sub-section headings — black bold */
+.a4-pages-viewport .tiptap-editor .ProseMirror h3 {
+    font-size: 13pt !important;
+    font-weight: bold !important;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #000000 !important;
+}
+
+/* H4: Sub-sub-section */
+.a4-pages-viewport .tiptap-editor .ProseMirror h4 {
+    font-size: 11pt !important;
+    font-weight: bold !important;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: #000000 !important;
+}
+
+/* Body text */
+.a4-pages-viewport .tiptap-editor .ProseMirror p {
+    text-align: justify;
+    margin-bottom: 10px;
+}
+
+/* ========================================================
+   TABLE STYLES
+======================================================== */
+.a4-pages-viewport .tiptap-editor .ProseMirror table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    table-layout: fixed;
+}
+.a4-pages-viewport .tiptap-editor .ProseMirror table tr {
+    page-break-inside: avoid;
+}
+.a4-pages-viewport .tiptap-editor .ProseMirror table th,
+.a4-pages-viewport .tiptap-editor .ProseMirror table td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+    min-width: 30px;
+    position: relative;
+    box-sizing: border-box;
+}
+.a4-pages-viewport .tiptap-editor .ProseMirror table th {
+    background-color: #f5d5c8;
+    font-weight: bold;
+    color: #1e293b;
+}
+/* Selected cell highlight */
+.a4-pages-viewport .tiptap-editor .ProseMirror table .selectedCell:after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(59, 130, 246, 0.12);
+    pointer-events: none;
+}
+/* Column resize handle */
+.a4-pages-viewport .tiptap-editor .ProseMirror table .column-resize-handle {
+    position: absolute;
+    right: -2px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #93c5fd;
+    cursor: col-resize;
+}
+
+/* ========================================================
+   IMAGE STYLES
+======================================================== */
+.a4-pages-viewport .tiptap-editor .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 8px 0;
+    border-radius: 2px;
+}
+.a4-pages-viewport .tiptap-editor .ProseMirror img.ProseMirror-selectednode {
+    outline: 2px solid #3b82f6;
+}
+
+/* ========================================================
+   MISC CONTENT STYLES
+======================================================== */
+/* Blockquote */
+.a4-pages-viewport .tiptap-editor .ProseMirror blockquote {
+    border-left: 3px solid #cbd5e1;
+    margin-left: 20px;
+    padding-left: 12px;
+    color: #64748b;
+}
+/* Code block */
+.a4-pages-viewport .tiptap-editor .ProseMirror pre {
+    background: #f1f5f9;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 10pt;
+    overflow-x: auto;
+}
+/* Link */
+.a4-pages-viewport .tiptap-editor .ProseMirror a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+/* ========================================================
+   AI ACTION BUTTONS — inline buttons hidden on PDF export
+======================================================== */
+.srs-ai-action {
+    display: flex;
+    justify-content: center;
+    padding: 6px 0;
+    user-select: none;
+}
+.srs-ai-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px dashed #7c3aed;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    color: #6d28d9;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.srs-ai-action-btn:hover {
+    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+    border-color: #6d28d9;
+    box-shadow: 0 2px 8px rgba(109, 40, 217, 0.15);
+    transform: translateY(-1px);
+}
+
+/* HIDE AI buttons when done or exporting */
+.srs-ai-action[data-done="true"] { display: none !important; }
+.export-mode .srs-ai-action { display: none !important; }

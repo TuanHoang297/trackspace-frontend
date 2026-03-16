@@ -10,10 +10,18 @@ export interface SrsDocumentResponse {
 }
 
 export interface SrsGenerateRequest {
-    projectId: number;
+    businessRules?: string;
+    nonScreenFunctions?: string;
+    notes?: string;
 }
 
 export interface SrsUpdateRequest {
     title?: string;
     content: string;
+}
+
+export interface SrsVisionRequest {
+    image: string; // base64
+    type: 'usecase' | 'screenflow' | 'db_schema' | 'mockup';
+    context?: string;
 }

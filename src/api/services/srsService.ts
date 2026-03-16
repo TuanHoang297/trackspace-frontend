@@ -4,6 +4,7 @@ import type {
     SrsDocumentResponse,
     SrsUpdateRequest
 } from '../types/types';
+import type { SrsGenerateRequest, SrsVisionRequest } from '../../types/srs.types';
 
 const srsService = {
     // Lấy bản SRS mới nhất của project
@@ -14,9 +15,19 @@ const srsService = {
     getAllSrsVersions: (projectId: number) =>
         axiosClient.get<ApiResponse<SrsDocumentResponse[]>>(`/projects/${projectId}/srs/versions`),
 
-    // Generate SRS (AI)
-    generateSrs: (projectId: number) =>
-        axiosClient.post<ApiResponse<SrsDocumentResponse>>(`/projects/${projectId}/srs/generate`),
+    // Generate SRS (AI) — with optional supplement form data
+    generateSrs: (projectId: number, supplement?: SrsGenerateRequest) =>
+        axiosClient.post<ApiResponse<SrsDocumentResponse>>(
+            `/projects/${projectId}/srs/generate`,
+            supplement || null
+        ),
+
+    // AI Vision: Analyze image → generate SRS section text
+    describeImage: (projectId: number, request: SrsVisionRequest) =>
+        axiosClient.post<ApiResponse<string>>(
+            `/projects/${projectId}/srs/describe-image`,
+            request
+        ),
 
     // Edit (Update) SRS bằng tay
     updateSrs: (srsId: number, data: SrsUpdateRequest) =>

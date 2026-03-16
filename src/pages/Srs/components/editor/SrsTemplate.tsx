@@ -1,5 +1,5 @@
 import React from 'react';
-import fptLogo from '../../assets/logo-fpt.png';
+import fptLogo from '../../../../assets/logo-fpt.png';
 export interface SrsData {
     projectName?: string;
     locationDate?: string;
@@ -25,6 +25,7 @@ export interface SrsData {
         screenDetails?: { feature?: string; name?: string; description?: string }[];
         roles?: { id: string; name: string }[];
         authorizations?: { screenName?: string; permissions: Record<string, boolean> }[];
+        nonScreenFunctions?: { feature?: string; name?: string; description?: string }[];
     };
     highLevelDesign: {
         conceptualERD?: string;
@@ -231,26 +232,10 @@ export const SrsTemplate: React.FC<SrsTemplateProps> = ({ srsData }) => {
       </section>
 
       {/* --- III. FUNCTIONAL REQUIREMENTS --- */}
+      {/* Content is generated when user uploads Screen Flow diagram (5.1) */}
       <section style={{ pageBreakBefore: 'always' }}>
         <h2>III. Functional Requirements</h2>
-        
-        {Array.isArray(srsData.functionalRequirements) && srsData.functionalRequirements.map((feature: any, featureIndex: number) => (
-          <div key={featureIndex}>
-            <h3>{featureIndex + 1}. {feature.name || '<<Feature Name>>'}</h3>
-            
-            {Array.isArray(feature.functions) && feature.functions.map((func: any, funcIndex: number) => (
-              <div key={funcIndex} style={{ marginLeft: '20px' }}>
-                <h4>{String.fromCharCode(97 + funcIndex)}. {func.name || '<<Function Name>>'}</h4>
-                <ul>
-                   <li><strong>Function trigger:</strong> {func.trigger || 'how this function is triggered...'}</li>
-                  <li><strong>Function description:</strong> {func.description || 'actors/roles, purpose...'}</li>
-                  <li><strong>Screen layout:</strong> {func.layoutInfo || 'mockup prototype of the screen...'}</li>
-                </ul>
-                <p><strong>Function Details:</strong> {func.details || 'provide explanation for the data, validation, business logics...'}</p>
-              </div>
-            ))}
-          </div>
-        ))}
+        <p><em>[This section will be auto-generated when you upload the Screen Flow diagram in section 5.1 above]</em></p>
       </section>
 
     </div>
