@@ -54,7 +54,7 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
 
     const available = useMemo(() =>
         allUsers.filter(u =>
-            (u.role === 'TEAMMEMBER' || u.role === 'TEAMLEADER') &&
+            u.role === 'STUDENT' &&
             !enrolledIds.has(u.userId) &&
             !sameSubjectEnrolledIds.has(u.userId)
         ), [allUsers, enrolledIds, sameSubjectEnrolledIds]);
@@ -199,8 +199,8 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
                                             <Typography variant="body2" fontWeight={checked ? 600 : 400} noWrap>{u.fullName}</Typography>
                                             <Typography variant="caption" color="text.secondary" noWrap>{u.email}</Typography>
                                         </Box>
-                                        <Chip label={u.role === 'TEAMLEADER' ? 'Leader' : 'Member'} size="small"
-                                            color={u.role === 'TEAMLEADER' ? 'warning' : 'default'} sx={{ fontSize: 10, height: 20 }} />
+                                        <Chip label="Sinh viên" size="small"
+                                            color="default" sx={{ fontSize: 10, height: 20 }} />
                                     </Box>
                                 );
                             })}

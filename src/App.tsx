@@ -96,7 +96,7 @@ function App() {
                             {/* Student routes */}
                             <Route
                                 element={
-                                    <ProtectedRoute allowedRoles={['TEAMLEADER', 'TEAMMEMBER']}>
+                                    <ProtectedRoute allowedRoles={['STUDENT']}>
                                         <AppLayout />
                                     </ProtectedRoute>
                                 }
@@ -107,7 +107,7 @@ function App() {
                             {/* Project Workspace — all roles */}
                             <Route
                                 element={
-                                    <ProtectedRoute allowedRoles={['LECTURER', 'TEAMLEADER', 'TEAMMEMBER']}>
+                                    <ProtectedRoute allowedRoles={['LECTURER', 'STUDENT']}>
                                         <ProjectLayout />
                                     </ProtectedRoute>
                                 }

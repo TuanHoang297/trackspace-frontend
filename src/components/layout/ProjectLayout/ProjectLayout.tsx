@@ -7,13 +7,10 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LogoutIcon from '@mui/icons-material/Logout';
-import PersonIcon from '@mui/icons-material/Person';
-import LockIcon from '@mui/icons-material/Lock';
 import ProjectSidebar, { SIDEBAR_EXPANDED, SIDEBAR_COLLAPSED } from './ProjectSidebar';
 import projectService from '../../../api/services/projectService';
 import type { ProjectResponse } from '../../../types/project.types';
 import { getUser, logout } from '../../../utils/auth';
-import ChangePasswordDialog from '../../common/ChangePasswordDialog';
 
 const ProjectLayout: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
@@ -22,7 +19,6 @@ const ProjectLayout: React.FC = () => {
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [pwOpen, setPwOpen] = useState(false);
     const currentUser = getUser();
     const drawerWidth = sidebarOpen ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
@@ -117,20 +113,11 @@ const ProjectLayout: React.FC = () => {
                             <Typography variant="caption" color="text.secondary">{currentUser?.email}</Typography>
                         </Box>
                         <Divider sx={{ my: 0.5 }} />
-                        <MenuItem onClick={() => setAnchorEl(null)} sx={{ borderRadius: 2, mx: 1, mb: 0.5 }}>
-                            <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText>Hồ sơ</ListItemText>
-                        </MenuItem>
-                        <MenuItem onClick={() => { setAnchorEl(null); setPwOpen(true); }} sx={{ borderRadius: 2, mx: 1, mb: 0.5 }}>
-                            <ListItemIcon><LockIcon fontSize="small" sx={{ color: '#8B5CF6' }} /></ListItemIcon>
-                            <ListItemText>Đổi mật khẩu</ListItemText>
-                        </MenuItem>
                         <MenuItem onClick={() => { setAnchorEl(null); logout(); }} sx={{ borderRadius: 2, mx: 1 }}>
                             <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
                             <ListItemText sx={{ color: 'error.main' }}>Đăng xuất</ListItemText>
                         </MenuItem>
                     </Menu>
-                    <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
                 </Box>
 
                 {/* Page Content */}

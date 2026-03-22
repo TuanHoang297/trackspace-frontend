@@ -12,7 +12,7 @@ export interface DashboardStats {
     totalClasses: number;
     activeClasses: number;
     totalStudents: number;
-    roles: { admins: number; lecturers: number; leaders: number; members: number };
+    roles: { admins: number; lecturers: number; students: number };
 }
 
 export function useAdminDashboard() {
@@ -35,12 +35,11 @@ export function useAdminDashboard() {
         lockedUsers: users.filter(u => !u.active).length,
         totalClasses: classes.filter(c => c.active).length,
         activeClasses: classes.filter(c => c.active).length,
-        totalStudents: classes.filter(c => c.active).reduce((sum, c) => sum + (c.totalStudents || 0), 0),
+        totalStudents: users.filter(u => u.role === 'STUDENT').length,
         roles: {
             admins: users.filter(u => u.role === 'ADMIN').length,
             lecturers: users.filter(u => u.role === 'LECTURER').length,
-            leaders: users.filter(u => u.role === 'TEAMLEADER').length,
-            members: users.filter(u => u.role === 'TEAMMEMBER').length,
+            students: users.filter(u => u.role === 'STUDENT').length,
         },
     }), [users, classes]);
 

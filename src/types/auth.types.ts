@@ -18,7 +18,7 @@ export interface UserResponse {
     userId: number;
     email: string;
     fullName: string;
-    role: 'ADMIN' | 'LECTURER' | 'TEAMLEADER' | 'TEAMMEMBER';
+    role: 'ADMIN' | 'LECTURER' | 'STUDENT';
     studentCode?: string;
     active: boolean;
     createdAt: string;
@@ -29,14 +29,14 @@ export interface CreateUserRequest {
     email: string;
     password: string;
     fullName: string;
-    role: 'LECTURER' | 'TEAMLEADER' | 'TEAMMEMBER';
+    role: 'LECTURER' | 'STUDENT';
     studentCode?: string;
 }
 
 export interface UpdateUserRequest {
     fullName: string;
     email: string;
-    role: 'ADMIN' | 'LECTURER' | 'TEAMLEADER' | 'TEAMMEMBER';
+    role: 'ADMIN' | 'LECTURER' | 'STUDENT';
     studentCode?: string;
     password?: string;
 }

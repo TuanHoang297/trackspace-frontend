@@ -73,7 +73,7 @@ describe('Auth Types — Shape Contracts', () => {
     });
 
     it('UserResponse role is one of the valid roles', () => {
-        const validRoles = ['ADMIN', 'LECTURER', 'TEAMLEADER', 'TEAMMEMBER'];
+        const validRoles = ['ADMIN', 'LECTURER', 'STUDENT'];
         const user = createMockUserResponse({ role: 'ADMIN' });
         expect(validRoles).toContain(user.role);
     });
@@ -92,9 +92,9 @@ describe('Auth Types — Shape Contracts', () => {
             email: 'new@test.com',
             password: 'pass123',
             fullName: 'New User',
-            role: 'TEAMMEMBER',
+            role: 'STUDENT',
         };
         expect(req.email).toBe('new@test.com');
-        expect(req.role).toBe('TEAMMEMBER');
+        expect(req.role).toBe('STUDENT');
     });
 });

@@ -13,9 +13,7 @@ export function useUserManagement() {
     // Dialog targets
     const [openCreate, setOpenCreate] = useState(false);
     const [editTarget, setEditTarget] = useState<UserResponse | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<UserResponse | null>(null);
     const [toggleTarget, setToggleTarget] = useState<UserResponse | null>(null);
-    const [deleting, setDeleting] = useState(false);
 
     // Actions Menu
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -30,13 +28,18 @@ export function useUserManagement() {
 
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
 
-    const filteredUsers = useMemo(() => users.filter((u) => {
-        const matchesSearch =
-            u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
-        return matchesSearch && matchesRole;
-    }), [users, searchTerm, roleFilter]);
+    const ROLE_ORDER: Record<string, number> = { ADMIN: 0, LECTURER: 1, STUDENT: 2 };
+
+    const filteredUsers = useMemo(() => users
+        .filter((u) => {
+            const matchesSearch =
+                u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                u.email.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+            return matchesSearch && matchesRole;
+        })
+        .sort((a, b) => (ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99)),
+    [users, searchTerm, roleFilter]);
 
     const activeCount = useMemo(() => users.filter((u) => u.active).length, [users]);
     const inactiveCount = useMemo(() => users.filter((u) => !u.active).length, [users]);
@@ -73,22 +76,7 @@ export function useUserManagement() {
         }
     };
 
-    const handleDeleteUser = async () => {
-        if (!deleteTarget) return;
-        try {
-            setDeleting(true);
-            await adminService.deleteUser(deleteTarget.userId);
-            toast.success(`Đã xóa tài khoản ${deleteTarget.fullName}`);
-            setDeleteTarget(null);
-            invalidate();
-        } catch (err: unknown) {
-            const message = (err as { response?: { data?: { message?: string } } })
-                .response?.data?.message || 'Xóa tài khoản thất bại';
-            toast.error(message);
-        } finally {
-            setDeleting(false);
-        }
-    };
+
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, user: UserResponse) => {
         setMenuAnchor(event.currentTarget);
@@ -106,7 +94,6 @@ export function useUserManagement() {
         activeCount, inactiveCount, fetchUsers: invalidate,
         openCreate, setOpenCreate, handleCreateUser,
         editTarget, setEditTarget, handleEditUser,
-        deleteTarget, setDeleteTarget, deleting, handleDeleteUser,
         toggleTarget, setToggleTarget, handleToggleStatus,
         menuAnchor, menuUser, handleMenuOpen, handleMenuClose,
     };

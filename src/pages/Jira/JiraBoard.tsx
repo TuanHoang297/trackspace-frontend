@@ -116,11 +116,10 @@ const JiraBoard: React.FC = () => {
     // Role-based permissions (Jira-style)
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const role = user?.role || '';
-    const isLeader = role === 'TEAMLEADER';
-    const isMember = role === 'TEAMMEMBER';
-    const canManageConnection = isLeader;                // Only Team Leader can Disconnect
-    const canCreateIssue = isLeader || isMember;         // Only team members can create issues/sprints
-    const canUpdateStatus = isLeader || isMember;        // Only team members can update status
+    const isStudent = role === 'STUDENT';
+    const canManageConnection = isStudent;               // Students can manage connections
+    const canCreateIssue = isStudent;                    // Students can create issues/sprints
+    const canUpdateStatus = isStudent;                   // Students can update status
 
     // State
     const [createOpen, setCreateOpen] = useState(false);
@@ -483,42 +482,38 @@ const JiraBoard: React.FC = () => {
                                     }}
                                 >
                                     {/* Sprint Header */}
-                                    <Box sx={{ p: 2, pb: 1 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                                            <Typography variant="subtitle2" fontWeight={700} sx={{
-                                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160,
-                                            }}>
-                                                {sprint.sprintName}
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                                                <Chip
-                                                    label={sprint.status}
-                                                    size="small"
-                                                    onClick={canManageConnection && sprint.status !== 'CLOSED' ? () => {
-                                                        setStatusConfirm({
-                                                            sprint,
-                                                            targetStatus: sprint.status === 'FUTURE' ? 'ACTIVE' : 'CLOSED',
-                                                        });
-                                                    } : undefined}
-                                                    sx={{
-                                                        height: 20, fontSize: '0.6rem', fontWeight: 700,
-                                                        bgcolor: isActive ? '#C6F6D5' : sprint.status === 'CLOSED' ? '#E3FCEF' : '#EDF2F7',
-                                                        color: isActive ? '#22543D' : sprint.status === 'CLOSED' ? '#006644' : '#42526E',
-                                                        cursor: canManageConnection && sprint.status !== 'CLOSED' ? 'pointer' : 'default',
-                                                        transition: 'all 0.2s',
-                                                        '&:hover': canManageConnection && sprint.status !== 'CLOSED' ? {
-                                                            transform: 'scale(1.05)',
-                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                                                        } : {},
-                                                    }}
-                                                />
-                                                {canManageConnection && (
-                                                    <IconButton size="small" onClick={() => { setEditingSprint(sprint); setSprintDialogOpen(true); }}>
-                                                        <EditIcon sx={{ fontSize: 14 }} />
-                                                    </IconButton>
-                                                )}
-                                            </Box>
+                                    <Box sx={{ px: 2, pt: 1, pb: 0.5 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.25, mb: 0.25 }}>
+                                            <Chip
+                                                label={sprint.status}
+                                                size="small"
+                                                onClick={canManageConnection && sprint.status !== 'CLOSED' ? () => {
+                                                    setStatusConfirm({
+                                                        sprint,
+                                                        targetStatus: sprint.status === 'FUTURE' ? 'ACTIVE' : 'CLOSED',
+                                                    });
+                                                } : undefined}
+                                                sx={{
+                                                    height: 20, fontSize: '0.6rem', fontWeight: 700,
+                                                    bgcolor: isActive ? '#C6F6D5' : sprint.status === 'CLOSED' ? '#E3FCEF' : '#EDF2F7',
+                                                    color: isActive ? '#22543D' : sprint.status === 'CLOSED' ? '#006644' : '#42526E',
+                                                    cursor: canManageConnection && sprint.status !== 'CLOSED' ? 'pointer' : 'default',
+                                                    transition: 'all 0.2s',
+                                                    '&:hover': canManageConnection && sprint.status !== 'CLOSED' ? {
+                                                        transform: 'scale(1.05)',
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                                                    } : {},
+                                                }}
+                                            />
+                                            {canManageConnection && (
+                                                <IconButton size="small" onClick={() => { setEditingSprint(sprint); setSprintDialogOpen(true); }}>
+                                                    <EditIcon sx={{ fontSize: 14 }} />
+                                                </IconButton>
+                                            )}
                                         </Box>
+                                        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+                                            {sprint.sprintName}
+                                        </Typography>
 
                                         {/* Sprint Goal */}
                                         {sprint.sprintGoal && (

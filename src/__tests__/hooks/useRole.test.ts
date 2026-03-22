@@ -35,23 +35,14 @@ describe('useRole', () => {
         expect(result.current.isReadOnly()).toBe(true);
     });
 
-    it('returns correct role for TEAMLEADER', () => {
-        mockGetUser.mockReturnValue({ userId: 3, email: 't@b.com', fullName: 'Leader', role: 'TEAMLEADER' });
+    it('returns correct role for STUDENT', () => {
+        mockGetUser.mockReturnValue({ userId: 3, email: 's@b.com', fullName: 'Student', role: 'STUDENT' });
 
         const { result } = renderHook(() => useRole());
 
-        expect(result.current.isTeamLeader()).toBe(true);
-        expect(result.current.isTeamMember()).toBe(false);
+        expect(result.current.isStudent()).toBe(true);
+        expect(result.current.isAdmin()).toBe(false);
         expect(result.current.isReadOnly()).toBe(false);
-    });
-
-    it('returns correct role for TEAMMEMBER', () => {
-        mockGetUser.mockReturnValue({ userId: 4, email: 'm@b.com', fullName: 'Member', role: 'TEAMMEMBER' });
-
-        const { result } = renderHook(() => useRole());
-
-        expect(result.current.isTeamMember()).toBe(true);
-        expect(result.current.isTeamLeader()).toBe(false);
     });
 
     it('returns empty role when no user', () => {
@@ -62,7 +53,6 @@ describe('useRole', () => {
         expect(result.current.role).toBe('');
         expect(result.current.isAdmin()).toBe(false);
         expect(result.current.isLecturer()).toBe(false);
-        expect(result.current.isTeamLeader()).toBe(false);
-        expect(result.current.isTeamMember()).toBe(false);
+        expect(result.current.isStudent()).toBe(false);
     });
 });

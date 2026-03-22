@@ -139,7 +139,7 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
                             usecase: [buildEmptyTableHTML(['ID', 'Feature', 'Use Case', 'Use Case Description'])],
                             screenflow: [
                                 buildEmptyTableHTML(['#', 'Feature', 'Screen', 'Description']),
-                                buildEmptyTableHTML(['Screen', 'ADMIN', 'LECTURER', 'TEAMLEADER', 'TEAMMEMBER']),
+                                buildEmptyTableHTML(['Screen', 'ADMIN', 'LECTURER', 'STUDENT']),
                             ],
                             db_schema: [buildEmptyTableHTML(['No', 'Table', 'Description'])],
                         };

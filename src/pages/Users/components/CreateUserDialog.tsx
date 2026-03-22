@@ -72,10 +72,10 @@ const CreateUserDialog: React.FC<Props> = ({ open, onClose, onSubmit }) => {
                         <Select value={form.role} label="Vai trò" sx={{ borderRadius: 2 }}
                             onChange={(e) => update('role', e.target.value)}>
                             <MenuItem value="LECTURER">Giảng viên</MenuItem>
-                            <MenuItem value="TEAMMEMBER">Thành viên</MenuItem>
+                            <MenuItem value="STUDENT">Sinh viên</MenuItem>
                         </Select>
                     </FormControl>
-                    {(form.role === 'TEAMLEADER' || form.role === 'TEAMMEMBER') && (
+                    {form.role === 'STUDENT' && (
                         <TextField label="Mã sinh viên" fullWidth value={form.studentCode || ''}
                             onChange={(e) => update('studentCode', e.target.value)}
                             placeholder="VD: SE123456"

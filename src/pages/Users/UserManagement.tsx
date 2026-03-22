@@ -4,14 +4,14 @@ import {
     TableHead, TableRow, Chip, IconButton, TextField, Select,
     MenuItem, FormControl, InputLabel, InputAdornment, Alert,
     Skeleton, Tooltip, Card, Avatar, Menu, ListItemIcon,
-    ListItemText, Divider, Button,
+    ListItemText, Button,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
-import DeleteIcon from '@mui/icons-material/Delete';
+
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BlockIcon from '@mui/icons-material/Block';
@@ -26,8 +26,7 @@ import { useUserManagement } from './hooks/useUserManagement';
 const ROLE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
     ADMIN: { label: 'Admin', color: '#DC2626', bg: '#FEE2E2' },
     LECTURER: { label: 'Giảng viên', color: '#7C3AED', bg: '#EDE9FE' },
-    TEAMLEADER: { label: 'Trưởng nhóm', color: '#D97706', bg: '#FEF3C7' },
-    TEAMMEMBER: { label: 'Thành viên', color: '#2563EB', bg: '#DBEAFE' },
+    STUDENT: { label: 'Sinh viên', color: '#2563EB', bg: '#DBEAFE' },
 };
 
 const AVATAR_COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#6366F1', '#14B8A6', '#EF4444'];
@@ -89,8 +88,7 @@ const UserManagement: React.FC = () => {
                         <MenuItem value="ALL">Tất cả</MenuItem>
                         <MenuItem value="ADMIN">Admin</MenuItem>
                         <MenuItem value="LECTURER">Giảng viên</MenuItem>
-                        <MenuItem value="TEAMLEADER">Trưởng nhóm</MenuItem>
-                        <MenuItem value="TEAMMEMBER">Thành viên</MenuItem>
+                        <MenuItem value="STUDENT">Sinh viên</MenuItem>
                     </Select>
                 </FormControl>
                 <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>{h.filteredUsers.length} kết quả</Typography>
@@ -168,12 +166,7 @@ const UserManagement: React.FC = () => {
                     <ListItemIcon>{h.menuUser?.active ? <LockIcon fontSize="small" sx={{ color: '#D97706' }} /> : <LockOpenIcon fontSize="small" sx={{ color: '#16A34A' }} />}</ListItemIcon>
                     <ListItemText primary={h.menuUser?.active ? 'Khóa tài khoản' : 'Kích hoạt'} primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
                 </MenuItem>
-                <Divider sx={{ my: 0.5 }} />
-                <MenuItem onClick={() => { if (h.menuUser) h.setDeleteTarget(h.menuUser); h.handleMenuClose(); }} disabled={h.menuUser?.role === 'ADMIN'}
-                    sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5, color: '#DC2626', '&:hover': { bgcolor: '#FEF2F2' } }}>
-                    <ListItemIcon><DeleteIcon fontSize="small" sx={{ color: '#DC2626' }} /></ListItemIcon>
-                    <ListItemText primary="Xóa tài khoản" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
-                </MenuItem>
+
             </Menu>
 
             {/* Dialogs */}
@@ -186,10 +179,7 @@ const UserManagement: React.FC = () => {
                 severity="warning" confirmLabel={h.toggleTarget?.active ? 'Khóa tài khoản' : 'Kích hoạt'}
                 onConfirm={h.handleToggleStatus} onCancel={() => h.setToggleTarget(null)} />
 
-            <ConfirmDialog open={!!h.deleteTarget} title="Xác nhận xóa"
-                message={<>Bạn có chắc chắn muốn xóa tài khoản <strong>{h.deleteTarget?.fullName}</strong> ({h.deleteTarget?.email})?</>}
-                severity="error" confirmLabel="Xóa tài khoản" loading={h.deleting}
-                onConfirm={h.handleDeleteUser} onCancel={() => h.setDeleteTarget(null)} />
+
         </Box>
     );
 };

@@ -12,8 +12,7 @@ export const useRole = () => {
         role,
         isLecturer: () => role === 'LECTURER',
         isAdmin: () => role === 'ADMIN',
-        isTeamLeader: () => role === 'TEAMLEADER',
-        isTeamMember: () => role === 'TEAMMEMBER',
+        isStudent: () => role === 'STUDENT',
         /** Lecturer has read-only access — no CRUD allowed */
         isReadOnly: () => role === 'LECTURER',
     };

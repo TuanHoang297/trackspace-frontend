@@ -19,14 +19,13 @@ interface Props {
 const ROLES = [
     { value: 'ADMIN', label: 'Admin' },
     { value: 'LECTURER', label: 'Giảng viên' },
-    { value: 'TEAMLEADER', label: 'Trưởng nhóm' },
-    { value: 'TEAMMEMBER', label: 'Thành viên' },
+    { value: 'STUDENT', label: 'Sinh viên' },
 ] as const;
 
 const EditUserDialog: React.FC<Props> = ({ open, user, onClose, onSubmit }) => {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
-    const [role, setRole] = useState<string>('TEAMMEMBER');
+    const [role, setRole] = useState<string>('STUDENT');
     const [studentCode, setStudentCode] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -66,7 +65,7 @@ const EditUserDialog: React.FC<Props> = ({ open, user, onClose, onSubmit }) => {
         }
     };
 
-    const isStudent = role === 'TEAMLEADER' || role === 'TEAMMEMBER';
+    const isStudent = role === 'STUDENT';
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth

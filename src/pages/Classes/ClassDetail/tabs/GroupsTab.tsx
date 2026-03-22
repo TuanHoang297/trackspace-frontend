@@ -16,7 +16,7 @@ import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import { toast } from 'react-toastify';
 import groupService from '../../../../api/services/groupService';
 import projectService from '../../../../api/services/projectService';
-import type { GroupResponse, GroupMemberResponse, CreateGroupRequest } from '../../../../types/group.types';
+import type { GroupResponse, GroupMemberResponse } from '../../../../types/group.types';
 import type { StudentInClassResponse } from '../../../../types/class.types';
 import type { ProjectResponse } from '../../../../types/project.types';
 import ConfirmDialog from '../../../../components/common/ConfirmDialog/ConfirmDialog';
@@ -34,9 +34,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
     const navigate = useNavigate();
     const { isAdmin, isLecturer } = useRole();
     const readOnly = !isAdmin() && !isLecturer();
-    const [openCreate, setOpenCreate] = useState(false);
     const [creating, setCreating] = useState(false);
-    const [newGroup, setNewGroup] = useState<CreateGroupRequest>({ groupName: '', description: '' });
 
     const [editTarget, setEditTarget] = useState<GroupResponse | null>(null);
     const [editName, setEditName] = useState('');
@@ -74,15 +72,18 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
 
 
     const handleCreate = async () => {
-        if (!newGroup.groupName) { toast.error('Tên nhóm không được để trống'); return; }
+        const usedNums = new Set(groups.map(g => {
+            const match = g.groupName.match(/Nhóm\s*(\d+)/i);
+            return match ? parseInt(match[1], 10) : 0;
+        }).filter(n => n > 0));
+        let next = 1;
+        while (usedNums.has(next)) next++;
         try {
             setCreating(true);
-            await groupService.createGroup(classId, newGroup);
-            toast.success('Tạo nhóm thành công!');
-            setOpenCreate(false);
-            setNewGroup({ groupName: '', description: '' });
+            await groupService.createGroup(classId, { groupName: `Nh\u00f3m ${next}`, description: '' });
+            toast.success(`T\u1ea1o Nh\u00f3m ${next} th\u00e0nh c\u00f4ng!`);
             onRefresh();
-        } catch (err: any) { toast.error(err.response?.data?.message || 'Tạo nhóm thất bại'); }
+        } catch (err: any) { toast.error(err.response?.data?.message || 'T\u1ea1o nh\u00f3m th\u1ea5t b\u1ea1i'); }
         finally { setCreating(false); }
     };
 
@@ -200,9 +201,9 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
         <>
             {!readOnly && (
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenCreate(true)}
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate} disabled={creating}
                         sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
-                        Tạo nhóm
+                        {creating ? 'Đang tạo...' : 'Tạo nhóm'}
                     </Button>
                 </Box>
             )}
@@ -223,7 +224,11 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                     gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' },
                     gap: 2,
                 }}>
-                    {groups.map((g, i) => {
+                    {[...groups].sort((a, b) => {
+                        const na = a.groupName.match(/(\d+)/);
+                        const nb = b.groupName.match(/(\d+)/);
+                        return (na ? parseInt(na[1]) : 999) - (nb ? parseInt(nb[1]) : 999);
+                    }).map((g, i) => {
                         const proj = projects.find(p => p.groupId === g.id);
                         const palettes = [
                             { g1: '#3B82F6', g2: '#8B5CF6', bg: '#EEF2FF', light: 'rgba(59,130,246,0.08)' },
@@ -409,27 +414,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                 </Box>
             )}
 
-            {/* Create Group Dialog */}
-            <Dialog open={openCreate} onClose={() => setOpenCreate(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Tạo nhóm mới</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
-                        <TextField label="Tên nhóm" fullWidth value={newGroup.groupName}
-                            onChange={e => setNewGroup({ ...newGroup, groupName: e.target.value })}
-                            placeholder="Ví dụ: Nhóm 1" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
-                        <TextField label="Mô tả (optional)" fullWidth multiline rows={2} value={newGroup.description || ''}
-                            onChange={e => setNewGroup({ ...newGroup, description: e.target.value })}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
-                    </Box>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button onClick={() => setOpenCreate(false)} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
-                    <Button variant="contained" onClick={handleCreate} disabled={creating}
-                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
-                        {creating ? 'Đang tạo...' : 'Tạo nhóm'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+
 
             {/* Edit Group Dialog */}
             <Dialog open={!!editTarget} onClose={() => setEditTarget(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -521,7 +506,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                         <Box sx={{ flex: 1 }}>
                                             <Typography variant="subtitle1" fontWeight={700}>{proj.projectName}</Typography>
                                             <Typography variant="caption" color="text.secondary">
-                                                {proj.hasProjectInfo ? '✅ Đã điền thông tin' : '📝 Chưa điền thông tin'}
+                                                {proj.hasProjectInfo ? 'Đã điền thông tin' : 'Chưa điền thông tin'}
                                             </Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -630,7 +615,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
 
                                     {/* Actions */}
                                     {!readOnly && (
-                                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                        <Box sx={{ display: 'flex', gap: 0.5, minWidth: 68, justifyContent: 'flex-end' }}>
                                             {!m.isLeader && (
                                                 <Tooltip title="Gán làm Team Leader">
                                                     <IconButton size="small" onClick={() => handleAssignLeader(m)}

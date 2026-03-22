@@ -174,7 +174,7 @@ const ProjectOverview: React.FC = () => {
         try {
             setSaving(true);
             const request: ProjectInfoRequest = {
-                topic: project?.projectName || topic, context, problems, primaryActors, functionalRequirements,
+                topic: topic || project?.projectName || '', context, problems, primaryActors, functionalRequirements,
             };
             const res = await projectService.saveProjectInfo(pid, request);
             // Update cache
@@ -255,17 +255,26 @@ const ProjectOverview: React.FC = () => {
                                 sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5, display: 'block' }}>
                                 Tên đề tài
                             </Typography>
-                            <Typography variant="h6" fontWeight={700} sx={{ color: '#1E293B' }}>
-                                {project?.projectName}
-                            </Typography>
+                            {editing && !readOnly ? (
+                                <TextField
+                                    fullWidth
+                                    value={topic || project?.projectName || ''}
+                                    onChange={e => setTopic(e.target.value)}
+                                    placeholder="Nhập tên đề tài"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, fontWeight: 700, fontSize: '1.1rem' } }}
+                                />
+                            ) : (
+                                <Typography variant="h6" fontWeight={700} sx={{ color: '#1E293B' }}>
+                                    {project?.projectName}
+                                </Typography>
+                            )}
                         </Box>
 
                         {editing && !readOnly ? (
                             /* ── Edit Mode ── */
                             <Box>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                    Điền các thông tin cơ bản về project. Thông tin này sẽ được sử dụng để tạo tài liệu SRS sau này.
-                                </Typography>
                                 <Grid container spacing={2.5}>
                                     <Grid item xs={12}>
                                         <TextField

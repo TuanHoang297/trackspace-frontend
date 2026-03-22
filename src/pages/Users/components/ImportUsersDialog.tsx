@@ -18,10 +18,18 @@ interface ImportError {
     reason: string;
 }
 
+interface SuccessEntry {
+    row: number;
+    email: string;
+    fullName: string;
+    role: string;
+}
+
 interface ImportResultData {
     totalRows: number;
     successCount: number;
     failedCount: number;
+    successes: SuccessEntry[];
     errors: ImportError[];
 }
 
@@ -95,6 +103,8 @@ const ImportUsersDialog: React.FC<Props> = ({ open, onClose, onSuccess }) => {
         }
     };
 
+    const ROLE_LABELS: Record<string, string> = { LECTURER: 'Giảng viên', STUDENT: 'Sinh viên' };
+
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth
             PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -159,7 +169,7 @@ const ImportUsersDialog: React.FC<Props> = ({ open, onClose, onSuccess }) => {
                         </Box>
 
                         <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
-                            Cột bắt buộc: <b>email</b>, <b>fullName</b>, <b>role</b> (LECTURER/TEAMLEADER/TEAMMEMBER).
+                            Cột bắt buộc: <b>email</b>, <b>fullName</b>, <b>role</b> (LECTURER/STUDENT).
                             Cột tùy chọn: <b>studentCode</b>. Mật khẩu mặc định: <b>password123</b>
                         </Typography>
                     </>
@@ -194,30 +204,71 @@ const ImportUsersDialog: React.FC<Props> = ({ open, onClose, onSuccess }) => {
                             />
                         </Box>
 
-                        {result.errors.length > 0 && (
-                            <TableContainer component={Paper} variant="outlined"
-                                sx={{ borderRadius: 2, maxHeight: 250 }}>
-                                <Table size="small" stickyHeader>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={{ fontWeight: 700 }}>Dòng</TableCell>
-                                            <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
-                                            <TableCell sx={{ fontWeight: 700 }}>Lỗi</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {result.errors.map((err, idx) => (
-                                            <TableRow key={idx}>
-                                                <TableCell>{err.row}</TableCell>
-                                                <TableCell sx={{ fontSize: '0.8rem' }}>{err.email || '—'}</TableCell>
-                                                <TableCell sx={{ color: 'error.main', fontSize: '0.8rem' }}>
-                                                    {err.reason}
-                                                </TableCell>
+                        {/* Success table */}
+                        {result.successes && result.successes.length > 0 && (
+                            <>
+                                <Typography variant="subtitle2" sx={{ mb: 1, color: '#16A34A', fontWeight: 700 }}>
+                                    ✅ Danh sách thành công
+                                </Typography>
+                                <TableContainer component={Paper} variant="outlined"
+                                    sx={{ borderRadius: 2, maxHeight: 200, mb: 2, borderColor: '#BBF7D0' }}>
+                                    <Table size="small" stickyHeader>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell sx={{ fontWeight: 700, bgcolor: '#F0FDF4' }}>Dòng</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, bgcolor: '#F0FDF4' }}>Email</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, bgcolor: '#F0FDF4' }}>Họ tên</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, bgcolor: '#F0FDF4' }}>Vai trò</TableCell>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                        </TableHead>
+                                        <TableBody>
+                                            {result.successes.map((s, idx) => (
+                                                <TableRow key={idx}>
+                                                    <TableCell>{s.row}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.8rem' }}>{s.email}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.8rem' }}>{s.fullName}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.8rem' }}>
+                                                        <Chip label={ROLE_LABELS[s.role] || s.role} size="small"
+                                                            sx={{ fontSize: '0.7rem', height: 20 }} />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </>
+                        )}
+
+                        {/* Error table */}
+                        {result.errors.length > 0 && (
+                            <>
+                                <Typography variant="subtitle2" sx={{ mb: 1, color: '#DC2626', fontWeight: 700 }}>
+                                    ❌ Danh sách thất bại
+                                </Typography>
+                                <TableContainer component={Paper} variant="outlined"
+                                    sx={{ borderRadius: 2, maxHeight: 200, borderColor: '#FECACA' }}>
+                                    <Table size="small" stickyHeader>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell sx={{ fontWeight: 700, bgcolor: '#FEF2F2' }}>Dòng</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, bgcolor: '#FEF2F2' }}>Email</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, bgcolor: '#FEF2F2' }}>Lỗi</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {result.errors.map((err, idx) => (
+                                                <TableRow key={idx}>
+                                                    <TableCell>{err.row}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.8rem' }}>{err.email || '—'}</TableCell>
+                                                    <TableCell sx={{ color: 'error.main', fontSize: '0.8rem' }}>
+                                                        {err.reason}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </>
                         )}
                     </Box>
                 )}

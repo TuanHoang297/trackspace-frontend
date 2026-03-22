@@ -48,7 +48,7 @@ const getNavItems = (role?: string): NavItem[] => {
     switch (role) {
         case 'ADMIN': return adminNavItems;
         case 'LECTURER': return lecturerNavItems;
-        case 'TEAMLEADER': case 'TEAMMEMBER': case 'STUDENT': return studentNavItems;
+        case 'STUDENT': return studentNavItems;
         default: return [];
     }
 };

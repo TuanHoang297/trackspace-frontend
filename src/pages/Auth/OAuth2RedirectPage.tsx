@@ -34,8 +34,6 @@ const OAuth2RedirectPage: React.FC = () => {
               case 'LECTURER':
                 navigate('/lecturer/classes', { replace: true });
                 break;
-              case 'TEAMLEADER':
-              case 'TEAMMEMBER':
               case 'STUDENT':
                 navigate('/student/dashboard', { replace: true });
                 break;

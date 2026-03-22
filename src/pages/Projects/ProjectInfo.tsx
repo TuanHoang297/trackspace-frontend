@@ -154,11 +154,11 @@ const ProjectInfo: React.FC = () => {
                     <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
                         Thông tin chi tiết Project
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                        {readOnly
-                            ? 'Bạn đang xem thông tin project ở chế độ chỉ đọc.'
-                            : 'Điền các thông tin cơ bản về project. Thông tin này sẽ được sử dụng để tạo tài liệu đặc tả yêu cầu (SRS) sau này.'}
-                    </Typography>
+                    {readOnly && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+                            Bạn đang xem thông tin project ở chế độ chỉ đọc.
+                        </Typography>
+                    )}
 
                     <Grid container spacing={4}>
 
