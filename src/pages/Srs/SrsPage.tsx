@@ -52,7 +52,7 @@ const normalizeSrsBaseTitle = (title: string, versionNumber: number): string => 
     return normalized || 'Document';
 };
 
-const buildSrsExportFileName = (title: string, versionNumber: number, extension: 'pdf' | 'docx'): string => {
+const buildSrsExportFileName = (title: string, versionNumber: number, extension: 'pdf' | 'doc'): string => {
     const baseTitle = normalizeSrsBaseTitle(title, versionNumber);
     return `SRS_${baseTitle}_v${versionNumber}.${extension}`;
 };
@@ -303,7 +303,7 @@ const SrsPage: React.FC = () => {
     };
 
     // ─── Export handler ──────────────────────────────────────────────────────────
-    const handleExport = async (format: 'pdf' | 'docx') => {
+    const handleExport = async (format: 'pdf' | 'doc') => {
         if (!srsData.activeSrs) return;
 
         if (format === 'pdf') {
@@ -345,10 +345,10 @@ const SrsPage: React.FC = () => {
             });
         }
         else {
-            toast.info('Đang tạo file DOCX...');
+            toast.info('Đang tạo file Doc...');
             try {
                 let editorHtml = srsData.editorRef.current?.getHTML() ?? '';
-                const fileName = buildSrsExportFileName(srsData.activeSrs.title, srsData.activeSrs.versionNumber, 'docx');
+                const fileName = buildSrsExportFileName(srsData.activeSrs.title, srsData.activeSrs.versionNumber, 'doc');
 
                 // Convert URL images to base64 for Word compatibility
                 const tempDiv = document.createElement('div');
@@ -405,7 +405,7 @@ const SrsPage: React.FC = () => {
 
                 editorHtml = tempDiv.innerHTML;
 
-                const response = await axiosClient.post('/srs/export-docx', {
+                const response = await axiosClient.post('/srs/export-doc', {
                     htmlContent: editorHtml,
                     title: srsData.activeSrs.title,
                     fileName: fileName,
@@ -417,10 +417,10 @@ const SrsPage: React.FC = () => {
                 a.download = fileName;
                 a.click();
                 URL.revokeObjectURL(url);
-                toast.success('Tải file DOCX thành công!');
+                toast.success('Tải file Doc thành công!');
             } catch (err: any) {
                 console.error('[DOCX Export]', err);
-                toast.error('Lỗi khi tạo file DOCX');
+                toast.error('Lỗi khi tạo file Doc');
             }
         }
     };
@@ -473,7 +473,7 @@ const SrsPage: React.FC = () => {
                 onGenerate={srsData.handleGenerate}
                 onSave={srsData.handleSave}
                 onExportPdf={() => handleExport('pdf')}
-                onExportDocx={() => handleExport('docx')}
+                onExportDocx={() => handleExport('doc')}
             />
 
             {/* Supplement Form */}
