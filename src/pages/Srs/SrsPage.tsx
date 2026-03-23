@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Skeleton, Alert } from '@mui/material';
 import { toast } from 'react-toastify';
-import html2pdf from 'html2pdf.js';
+
 import axiosClient from '../../api/axiosClient';
 import { useRole } from '../../hooks/useRole';
 import { useSrsData } from './hooks/useSrsData';
@@ -303,48 +303,10 @@ const SrsPage: React.FC = () => {
     };
 
     // ─── Export handler ──────────────────────────────────────────────────────────
-    const handleExport = async (format: 'pdf' | 'doc') => {
+    const handleExport = async () => {
         if (!srsData.activeSrs) return;
 
-        if (format === 'pdf') {
-            toast.info(`Đang tạo file PDF...`);
-            const element = document.getElementById('srs-pdf-content');
-            if (!element) {
-                toast.error("Không tìm thấy nội dung để xuất");
-                return;
-            }
-            element.classList.add('export-mode');
-
-            const fileName = buildSrsExportFileName(srsData.activeSrs.title, srsData.activeSrs.versionNumber, 'pdf');
-            const opt: any = {
-                margin:       [25, 0, 25, 0],
-                filename:     fileName,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:    { mode: ['css', 'legacy', 'avoid-all'] }
-            };
-            html2pdf().set(opt).from(element).toPdf().get('pdf').then((pdf: any) => {
-                const totalPages = pdf.internal.getNumberOfPages();
-                for (let i = 1; i <= totalPages; i++) {
-                    pdf.setPage(i);
-                    pdf.setFontSize(10);
-                    pdf.setTextColor(100, 100, 100);
-                    pdf.setDrawColor(200, 200, 200);
-                    pdf.line(20, 275, 190, 275);
-                    const text = `${i} | Page`;
-                    pdf.text(text, 190, 281, { align: 'right' });
-                }
-                pdf.save(fileName);
-                toast.success('Tải file thành công!');
-                element.classList.remove('export-mode');
-            }).catch((err: any) => {
-                console.error(err);
-                toast.error('Lỗi khi tải file');
-                element.classList.remove('export-mode');
-            });
-        }
-        else {
+        {
             toast.info('Đang tạo file Doc...');
             try {
                 let editorHtml = srsData.editorRef.current?.getHTML() ?? '';
@@ -472,8 +434,7 @@ const SrsPage: React.FC = () => {
                 isUpdating={srsData.updateMutation.isPending}
                 onGenerate={srsData.handleGenerate}
                 onSave={srsData.handleSave}
-                onExportPdf={() => handleExport('pdf')}
-                onExportDocx={() => handleExport('doc')}
+                onExportDocx={() => handleExport()}
             />
 
             {/* Supplement Form */}

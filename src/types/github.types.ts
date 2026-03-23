@@ -46,6 +46,7 @@ export interface GitHubCommitResponse {
     linesDeleted: number;
     branchName: string;
     linkedIssueId: number | null;
+    repoLabel: string | null;
 }
 
 export interface GitHubStatsResponse {

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, Box, Typography, Chip, Avatar, IconButton,
-    TextField, MenuItem, Divider,
+    TextField, MenuItem, Divider, CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -12,7 +12,7 @@ import BugReportIcon from '@mui/icons-material/BugReport';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import SaveIcon from '@mui/icons-material/Save';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import jiraService from '../../../api/services/jiraService';
 import { toast } from 'react-toastify';
 import ConfirmDialog from '../../../components/common/ConfirmDialog/ConfirmDialog';
@@ -44,29 +44,59 @@ interface Props {
     onClose: () => void;
     issue: JiraIssueResponse | null;
     onUpdated: () => void;
+    onRefreshOnly?: () => void;
     canEdit: boolean;
     canUpdateStatus: boolean;
     members?: Array<{ userId: number; fullName: string }>;
 }
 
 const IssueDetailDialog: React.FC<Props> = ({
-    open, onClose, issue, onUpdated, canEdit, canUpdateStatus, members,
+    open, onClose, issue, onUpdated, onRefreshOnly, canEdit, canUpdateStatus, members,
 }) => {
     const [statusLoading, setStatusLoading] = useState(false);
     const [assignLoading, setAssignLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [saved, setSaved] = useState(false);
 
     const [summary, setSummary] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('');
     const [dueDate, setDueDate] = useState('');
     const [editIssueType, setEditIssueType] = useState('');
-    const [dirty, setDirty] = useState(false);
+    const [localStatus, setLocalStatus] = useState('');
 
     const [jiraUsers, setJiraUsers] = useState<JiraUser[]>([]);
     const [selectedAccountId, setSelectedAccountId] = useState('');
+
+    const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+
+    const showSaved = useCallback(() => {
+        setSaved(true);
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+    }, []);
+
+    // Auto-save: update issue fields without closing dialog
+    const autoSave = useCallback(async (fields: Record<string, unknown>) => {
+        if (!issue || !canEdit) return;
+        setSaving(true);
+        try {
+            await jiraService.updateIssue(issue.issueId, {
+                projectId: issue.projectId,
+                issueType: (fields.issueType as string) || editIssueType || issue.issueType,
+                summary: ((fields.summary as string) || summary).trim(),
+                description: (((fields.description as string) ?? description).trim()) || undefined,
+                priority: (fields.priority as string) || priority || undefined,
+                dueDate: ((fields.dueDate as string) ?? dueDate) || undefined,
+            });
+            showSaved();
+            onRefreshOnly?.();
+        } catch { toast.error('Không thể cập nhật issue'); }
+        finally { setSaving(false); }
+    }, [issue, editIssueType, summary, description, priority, dueDate, canEdit, showSaved, onRefreshOnly]);
 
     useEffect(() => {
         if (issue) {
@@ -76,7 +106,8 @@ const IssueDetailDialog: React.FC<Props> = ({
             setDueDate(issue.dueDate?.slice(0, 10) || '');
             setEditIssueType(issue.issueType || 'TASK');
             setSelectedAccountId(issue.jiraAccountId || '');
-            setDirty(false);
+            setLocalStatus(issue.status || 'To Do');
+            setSaved(false);
         }
     }, [issue]);
 
@@ -88,19 +119,29 @@ const IssueDetailDialog: React.FC<Props> = ({
         }
     }, [open, issue?.projectId, canEdit]);
 
+    useEffect(() => {
+        return () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); };
+    }, []);
+
+    // === Early return AFTER all hooks ===
     if (!issue) return null;
 
-    const statusStyle = STATUS_COLORS[issue.status] || STATUS_COLORS['To Do'];
+    const statusStyle = STATUS_COLORS[localStatus] || STATUS_COLORS['To Do'];
     const typeIcon = TYPE_ICONS[issue.issueType] || TYPE_ICONS.TASK;
+    const formatDate = (d: string | null) => !d ? '—' : new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     const handleStatusChange = async (newStatus: string) => {
-        if (newStatus === issue.status) return;
+        if (newStatus === localStatus) return;
         try {
             setStatusLoading(true);
+            setLocalStatus(newStatus);
             await jiraService.updateStatus(issue.issueId, newStatus);
-            toast.success(`Chuyển trạng thái → ${newStatus}`);
-            onUpdated();
-        } catch { toast.error('Không thể cập nhật trạng thái'); }
+            showSaved();
+            onRefreshOnly?.();
+        } catch {
+            setLocalStatus(issue.status);
+            toast.error('Không thể cập nhật trạng thái');
+        }
         finally { setStatusLoading(false); }
     };
 
@@ -108,22 +149,21 @@ const IssueDetailDialog: React.FC<Props> = ({
         if (!accountId) return;
         const user = jiraUsers.find(u => u.accountId === accountId);
         if (!user) return;
-        // Try to find matching TrackSpace userId by fullName == displayName
         const matchedMember = members?.find(
             m => m.fullName.trim().toLowerCase() === user.displayName?.trim().toLowerCase()
         );
         try {
             setAssignLoading(true);
             await jiraService.assignIssue(issue.issueId, accountId, user.displayName, matchedMember?.userId);
-            toast.success(`Đã gán cho ${user.displayName}!`);
             setSelectedAccountId(accountId);
-            onUpdated();
+            showSaved();
+            onRefreshOnly?.();
         } catch { toast.error('Không thể phân công'); }
         finally { setAssignLoading(false); }
     };
 
     const handleDelete = async () => {
-        if (deleteLoading) return; // guard duplicate calls
+        if (deleteLoading) return;
         try {
             setDeleteLoading(true);
             await jiraService.deleteIssue(issue.issueId);
@@ -142,26 +182,15 @@ const IssueDetailDialog: React.FC<Props> = ({
         setDeleteLoading(false);
         setDeleteConfirm(false);
         onClose();
-        // Delay refresh so toast stays visible
         setTimeout(() => onUpdated(), 500);
     };
 
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            await jiraService.updateIssue(issue.issueId, {
-                projectId: issue.projectId, issueType: editIssueType || issue.issueType,
-                summary: summary.trim(), description: description.trim() || undefined,
-                priority: priority || undefined, dueDate: dueDate || undefined,
-            });
-            toast.success('Cập nhật issue thành công');
-            setDirty(false); onUpdated();
-        } catch { toast.error('Không thể cập nhật issue'); }
-        finally { setSaving(false); }
-    };
-
-    const markDirty = () => { if (!dirty) setDirty(true); };
-    const formatDate = (d: string | null) => !d ? '—' : new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    // Auto-save triggers
+    const handleSummaryBlur = () => { if (summary.trim() && summary !== issue.summary) autoSave({ summary }); };
+    const handleDescBlur = () => { if (description !== (issue.description || '')) autoSave({ description }); };
+    const handlePriorityChange = (val: string) => { setPriority(val); autoSave({ priority: val }); };
+    const handleDueDateChange = (val: string) => { setDueDate(val); autoSave({ dueDate: val }); };
+    const handleTypeChange = (val: string) => { setEditIssueType(val); autoSave({ issueType: val }); };
 
     return (
         <>
@@ -170,7 +199,7 @@ const IssueDetailDialog: React.FC<Props> = ({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {canEdit ? (
                             <TextField select size="small" value={editIssueType}
-                                onChange={e => { setEditIssueType(e.target.value); markDirty(); }}
+                                onChange={e => handleTypeChange(e.target.value)}
                                 sx={{ minWidth: 100, '& .MuiSelect-select': { fontWeight: 600, fontSize: '0.8rem' } }}>
                                 {['TASK', 'STORY', 'BUG', 'EPIC', 'SUBTASK'].map(t => (
                                     <MenuItem key={t} value={t}>
@@ -182,18 +211,23 @@ const IssueDetailDialog: React.FC<Props> = ({
                                 ))}
                             </TextField>
                         ) : (
-                            <>{typeIcon}</>            
+                            <>{typeIcon}</>
                         )}
                         <Typography variant="caption" fontWeight={700} color="text.secondary">{issue.issueKey}</Typography>
                         {!canEdit && <Chip label={issue.issueType} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }} />}
                     </Box>
-                    <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {saving && <CircularProgress size={16} sx={{ color: '#3B82F6' }} />}
+                        {saved && !saving && <CheckCircleIcon sx={{ color: '#10B981', fontSize: 18 }} />}
+                        <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
+                    </Box>
                 </DialogTitle>
 
                 <DialogContent sx={{ pt: 1 }}>
                     {canEdit ? (
                         <TextField fullWidth size="small" value={summary}
-                            onChange={e => { setSummary(e.target.value); markDirty(); }}
+                            onChange={e => setSummary(e.target.value)}
+                            onBlur={handleSummaryBlur}
                             sx={{ mb: 2, mt: 1, '& .MuiInputBase-input': { fontWeight: 700, fontSize: '1.15rem' } }} />
                     ) : (
                         <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5, mt: 1, lineHeight: 1.3 }}>{issue.summary}</Typography>
@@ -203,7 +237,7 @@ const IssueDetailDialog: React.FC<Props> = ({
                     <Box sx={{ mb: 2 }}>
                         <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>Trạng thái</Typography>
                         {canUpdateStatus ? (
-                            <TextField select size="small" fullWidth disabled={statusLoading} value={issue.status}
+                            <TextField select size="small" fullWidth disabled={statusLoading} value={localStatus}
                                 onChange={e => handleStatusChange(e.target.value)}
                                 sx={{ '& .MuiSelect-select': { fontWeight: 600, color: statusStyle.color, bgcolor: statusStyle.bg, borderRadius: 1 } }}>
                                 {STATUS_OPTIONS.map(s => (
@@ -212,7 +246,7 @@ const IssueDetailDialog: React.FC<Props> = ({
                                     </Box></MenuItem>
                                 ))}
                             </TextField>
-                        ) : <Chip label={issue.status} sx={{ fontWeight: 600, bgcolor: statusStyle.bg, color: statusStyle.color }} />}
+                        ) : <Chip label={localStatus} sx={{ fontWeight: 600, bgcolor: statusStyle.bg, color: statusStyle.color }} />}
                     </Box>
 
                     <Divider sx={{ my: 1.5 }} />
@@ -222,7 +256,8 @@ const IssueDetailDialog: React.FC<Props> = ({
                         <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>Mô tả</Typography>
                         {canEdit ? (
                             <TextField fullWidth multiline rows={3} size="small" placeholder="Thêm mô tả..."
-                                value={description} onChange={e => { setDescription(e.target.value); markDirty(); }} />
+                                value={description} onChange={e => setDescription(e.target.value)}
+                                onBlur={handleDescBlur} />
                         ) : <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{issue.description || 'Không có mô tả'}</Typography>}
                     </Box>
 
@@ -231,7 +266,7 @@ const IssueDetailDialog: React.FC<Props> = ({
                         <Box>
                             <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>Mức ưu tiên</Typography>
                             {canEdit ? (
-                                <TextField select size="small" fullWidth value={priority} onChange={e => { setPriority(e.target.value); markDirty(); }}>
+                                <TextField select size="small" fullWidth value={priority} onChange={e => handlePriorityChange(e.target.value)}>
                                     {PRIORITY_OPTIONS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
                                 </TextField>
                             ) : <Typography variant="body2" fontWeight={600}>{issue.priority}</Typography>}
@@ -242,7 +277,7 @@ const IssueDetailDialog: React.FC<Props> = ({
                             </Typography>
                             {canEdit ? (
                                 <TextField type="date" size="small" fullWidth value={dueDate}
-                                    onChange={e => { setDueDate(e.target.value); markDirty(); }} InputLabelProps={{ shrink: true }} />
+                                    onChange={e => handleDueDateChange(e.target.value)} InputLabelProps={{ shrink: true }} />
                             ) : <Typography variant="body2" fontWeight={600} color={issue.dueDate && new Date(issue.dueDate) < new Date() && issue.status !== 'Done' ? 'error.main' : 'text.primary'}>{formatDate(issue.dueDate)}</Typography>}
                         </Box>
                     </Box>
@@ -289,15 +324,7 @@ const IssueDetailDialog: React.FC<Props> = ({
                                 sx={{ borderRadius: 2, textTransform: 'none' }}>Xóa</Button>
                         )}
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        {canEdit && (
-                            <Button variant="contained" onClick={handleSave} disabled={saving || !summary.trim()}
-                                startIcon={<SaveIcon />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
-                                {saving ? 'Đang lưu...' : 'Cập nhật'}
-                            </Button>
-                        )}
-                        <Button onClick={onClose} variant="outlined" color="inherit" sx={{ borderRadius: 2, textTransform: 'none' }}>Đóng</Button>
-                    </Box>
+                    <Button onClick={onClose} variant="outlined" color="inherit" sx={{ borderRadius: 2, textTransform: 'none' }}>Đóng</Button>
                 </DialogActions>
             </Dialog>
 

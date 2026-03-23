@@ -90,7 +90,14 @@ const CommitListDialog: React.FC<CommitListDialogProps> = ({ open, onClose, proj
                                 <CommitIcon sx={{ fontSize: 16, color: '#3B82F6', mt: 0.3, flexShrink: 0 }} />
                                 <Box sx={{ flex: 1, minWidth: 0 }}>
                                     <Typography fontSize="0.82rem" fontWeight={600} color="#1E293B"
-                                        sx={{ lineHeight: 1.4, wordBreak: 'break-word' }}>
+                                        sx={{
+                                            lineHeight: 1.4,
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                        }}>
                                         {c.commitMessage}
                                     </Typography>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>

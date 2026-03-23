@@ -64,6 +64,7 @@ const StatCard: React.FC<{
     </Paper>
 );
 
+
 const MemberDetailDrawer: React.FC<MemberDetailDrawerProps> = ({
     open, onClose, member, projectId, rank, contributionPercent, teamAverages,
 }) => {
@@ -414,64 +415,112 @@ const MemberDetailDrawer: React.FC<MemberDetailDrawerProps> = ({
                             <CommitIcon sx={{ fontSize: 48, color: '#CBD5E1', mb: 1 }} />
                             <Typography color="text.secondary" fontSize="0.85rem">No commits found</Typography>
                         </Box>
-                    ) : (
-                        <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-                            {commits.map((c, i) => (
-                                <Box key={c.commitSha || i} sx={{
-                                    px: 2.5, py: 1.5,
-                                    borderBottom: i < commits.length - 1 ? '1px solid #F1F5F9' : 'none',
-                                    '&:hover': { bgcolor: '#F8FAFC' },
-                                    transition: 'background 0.12s',
-                                }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                                        <Box sx={{
-                                            width: 28, height: 28, borderRadius: '50%',
-                                            bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            flexShrink: 0, mt: 0.2,
-                                        }}>
-                                            <CommitIcon sx={{ fontSize: 14, color: '#3B82F6' }} />
-                                        </Box>
-                                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                                            <Typography fontSize="0.82rem" fontWeight={600} color="#1E293B"
-                                                sx={{ lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {c.commitMessage}
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
-                                                <Typography fontSize="0.68rem" color="text.secondary">{timeAgo(c.commitDate)}</Typography>
-                                                {c.branchName && (
-                                                    <Chip label={c.branchName} size="small" sx={{
-                                                        height: 18, fontSize: '0.6rem', bgcolor: '#EFF6FF',
-                                                        color: '#3B82F6', fontWeight: 600, fontFamily: "'JetBrains Mono', monospace",
-                                                    }} />
-                                                )}
-                                                <Chip
-                                                    label={c.commitSha?.substring(0, 7)}
-                                                    size="small"
-                                                    onClick={() => navigator.clipboard.writeText(c.commitSha || '')}
-                                                    sx={{
-                                                        height: 18, fontSize: '0.62rem', cursor: 'pointer',
-                                                        fontFamily: "'JetBrains Mono', monospace",
-                                                        bgcolor: '#F1F5F9', color: '#64748B', fontWeight: 600,
-                                                        '&:hover': { bgcolor: '#E2E8F0' },
-                                                    }}
-                                                />
+                    ) : (() => {
+                        const repoLabels = [...new Set(commits.map(c => c.repoLabel || ''))];
+                        const hasMultiRepo = repoLabels.length > 1;
+                        const repoColor: Record<string, string> = { FRONTEND: '#3B82F6', BACKEND: '#8B5CF6' };
+                        const repoIcon: Record<string, string> = { FRONTEND: '🖥️', BACKEND: '⚙️' };
+
+                        const grouped = hasMultiRepo
+                            ? repoLabels.map(label => ({ label, commits: commits.filter(c => (c.repoLabel || '') === label) }))
+                            : [{ label: '', commits }];
+
+                        return (
+                            <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                                {grouped.map((group, gi) => (
+                                    <Box key={group.label || 'all'}>
+                                        {hasMultiRepo && (
+                                            <Box sx={{
+                                                px: 2, py: 1.2,
+                                                bgcolor: repoColor[group.label] === '#3B82F6' ? '#EFF6FF' : repoColor[group.label] === '#8B5CF6' ? '#F5F3FF' : '#F8FAFC',
+                                                borderBottom: '1px solid #E2E8F0',
+                                                ...(gi > 0 ? { borderTop: '2px solid #E2E8F0', mt: 0.5 } : {}),
+                                                display: 'flex', alignItems: 'center', gap: 1,
+                                            }}>
+                                                <Typography fontSize="0.75rem" fontWeight={700}
+                                                    sx={{ color: repoColor[group.label] || '#64748B' }}>
+                                                    {repoIcon[group.label] || '📁'} {group.label || 'Unknown'}
+                                                </Typography>
+                                                <Typography fontSize="0.65rem" fontWeight={500} color="text.secondary">
+                                                    ({group.commits.length} commits)
+                                                </Typography>
                                             </Box>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', gap: 0.8, flexShrink: 0, mt: 0.3 }}>
-                                            {c.linesAdded > 0 && (
-                                                <Typography fontSize="0.68rem" fontWeight={700} color="#22C55E"
-                                                    sx={{ fontFamily: "'JetBrains Mono', monospace" }}>+{c.linesAdded}</Typography>
-                                            )}
-                                            {c.linesDeleted > 0 && (
-                                                <Typography fontSize="0.68rem" fontWeight={700} color="#EF4444"
-                                                    sx={{ fontFamily: "'JetBrains Mono', monospace" }}>-{c.linesDeleted}</Typography>
-                                            )}
-                                        </Box>
+                                        )}
+                                        {group.commits.map((c, i) => (
+                                            <Box key={c.commitSha || i} sx={{
+                                                px: 2.5, py: 1.5,
+                                                borderBottom: i < group.commits.length - 1 ? '1px solid #F1F5F9' : 'none',
+                                                '&:hover': { bgcolor: '#F8FAFC' },
+                                                transition: 'background 0.12s',
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                                                    <Box sx={{
+                                                        width: 28, height: 28, borderRadius: '50%',
+                                                        bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        flexShrink: 0, mt: 0.2,
+                                                    }}>
+                                                        <CommitIcon sx={{ fontSize: 14, color: '#3B82F6' }} />
+                                                    </Box>
+                                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                        <Typography fontSize="0.82rem" fontWeight={600} color="#1E293B"
+                                                            sx={{
+                                                                lineHeight: 1.4,
+                                                                display: '-webkit-box',
+                                                                WebkitLineClamp: 2,
+                                                                WebkitBoxOrient: 'vertical',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                            }}>
+                                                            {c.commitMessage}
+                                                        </Typography>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mt: 0.5, flexWrap: 'wrap' }}>
+                                                            <Typography fontSize="0.68rem" color="text.secondary">{timeAgo(c.commitDate)}</Typography>
+                                                            {c.repoLabel && hasMultiRepo && (
+                                                                <Chip label={c.repoLabel} size="small" sx={{
+                                                                    height: 18, fontSize: '0.58rem', fontWeight: 700,
+                                                                    bgcolor: repoColor[c.repoLabel] === '#3B82F6' ? '#DBEAFE' : repoColor[c.repoLabel] === '#8B5CF6' ? '#EDE9FE' : '#F1F5F9',
+                                                                    color: repoColor[c.repoLabel] || '#64748B',
+                                                                    borderRadius: 1,
+                                                                }} />
+                                                            )}
+                                                            {c.branchName && (
+                                                                <Chip label={c.branchName} size="small" sx={{
+                                                                    height: 18, fontSize: '0.6rem', bgcolor: '#EFF6FF',
+                                                                    color: '#3B82F6', fontWeight: 600, fontFamily: "'JetBrains Mono', monospace",
+                                                                    maxWidth: 140, '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                                                                }} />
+                                                            )}
+                                                            <Chip
+                                                                label={c.commitSha?.substring(0, 7)}
+                                                                size="small"
+                                                                onClick={() => navigator.clipboard.writeText(c.commitSha || '')}
+                                                                sx={{
+                                                                    height: 18, fontSize: '0.62rem', cursor: 'pointer',
+                                                                    fontFamily: "'JetBrains Mono', monospace",
+                                                                    bgcolor: '#F1F5F9', color: '#64748B', fontWeight: 600,
+                                                                    '&:hover': { bgcolor: '#E2E8F0' },
+                                                                }}
+                                                            />
+                                                        </Box>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', gap: 0.8, flexShrink: 0, mt: 0.3 }}>
+                                                        {c.linesAdded > 0 && (
+                                                            <Typography fontSize="0.68rem" fontWeight={700} color="#22C55E"
+                                                                sx={{ fontFamily: "'JetBrains Mono', monospace" }}>+{c.linesAdded}</Typography>
+                                                        )}
+                                                        {c.linesDeleted > 0 && (
+                                                            <Typography fontSize="0.68rem" fontWeight={700} color="#EF4444"
+                                                                sx={{ fontFamily: "'JetBrains Mono', monospace" }}>-{c.linesDeleted}</Typography>
+                                                        )}
+                                                    </Box>
+                                                </Box>
+                                            </Box>
+                                        ))}
                                     </Box>
-                                </Box>
-                            ))}
-                        </Paper>
-                    )}
+                                ))}
+                            </Paper>
+                        );
+                    })()}
                 </Box>
               ) : tasks !== undefined ? (
                 /* ═══ Tasks View ═══ */

@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     Box, Typography, Paper, Button, Chip, MenuItem, Select, FormControl,
-    CircularProgress, Tooltip, IconButton, Menu, ListItemIcon, ListItemText
+    CircularProgress, Tooltip, IconButton
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SaveIcon from '@mui/icons-material/Save';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import type { SrsDocumentResponse } from '../../../types/srs.types';
@@ -25,16 +24,16 @@ interface SrsHeaderBarProps {
     isUpdating: boolean;
     onGenerate: () => void;
     onSave: () => void;
-    onExportPdf: () => void;
+
     onExportDocx: () => void;
 }
 
 const SrsHeaderBar: React.FC<SrsHeaderBarProps> = ({
     activeSrs, latestSrs, versions, selectedVersionId, setSelectedVersionId,
     isLatest, readOnly, showSupplement, setShowSupplement,
-    isGenerating, isUpdating, onGenerate, onSave, onExportPdf, onExportDocx,
+    isGenerating, isUpdating, onGenerate, onSave, onExportDocx,
 }) => {
-    const [exportAnchor, setExportAnchor] = useState<null | HTMLElement>(null);
+
 
     return (
         <Paper
@@ -112,37 +111,20 @@ const SrsHeaderBar: React.FC<SrsHeaderBarProps> = ({
                     </>
                 )}
 
-                {/* Export dropdown */}
+                {/* Export Doc button */}
                 <Button
                     variant="outlined"
                     size="small"
                     startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
-                    onClick={(e) => setExportAnchor(e.currentTarget)}
+                    onClick={onExportDocx}
                     sx={{
                         textTransform: 'none', borderRadius: 1.5, fontWeight: 600, fontSize: '0.8rem',
                         borderColor: '#E2E8F0', color: '#1E293B',
                         '&:hover': { borderColor: '#CBD5E1', bgcolor: '#F8FAFC' }
                     }}
                 >
-                    Export
+                    Export Doc
                 </Button>
-                <Menu
-                    anchorEl={exportAnchor}
-                    open={Boolean(exportAnchor)}
-                    onClose={() => setExportAnchor(null)}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    slotProps={{ paper: { sx: { minWidth: 160, mt: 0.5, borderRadius: 2, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' } } }}
-                >
-                    <MenuItem onClick={() => { onExportPdf(); setExportAnchor(null); }}>
-                        <ListItemIcon><PictureAsPdfIcon sx={{ color: '#EF4444', fontSize: 18 }} /></ListItemIcon>
-                        <ListItemText primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 500 }}>PDF</ListItemText>
-                    </MenuItem>
-                    <MenuItem onClick={() => { onExportDocx(); setExportAnchor(null); }}>
-                        <ListItemIcon><DescriptionOutlinedIcon sx={{ color: '#2563EB', fontSize: 18 }} /></ListItemIcon>
-                        <ListItemText primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 500 }}>DOCX</ListItemText>
-                    </MenuItem>
-                </Menu>
 
                 {/* Save button */}
                 {!readOnly && isLatest && (

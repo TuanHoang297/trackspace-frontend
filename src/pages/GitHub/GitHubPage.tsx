@@ -29,6 +29,8 @@ import type {
     GitHubConnectionResponse, GitHubCommitResponse, GitHubStatsResponse, GitHubBranchResponse,
 } from '../../types/github.types';
 import { useRole } from '../../hooks/useRole';
+import { useSyncHeartbeat } from '../../hooks/useSyncHeartbeat';
+
 import AuthorCard from './components/AuthorCard';
 
 type ViewMode = 'overview' | 'connect' | 'detail';
@@ -46,6 +48,7 @@ const GitHubPage: React.FC = () => {
     const navigate = useNavigate();
     const { isReadOnly } = useRole();
     const readOnly = isReadOnly();
+    useSyncHeartbeat(pid);
 
     // Access guard — redirect on 403 / 404
     const { data: accessProject, error: projectError } = useQuery({
@@ -85,6 +88,7 @@ const GitHubPage: React.FC = () => {
     const [authorFilter, setAuthorFilter] = useState<string>('all');
     const [branchSearch, setBranchSearch] = useState('');
     const [disconnectOpen, setDisconnectOpen] = useState(false);
+    const [disconnecting, setDisconnecting] = useState(false);
     const [periodFilter, setPeriodFilter] = useState<'all' | 'last_month' | 'last_3_months'>('all');
     const [branchCommits, setBranchCommits] = useState<GitHubCommitResponse[] | null>(null);
     const [branchLoading, setBranchLoading] = useState(false);
@@ -99,6 +103,7 @@ const GitHubPage: React.FC = () => {
             catch { return [] as GitHubConnectionResponse[]; }
         },
         enabled: !!pid,
+        refetchInterval: 10_000,
     });
 
     const getConn = (t: RepoType) => connections.find(c => c.repoLabel === t && c.connectionStatus === 'CONNECTED');
@@ -126,18 +131,7 @@ const GitHubPage: React.FC = () => {
         else { setView('overview'); setSelectedRepo(null); setSearchParams({}, { replace: true }); }
     }
 
-    // Background sync
-    useQuery({
-        queryKey: ['github', 'backgroundSync', pid],
-        queryFn: async () => {
-            setSyncing(true);
-            try { await githubService.sync({ projectId: pid }); await queryClient.invalidateQueries({ queryKey: ['github', 'connections', pid] }); }
-            catch { /* non-blocking */ } finally { setSyncing(false); }
-            return null;
-        },
-        enabled: !!pid && connections.length > 0,
-        staleTime: 60_000,
-    });
+
 
     const handleCardClick = (t: RepoType) => {
         setSelectedRepo(t);
@@ -169,11 +163,12 @@ const GitHubPage: React.FC = () => {
     const handleDisconnect = async () => {
         if (!activeConn) return;
         try {
+            setDisconnecting(true);
             await githubService.disconnectSingle(activeConn.connectionId);
             toast.success(`Đã ngắt kết nối ${cfgData?.label || 'GitHub'}`);
             setDisconnectOpen(false); setCommits([]); setStats([]); setBranches([]);
             await fetchConns(); handleBack();
-        } catch { toast.error('Không thể ngắt kết nối'); }
+        } catch { toast.error('Không thể ngắt kết nối'); } finally { setDisconnecting(false); }
     };
 
     const handleAuthorClick = (githubLogin: string) => { setAuthorFilter(githubLogin); setBranchFilter('all'); setTab(1); };
@@ -547,6 +542,7 @@ const GitHubPage: React.FC = () => {
                     message="Toàn bộ dữ liệu commits sẽ bị xóa khỏi TrackSpace. Action này không thể hoàn tác."
                     onConfirm={handleDisconnect}
                     onCancel={() => setDisconnectOpen(false)}
+                    loading={disconnecting}
                 />
             </>
         );

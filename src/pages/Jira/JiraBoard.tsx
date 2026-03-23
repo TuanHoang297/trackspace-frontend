@@ -17,12 +17,14 @@ import { useQuery } from '@tanstack/react-query';
 import jiraService from '../../api/services/jiraService';
 import projectService from '../../api/services/projectService';
 import { toast } from 'react-toastify';
+
 import IssueCard from './components/IssueCard';
 import CreateIssueDialog from './components/CreateIssueDialog';
 import IssueDetailDialog from './components/IssueDetailDialog';
 import SprintDialog from './components/SprintDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog/ConfirmDialog';
 import groupService from '../../api/services/groupService';
+import { useSyncHeartbeat } from '../../hooks/useSyncHeartbeat';
 import type { JiraIssueResponse, JiraSprintResponse, JiraSprintRequest } from '../../types/jira.types';
 import {
     DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors,
@@ -90,6 +92,7 @@ const JiraBoard: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const pid = Number(projectId);
+    useSyncHeartbeat(pid);
 
     const { connection, sprints, issues, setIssues, loading, syncing, refresh, loadLocal } = useJira(pid);
 
@@ -117,9 +120,9 @@ const JiraBoard: React.FC = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const role = user?.role || '';
     const isStudent = role === 'STUDENT';
-    const canManageConnection = isStudent;               // Students can manage connections
-    const canCreateIssue = isStudent;                    // Students can create issues/sprints
-    const canUpdateStatus = isStudent;                   // Students can update status
+    const canManageConnection = isStudent;
+    const canCreateIssue = isStudent;
+    const canUpdateStatus = isStudent;
 
     // State
     const [createOpen, setCreateOpen] = useState(false);
@@ -679,7 +682,8 @@ const JiraBoard: React.FC = () => {
                 open={!!detailIssue}
                 onClose={() => setDetailIssue(null)}
                 issue={detailIssue}
-                onUpdated={() => { setDetailIssue(null); refresh(); }}
+                onUpdated={() => { setDetailIssue(null); loadLocal(); }}
+                onRefreshOnly={loadLocal}
                 canEdit={canCreateIssue}
                 canUpdateStatus={canUpdateStatus}
                 members={members}

@@ -44,6 +44,7 @@ export default function useJira(projectId: number): UseJiraReturn {
             return res.data.data as JiraSprintResponse[];
         },
         enabled: !!projectId && isConnected,
+        refetchInterval: 10_000, // Auto-poll DB every 30s (backend syncs Jira → DB every 30s)
     });
 
     const { data: fetchedIssues = [], isLoading: issuesLoading } = useQuery({
@@ -53,6 +54,7 @@ export default function useJira(projectId: number): UseJiraReturn {
             return res.data.data as JiraIssueResponse[];
         },
         enabled: !!projectId && isConnected,
+        refetchInterval: 10_000, // Auto-poll DB every 30s
     });
 
     // Allow optimistic updates via setIssues while keeping React Query as source of truth
