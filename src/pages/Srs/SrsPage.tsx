@@ -387,6 +387,7 @@ const SrsPage: React.FC = () => {
         }
     };
 
+
     // ─── LOADING STATE ──────────────────────────────────────────────────────────
     if (srsData.latestLoading) {
         return (
@@ -465,7 +466,7 @@ const SrsPage: React.FC = () => {
                 <SrsA4Editor
                     ref={srsData.editorRef}
                     value={srsData.content}
-                    readOnly={readOnly || !srsData.isLatest}
+                    readOnly={readOnly}
                     onImageUpload={uploadImageToCloudinary}
                     onImageInserted={() => srsData.persistDraftNow()}
                     onAiAction={(actionType, insertPos) => handleDescribeImage(actionType as any, insertPos)}

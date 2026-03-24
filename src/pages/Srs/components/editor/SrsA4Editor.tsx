@@ -105,6 +105,11 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
         editable: !readOnly,
         onUpdate: ({ editor: ed }) => {
             const html = ed.getHTML();
+            // Update contentKeyRef so the content sync effect doesn't
+            // re-run setContent() when parent state updates from this edit.
+            // Without this, user edit → onChange → parent updates value →
+            // content sync runs setContent() → wipes redo stack.
+            contentKeyRef.current = getContentKey(html);
             setTimeout(() => {
                 onChangeRef.current?.(html);
             }, 0);
@@ -131,6 +136,7 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
                     for (const { pos, node } of buttonsToRestore.reverse()) {
                         tr = tr.setNodeMarkup(pos, undefined, { ...node.attrs, done: false });
                     }
+                    tr.setMeta('addToHistory', false);
                     ed.view.dispatch(tr);
 
                     for (const { pos, node } of buttonsToRestore) {

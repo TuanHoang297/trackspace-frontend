@@ -13,7 +13,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import FlagIcon from '@mui/icons-material/Flag';
 
 import useJira from '../../hooks/useJira';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import jiraService from '../../api/services/jiraService';
 import projectService from '../../api/services/projectService';
 import { toast } from 'react-toastify';
@@ -95,6 +95,7 @@ const JiraBoard: React.FC = () => {
     useSyncHeartbeat(pid);
 
     const { connection, sprints, issues, setIssues, loading, syncing, refresh, loadLocal } = useJira(pid);
+    const queryClient = useQueryClient();
 
     // Access guard — redirect on 403 / 404
     const { data: accessProject, error: projectError } = useQuery({
@@ -116,11 +117,27 @@ const JiraBoard: React.FC = () => {
         else if (status === 404) navigate('/forbidden', { replace: true, state: { type: 'not_found' } });
     }, [projectError, pid, navigate]);
 
-    // Role-based permissions (Jira-style)
+    // Role-based permissions — only Team Leader can manage connection/sprints/issues
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const role = user?.role || '';
     const isStudent = role === 'STUDENT';
-    const canManageConnection = isStudent;
+
+    // Fetch workspace data to determine Team Leader status
+    const { data: workspaces } = useQuery({
+        queryKey: ['student', 'workspaces'],
+        queryFn: async () => {
+            const res = await (await import('../../api/services/studentService')).default.getMyWorkspaces();
+            return res.data.data;
+        },
+        enabled: isStudent,
+    });
+    const isLeader = useMemo(() => {
+        if (!isStudent || !workspaces) return false;
+        const ws = workspaces.find(w => w.projectId === pid);
+        return ws?.isLeader ?? false;
+    }, [isStudent, workspaces, pid]);
+
+    const canManageConnection = isLeader;
     const canCreateIssue = isStudent;
     const canUpdateStatus = isStudent;
 
@@ -254,6 +271,7 @@ const JiraBoard: React.FC = () => {
             .catch(() => { /* best-effort */ });
     }, [accessProject]);
     const [disconnectOpen, setDisconnectOpen] = useState(false);
+    const [disconnecting, setDisconnecting] = useState(false);
 
     // Filter issues by assignee
     const filteredIssues = useMemo(() => {
@@ -295,13 +313,21 @@ const JiraBoard: React.FC = () => {
 
 
     const handleDisconnect = async () => {
+        setDisconnecting(true);
         try {
             await jiraService.disconnect(pid);
+            // Clear all Jira caches so connect page doesn't see stale CONNECTED status
+            queryClient.removeQueries({ queryKey: ['jira', 'connection', pid] });
+            queryClient.removeQueries({ queryKey: ['jira', 'sprints', pid] });
+            queryClient.removeQueries({ queryKey: ['jira', 'issues', pid] });
+            queryClient.removeQueries({ queryKey: ['jira', 'backgroundSync', pid] });
             toast.success('Đã ngắt kết nối Jira');
             setDisconnectOpen(false);
             navigate(`/projects/${pid}/jira/connect`);
         } catch {
             toast.error('Không thể ngắt kết nối');
+        } finally {
+            setDisconnecting(false);
         }
     };
 
@@ -706,6 +732,7 @@ const JiraBoard: React.FC = () => {
                 message="Dữ liệu sprint và issue sẽ bị xóa khỏi TrackSpace. Action này không thể hoàn tác."
                 onConfirm={handleDisconnect}
                 onCancel={() => setDisconnectOpen(false)}
+                loading={disconnecting}
             />
             <ConfirmDialog
                 open={deleteSprintId !== null}

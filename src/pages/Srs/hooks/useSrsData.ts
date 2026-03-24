@@ -125,15 +125,14 @@ export function useSrsData() {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data: { title?: string, content: string }) => srsService.updateSrs(latestSrs!.id, data),
+        mutationFn: (data: { title?: string, content: string }) => srsService.updateSrs(activeSrs!.id, data),
         onSuccess: () => {
-            if (latestSrs?.id) {
-                localStorage.removeItem(getDraftKey(latestSrs.id));
+            if (activeSrs?.id) {
+                localStorage.removeItem(getDraftKey(activeSrs.id));
             }
-            toast.success('Đã lưu version mới thành công!');
+            toast.success('Đã lưu SRS thành công!');
             queryClient.invalidateQueries({ queryKey: ['srs', 'latest', pid] });
             queryClient.invalidateQueries({ queryKey: ['srs', 'versions', pid] });
-            setSelectedVersionId('');
         },
         onError: (err: any) => {
             toast.error(err.response?.data?.message || 'Lỗi khi lưu SRS');

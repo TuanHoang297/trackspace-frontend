@@ -16,6 +16,12 @@ import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { getUser, logout } from '../../../utils/auth';
 
+const ROLE_LABELS: Record<string, string> = {
+    ADMIN: 'Admin',
+    LECTURER: 'Lecturer',
+    STUDENT: 'Student',
+};
+
 interface HeaderProps {
     onMenuClick: () => void;
     drawerWidth: number;
@@ -75,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, drawerWidth }) => {
                             {user?.fullName || 'Admin'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                            {user?.role || 'ADMIN'}
+                            {ROLE_LABELS[user?.role || ''] || user?.role || 'ADMIN'}
                         </Typography>
                     </Box>
                     <Avatar

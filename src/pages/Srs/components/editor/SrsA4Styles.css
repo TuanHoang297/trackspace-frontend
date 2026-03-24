@@ -307,3 +307,4 @@
 /* HIDE AI buttons when done or exporting */
 .srs-ai-action[data-done="true"] { display: none !important; }
 .export-mode .srs-ai-action { display: none !important; }
+

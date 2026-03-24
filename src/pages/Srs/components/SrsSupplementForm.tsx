@@ -34,7 +34,7 @@ const SrsSupplementForm: React.FC<SrsSupplementFormProps> = ({
                         Nhập thông tin bổ sung để AI tạo SRS chính xác hơn. VD: business rules, non-screen functions, constraints...
                     </Box>
                     <TextField
-                        placeholder="VD:&#10;- Email phải @fpt.edu.vn&#10;- Auto-sync Jira mỗi 30 phút&#10;- JWT token hết hạn sau 24h"
+                        placeholder="Nhập thông tin bổ sung..."
                         multiline rows={5}
                         value={supplementInfo}
                         onChange={(e) => setSupplementInfo(e.target.value)}
@@ -61,7 +61,7 @@ const SrsSupplementForm: React.FC<SrsSupplementFormProps> = ({
                     Nhập thông tin bổ sung để AI tạo SRS chính xác hơn (tùy chọn)
                 </Box>
                 <TextField
-                    placeholder="VD: Email phải @fpt.edu.vn, Auto-sync Jira mỗi 30 phút..."
+                    placeholder="Nhập thông tin bổ sung..."
                     multiline rows={3}
                     value={supplementInfo}
                     onChange={(e) => setSupplementInfo(e.target.value)}

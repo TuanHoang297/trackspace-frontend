@@ -123,11 +123,11 @@ const SrsHeaderBar: React.FC<SrsHeaderBarProps> = ({
                         '&:hover': { borderColor: '#CBD5E1', bgcolor: '#F8FAFC' }
                     }}
                 >
-                    Export Doc
+                    Export
                 </Button>
 
                 {/* Save button */}
-                {!readOnly && isLatest && (
+                {!readOnly && (
                     <Button
                         variant="contained"
                         size="small"

@@ -9,8 +9,15 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ProjectSidebar, { SIDEBAR_EXPANDED, SIDEBAR_COLLAPSED } from './ProjectSidebar';
 import projectService from '../../../api/services/projectService';
+import studentService from '../../../api/services/studentService';
 import type { ProjectResponse } from '../../../types/project.types';
 import { getUser, logout } from '../../../utils/auth';
+
+const ROLE_LABELS: Record<string, string> = {
+    ADMIN: 'Admin',
+    LECTURER: 'Lecturer',
+    STUDENT: 'Student',
+};
 
 const ProjectLayout: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
@@ -34,6 +41,25 @@ const ProjectLayout: React.FC = () => {
         enabled: !!pid,
         retry: false,
     });
+
+    // Fetch workspace data to determine Team Leader / Member for STUDENT role
+    const { data: workspaces } = useQuery({
+        queryKey: ['student', 'workspaces'],
+        queryFn: async () => {
+            const res = await studentService.getMyWorkspaces();
+            return res.data.data;
+        },
+        enabled: currentUser?.role === 'STUDENT',
+    });
+
+    const getProjectRoleLabel = () => {
+        if (currentUser?.role !== 'STUDENT') {
+            return ROLE_LABELS[currentUser?.role || ''] || currentUser?.role || '';
+        }
+        if (!workspaces || !project) return ROLE_LABELS.STUDENT;
+        const ws = workspaces.find(w => w.projectId === pid);
+        return ws?.isLeader ? 'Team Leader' : 'Member';
+    };
 
     // Breadcrumb "Lớp học" link should be role-aware
     const classListPath = currentUser?.role === 'LECTURER' ? '/lecturer/classes' : '/student/dashboard';
@@ -93,7 +119,7 @@ const ProjectLayout: React.FC = () => {
                                 {currentUser?.fullName || 'User'}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                {currentUser?.role || ''}
+                                {getProjectRoleLabel()}
                             </Typography>
                         </Box>
                         <Avatar sx={{ width: 38, height: 38, background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', fontSize: 14, fontWeight: 800, boxShadow: '0 2px 8px rgba(59,130,246,0.3)' }}>
