@@ -368,7 +368,7 @@ const ContributionPage: React.FC = () => {
                         })}
                     </Box>
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2.5, mb: 3 }}>
-                        {(activeDomain === 'ALL' ? members : members.filter(m => (m.role?.toUpperCase() || 'UNKNOWN') === activeDomain)).map((m: ContributionResponse, i: number) => (
+                        {(activeDomain === 'ALL' ? members : members.filter(m => (m.role?.toUpperCase() || 'UNKNOWN') === activeDomain)).map((m: ContributionResponse) => (
                             <MemberCard key={m.userId} m={m} rank={members.indexOf(m) + 1} projectId={pid} contributionPercent={getPercent(m.userId)} onClick={() => handleCardClick(m, members.indexOf(m) + 1)} />
                         ))}
                     </Box>
@@ -382,9 +382,7 @@ const ContributionPage: React.FC = () => {
                         const totalContribution = getPercent(myData.userId);
                         
                         // Derived values
-                        const safeDiv = (a: number, b: number) => b === 0 ? 0 : (a / b) * 100;
-                        const taskProgress = safeDiv(myData.tasksCompleted, myData.tasksAssigned);
-
+                        
                         return (
                             <Box sx={{ mb: 4, mt: 1 }}>
                                 <MemberDashboardView 

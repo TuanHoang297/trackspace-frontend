@@ -660,11 +660,5 @@ const MemberDashboardView: React.FC<MemberDashboardViewProps> = ({
 };
 
 /* ── Helpers ── */
-const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <Typography fontSize="0.75rem" fontWeight={700} color="text.secondary"
-        sx={{ mb: 1.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        {children}
-    </Typography>
-);
 
 export default MemberDashboardView;
