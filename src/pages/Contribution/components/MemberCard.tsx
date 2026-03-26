@@ -1,9 +1,9 @@
 import React from 'react';
-import { Box, Typography, Paper, Avatar, Chip } from '@mui/material';
+import { Box, Typography, Paper, Avatar } from '@mui/material';
 import ScoreRing from './ScoreRing';
 import MiniProgress from './MiniProgress';
 import { MemberSparkline } from './ActivitySparkline';
-import { GRADIENTS, AVATAR_COLORS, DOMAIN_META, getInitials } from './constants';
+import { GRADIENTS, AVATAR_COLORS, getInitials } from './constants';
 import type { ContributionResponse } from '../../../types/contribution.types';
 
 interface MemberCardProps {
@@ -16,7 +16,6 @@ interface MemberCardProps {
 
 const MemberCard: React.FC<MemberCardProps> = ({ m, rank, projectId, contributionPercent, onClick }) => {
     const avatarColor = AVATAR_COLORS[(rank - 1) % AVATAR_COLORS.length];
-    const domain = DOMAIN_META[m.domain] || DOMAIN_META.UNKNOWN;
     const rankGradient = rank === 1 ? GRADIENTS.gold : rank === 2 ? GRADIENTS.silver : rank === 3 ? GRADIENTS.bronze : 'linear-gradient(135deg, #334155, #475569)';
     const rankGlow = rank === 1 ? 'rgba(245,158,11,0.5)' : rank === 2 ? 'rgba(192,192,192,0.4)' : rank === 3 ? 'rgba(205,127,50,0.4)' : 'none';
 
@@ -67,8 +66,37 @@ const MemberCard: React.FC<MemberCardProps> = ({ m, rank, projectId, contributio
                         sx={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.3, wordBreak: 'break-word' }}>
                         {m.fullName}
                     </Typography>
-                    <Chip label={domain.label} size="small"
-                        sx={{ height: 17, fontSize: '0.5rem', fontWeight: 700, mt: 0.3, bgcolor: 'rgba(99,102,241,0.15)', color: '#93C5FD', borderRadius: 1, border: '1px solid rgba(99,102,241,0.2)' }} />
+                    <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                        {m.role && m.role !== 'UNKNOWN' ? (
+                            <Box sx={{
+                                px: 1.2, py: 0.3, borderRadius: 1.2,
+                                display: 'flex', alignItems: 'center',
+                                background: m.role === 'FULLSTACK' ? 'rgba(236,72,153,0.2)' :
+                                            m.role === 'FRONTEND' ? 'rgba(56,189,248,0.2)' :
+                                            m.role === 'BACKEND' ? 'rgba(52,211,153,0.2)' :
+                                            'rgba(255,255,255,0.1)',
+                                border: '1px solid',
+                                borderColor: m.role === 'FULLSTACK' ? 'rgba(236,72,153,0.6)' :
+                                             m.role === 'FRONTEND' ? 'rgba(56,189,248,0.6)' :
+                                             m.role === 'BACKEND' ? 'rgba(52,211,153,0.6)' :
+                                             'rgba(255,255,255,0.3)'
+                            }}>
+                                <Typography fontSize="0.6rem" fontWeight={800} sx={{ 
+                                    letterSpacing: '0.04em',
+                                    color: m.role === 'FULLSTACK' ? '#F472B6' :
+                                           m.role === 'FRONTEND' ? '#67E8F9' :
+                                           m.role === 'BACKEND' ? '#6EE7B7' :
+                                           '#E2E8F0'
+                                }}>
+                                    {m.role}
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <Typography fontSize="0.65rem" color="rgba(148,163,184,0.8)">
+                                MEMBER
+                            </Typography>
+                        )}
+                    </Box>
                 </Box>
                 {/* Rank badge */}
                 <Box sx={{
@@ -85,14 +113,15 @@ const MemberCard: React.FC<MemberCardProps> = ({ m, rank, projectId, contributio
                 </Box>
             </Box>
 
-            {/* ── Body (simplified) ── */}
+            {/* ── Body ── */}
             <Box sx={{ p: 2 }}>
                 {/* Score + Progress Bars */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
                     <ScoreRing score={contributionPercent} size={64} thickness={4} />
                     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <MiniProgress label="GitHub Impact" value={m.githubImpactScore} color="#3B82F6" />
-                        <MiniProgress label="Jira Execution" value={m.jiraExecutionScore} color="#10B981" />
+                        <MiniProgress label="Code Score" value={m.codeScore} color="#3B82F6" />
+                        <MiniProgress label="Task Score" value={m.taskScore} color="#10B981" />
+                        <MiniProgress label="Consistency" value={m.consistencyScore} color="#F59E0B" />
                     </Box>
                 </Box>
 
@@ -100,7 +129,7 @@ const MemberCard: React.FC<MemberCardProps> = ({ m, rank, projectId, contributio
 
                 {/* Activity Sparkline */}
                 <Typography fontSize="0.6rem" fontWeight={700} color="text.secondary" sx={{ mb: 0.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Activity Trend</Typography>
-                <MemberSparkline userId={m.userId} projectId={projectId} />
+                <MemberSparkline userId={m.userId} projectId={projectId} activeDays={m.activeDays} />
             </Box>
         </Paper>
     );

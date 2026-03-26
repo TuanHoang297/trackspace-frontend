@@ -4,33 +4,27 @@ export interface ContributionResponse {
     userId: number;
     fullName: string;
     email: string;
+    role: string;
 
-    // GitHub Pillar (50%)
+    // Code Pillar (40%)
     totalCommits: number;
     linesAdded: number;
     linesDeleted: number;
     bugFixCommits: number;
-    githubImpactScore: number;
+    weightedLinesAdded: number;
+    codeScore: number;
 
-    // Consistency
+    // Consistency Pillar (20%)
     activeDays: number;
-    consistencyFactor: number;
+    consistencyScore: number;
 
-    // Jira Pillar (50%)
+    // Task Pillar (40%)
     tasksAssigned: number;
     tasksCompleted: number;
     tasksInProgress: number;
     taskCompletionRate: number;
-    /** Number of tasks past their due date and not yet completed */
     overdueTaskCount: number;
-    jiraExecutionScore: number;
-
-    // Code Churn
-    codeChurnRate: number;
-
-    // Domain
-    domain: 'FRONTEND' | 'BACKEND' | 'BOTH' | 'UNKNOWN';
-    smartCoderBonus: number;
+    taskScore: number;
 
     // Final
     contributionScore: number;

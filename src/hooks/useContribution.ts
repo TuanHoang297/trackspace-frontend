@@ -39,18 +39,18 @@ export default function useContribution(projectId: number) {
         retry: false,
     });
 
-    // ── Recalculate ──
+    // ── Recalculate (V2 — no domain weights) ──
     const recalculateMutation = useMutation({
-        mutationFn: async (feWeight: number) => {
-            await contributionService.recalculate(projectId, feWeight, 1 - feWeight);
+        mutationFn: async () => {
+            await contributionService.recalculate(projectId);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: contributionKeys.dashboard(projectId) });
         },
     });
 
-    const recalculate = useCallback(async (feWeight: number) => {
-        await recalculateMutation.mutateAsync(feWeight);
+    const recalculate = useCallback(async () => {
+        await recalculateMutation.mutateAsync();
     }, [recalculateMutation]);
 
     // ── Toggle expand ──

@@ -9,7 +9,6 @@ import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import DescriptionIcon from '@mui/icons-material/Description';
-import SettingsIcon from '@mui/icons-material/Settings';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -20,7 +19,6 @@ const NAV_ITEMS = [
     { icon: <GitHubIcon sx={{ fontSize: 19 }} />, label: 'GitHub', path: '/github' },
     { icon: <BarChartIcon sx={{ fontSize: 19 }} />, label: 'Contribution', path: '/contribution' },
     { icon: <DescriptionIcon sx={{ fontSize: 19 }} />, label: 'SRS Document', path: '/srs' },
-    { icon: <SettingsIcon sx={{ fontSize: 19 }} />, label: 'Cài đặt', path: '/settings' },
 ];
 
 const SIDEBAR_EXPANDED = 220;

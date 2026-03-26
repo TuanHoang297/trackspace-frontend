@@ -111,7 +111,7 @@ function buildDailyData(entries: { date: string; commitCount: number }[], numDay
 }
 
 /* Compact sparkline for member cards (60 days, no X axis) */
-export const MemberSparkline: React.FC<{ userId: number; projectId: number; color?: string }> = ({ userId, projectId, color }) => {
+export const MemberSparkline: React.FC<{ userId: number; projectId: number; color?: string; activeDays?: number }> = ({ userId, projectId, color, activeDays }) => {
     const { data, isLoading } = useHeatmap(userId, projectId, true);
 
     const dailyData = React.useMemo(
@@ -122,13 +122,13 @@ export const MemberSparkline: React.FC<{ userId: number; projectId: number; colo
     return (
         <ActivitySparkline
             data={dailyData} loading={isLoading} color={color}
-            totalCommits={data?.totalCommits} activeDays={data?.totalActiveDays}
+            totalCommits={data?.totalCommits} activeDays={activeDays ?? data?.totalActiveDays}
         />
     );
 };
 
 /* Larger sparkline for detail drawer (90 days, with X axis labels) */
-export const DetailSparkline: React.FC<{ userId: number; projectId: number; color?: string }> = ({ userId, projectId, color }) => {
+export const DetailSparkline: React.FC<{ userId: number; projectId: number; color?: string; activeDays?: number }> = ({ userId, projectId, color, activeDays }) => {
     const { data, isLoading } = useHeatmap(userId, projectId, true);
 
     const dailyData = React.useMemo(
@@ -139,7 +139,7 @@ export const DetailSparkline: React.FC<{ userId: number; projectId: number; colo
     return (
         <ActivitySparkline
             data={dailyData} loading={isLoading} color={color}
-            totalCommits={data?.totalCommits} activeDays={data?.totalActiveDays}
+            totalCommits={data?.totalCommits} activeDays={activeDays ?? data?.totalActiveDays}
             showXAxis height={150}
         />
     );

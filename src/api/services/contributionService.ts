@@ -21,10 +21,8 @@ const contributionService = {
     getDashboard: (projectId: number) =>
         axiosClient.get<ApiResponse<DashboardResponse>>(`${BASE}/dashboard/${projectId}`),
 
-    recalculate: (projectId: number, feWeight = 0.5, beWeight = 0.5) =>
-        axiosClient.post<ApiResponse<ContributionResponse[]>>(`${BASE}/recalculate/${projectId}`, null, {
-            params: { feWeight, beWeight },
-        }),
+    recalculate: (projectId: number) =>
+        axiosClient.post<ApiResponse<ContributionResponse[]>>(`${BASE}/recalculate/${projectId}`),
 
     getHeatmap: (userId: number, projectId: number) =>
         axiosClient.get<ApiResponse<HeatmapResponse>>(`${BASE}/heatmap/${userId}`, {
