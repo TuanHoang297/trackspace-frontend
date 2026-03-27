@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Editor } from '@tiptap/core';
+import { useEditorState } from '@tiptap/react';
 import { Box, IconButton, Tooltip, Divider, Select, MenuItem, type SelectChangeEvent } from '@mui/material';
 
 // ── MUI Icons ──────────────────────────────────────────────────────────────────
@@ -87,24 +88,132 @@ const miniSelectSx = {
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#3b82f6', borderWidth: 1.5 },
 };
 
+const DEFAULT_FONT_SIZE_PT = 11;
+const MIN_FONT_SIZE_PT = 8;
+const MAX_FONT_SIZE_PT = 72;
+const FONT_SIZE_PRESETS = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
+
+const parseFontSizePt = (raw?: string): number => {
+    if (!raw) return DEFAULT_FONT_SIZE_PT;
+    const match = raw.match(/([0-9]+(?:\.[0-9]+)?)/);
+    if (!match) return DEFAULT_FONT_SIZE_PT;
+    const value = Number(match[1]);
+    return Number.isFinite(value) ? Math.round(value) : DEFAULT_FONT_SIZE_PT;
+};
+
+const pxToPt = (px: number): number => Math.round((px * 72) / 96);
+
+const getCurrentFontSizePt = (ed: Editor): number => {
+    const inlineFontSize = ed.getAttributes('textStyle').fontSize as string | undefined;
+    if (inlineFontSize) {
+        return parseFontSizePt(inlineFontSize);
+    }
+
+    const { from } = ed.state.selection;
+    const domAtPos = ed.view.domAtPos(from);
+    const baseNode = domAtPos.node;
+    const element = (baseNode instanceof HTMLElement
+        ? baseNode
+        : baseNode.parentElement) as HTMLElement | null;
+
+    if (!element) return DEFAULT_FONT_SIZE_PT;
+
+    const computedPx = Number.parseFloat(window.getComputedStyle(element).fontSize);
+    if (!Number.isFinite(computedPx)) return DEFAULT_FONT_SIZE_PT;
+
+    return pxToPt(computedPx);
+};
+
 // ── Toolbar ────────────────────────────────────────────────────────────────────
 
 interface SrsEditorToolbarProps {
     editor: Editor;
+    historyLocked?: boolean;
     onImageInsert: () => void;
     onLinkInsert: () => void;
 }
 
-const SrsEditorToolbar: React.FC<SrsEditorToolbarProps> = ({ editor, onImageInsert, onLinkInsert }) => {
-    const currentHeading = [1, 2, 3, 4, 5].find(l => editor.isActive('heading', { level: l })) ?? 0;
+const SrsEditorToolbar: React.FC<SrsEditorToolbarProps> = ({ editor, historyLocked = false, onImageInsert, onLinkInsert }) => {
+    const editorState = useEditorState({
+        editor,
+        selector: ({ editor: ed }) => {
+            if (!ed) {
+                return {
+                    canUndo: false,
+                    canRedo: false,
+                    currentHeading: 0,
+                    currentFontSize: DEFAULT_FONT_SIZE_PT,
+                    isBold: false,
+                    isItalic: false,
+                    isUnderline: false,
+                    isStrike: false,
+                    alignLeft: false,
+                    alignCenter: false,
+                    alignRight: false,
+                    alignJustify: false,
+                    isBulletList: false,
+                    isOrderedList: false,
+                    textColor: '#000',
+                };
+            }
+
+            const inTable = ed.isActive('table');
+
+            const isLeft = ed.isActive({ textAlign: 'left' });
+            const isCenter = ed.isActive({ textAlign: 'center' });
+            const isRight = ed.isActive({ textAlign: 'right' });
+            const isJustify = ed.isActive({ textAlign: 'justify' });
+            const hasExplicitAlign = isLeft || isCenter || isRight || isJustify;
+
+            // In table cells, default visual state is Left unless user has explicitly chosen another alignment.
+            const alignLeft = inTable ? (!hasExplicitAlign || isLeft) : isLeft;
+            const alignCenter = isCenter;
+            const alignRight = isRight;
+            const alignJustify = isJustify;
+
+            return {
+                canUndo: ed.can().undo(),
+                canRedo: ed.can().redo(),
+                currentHeading: [1, 2, 3, 4, 5].find((l) => ed.isActive('heading', { level: l })) ?? 0,
+                currentFontSize: getCurrentFontSizePt(ed),
+                isBold: ed.isActive('bold'),
+                isItalic: ed.isActive('italic'),
+                isUnderline: ed.isActive('underline'),
+                isStrike: ed.isActive('strike'),
+                alignLeft,
+                alignCenter,
+                alignRight,
+                alignJustify,
+                isBulletList: ed.isActive('bulletList'),
+                isOrderedList: ed.isActive('orderedList'),
+                textColor: ed.getAttributes('textStyle').color || '#000',
+            };
+        },
+    });
+
+    const currentHeading = editorState.currentHeading;
+
+    const fontSizeOptions = React.useMemo(() => {
+        const set = new Set(FONT_SIZE_PRESETS);
+        set.add(editorState.currentFontSize);
+        return Array.from(set).sort((a, b) => a - b);
+    }, [editorState.currentFontSize]);
+
+    const applyFontSize = (sizePt: number) => {
+        const next = Math.max(MIN_FONT_SIZE_PT, Math.min(MAX_FONT_SIZE_PT, Math.round(sizePt)));
+        const applied = editor.chain().focus().setMark('textStyle', { fontSize: `${next}pt` }).run();
+        if (!applied) {
+            editor.commands.setMark('textStyle', { fontSize: `${next}pt` });
+        }
+    };
 
     return (
         <Box className="srs-custom-toolbar">
             {/* ── Undo / Redo ── */}
-            <TBtn tip="Undo (Ctrl+Z)" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
+            <TBtn tip="Undo (Ctrl+Z)" onClick={() => editor.chain().focus().undo().run()} disabled={historyLocked || !editorState.canUndo}>
                 <UndoRoundedIcon sx={iconSx} />
             </TBtn>
-            <TBtn tip="Redo (Ctrl+Y)" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
+            <TBtn tip="Redo (Ctrl+Y)" onClick={() => editor.chain().focus().redo().run()} disabled={historyLocked || !editorState.canRedo}>
                 <RedoRoundedIcon sx={iconSx} />
             </TBtn>
             <Sep />
@@ -134,19 +243,31 @@ const SrsEditorToolbar: React.FC<SrsEditorToolbarProps> = ({ editor, onImageInse
             >
                 {FONTS.map(f => <MenuItem key={f.value} value={f.value} sx={{ fontSize: '0.78rem', fontFamily: f.value }}>{f.label}</MenuItem>)}
             </Select>
+            <Select
+                size="small"
+                value={editorState.currentFontSize}
+                onChange={(e: SelectChangeEvent<number>) => applyFontSize(Number(e.target.value))}
+                sx={{ ...miniSelectSx, minWidth: 62 }}
+            >
+                {fontSizeOptions.map((size) => (
+                    <MenuItem key={size} value={size} sx={{ fontSize: '0.78rem' }}>
+                        {size}
+                    </MenuItem>
+                ))}
+            </Select>
             <Sep />
 
             {/* ── Text format ── */}
-            <TBtn tip="Bold (Ctrl+B)" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
+            <TBtn tip="Bold (Ctrl+B)" active={editorState.isBold} onClick={() => editor.chain().focus().toggleBold().run()}>
                 <FormatBoldRoundedIcon sx={iconSx} />
             </TBtn>
-            <TBtn tip="Italic (Ctrl+I)" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <TBtn tip="Italic (Ctrl+I)" active={editorState.isItalic} onClick={() => editor.chain().focus().toggleItalic().run()}>
                 <FormatItalicRoundedIcon sx={iconSx} />
             </TBtn>
-            <TBtn tip="Underline (Ctrl+U)" active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+            <TBtn tip="Underline (Ctrl+U)" active={editorState.isUnderline} onClick={() => editor.chain().focus().toggleUnderline().run()}>
                 <FormatUnderlinedRoundedIcon sx={iconSx} />
             </TBtn>
-            <TBtn tip="Strikethrough" active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>
+            <TBtn tip="Strikethrough" active={editorState.isStrike} onClick={() => editor.chain().focus().toggleStrike().run()}>
                 <StrikethroughSRoundedIcon sx={iconSx} />
             </TBtn>
             <Sep />
@@ -164,7 +285,7 @@ const SrsEditorToolbar: React.FC<SrsEditorToolbarProps> = ({ editor, onImageInse
                     />
                     <span style={{
                         position: 'absolute', bottom: 2, left: 6, right: 6, height: 3,
-                        background: editor.getAttributes('textStyle').color || '#000',
+                        background: editorState.textColor,
                         borderRadius: 1,
                     }} />
                 </label>
@@ -190,25 +311,25 @@ const SrsEditorToolbar: React.FC<SrsEditorToolbarProps> = ({ editor, onImageInse
             <Sep />
 
             {/* ── Alignment ── */}
-            <TBtn tip="Align Left" active={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+            <TBtn tip="Align Left" active={editorState.alignLeft} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
                 <FormatAlignLeftRoundedIcon sx={iconSx} />
             </TBtn>
-            <TBtn tip="Align Center" active={editor.isActive({ textAlign: 'center' })} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
+            <TBtn tip="Align Center" active={editorState.alignCenter} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
                 <FormatAlignCenterRoundedIcon sx={iconSx} />
             </TBtn>
-            <TBtn tip="Align Right" active={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()}>
+            <TBtn tip="Align Right" active={editorState.alignRight} onClick={() => editor.chain().focus().setTextAlign('right').run()}>
                 <FormatAlignRightRoundedIcon sx={iconSx} />
             </TBtn>
-            <TBtn tip="Justify" active={editor.isActive({ textAlign: 'justify' })} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
+            <TBtn tip="Justify" active={editorState.alignJustify} onClick={() => editor.chain().focus().setTextAlign('justify').run()}>
                 <FormatAlignJustifyRoundedIcon sx={iconSx} />
             </TBtn>
             <Sep />
 
             {/* ── Lists ── */}
-            <TBtn tip="Bullet list" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+            <TBtn tip="Bullet list" active={editorState.isBulletList} onClick={() => editor.chain().focus().toggleBulletList().run()}>
                 <FormatListBulletedRoundedIcon sx={iconSx} />
             </TBtn>
-            <TBtn tip="Numbered list" active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+            <TBtn tip="Numbered list" active={editorState.isOrderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
                 <FormatListNumberedRoundedIcon sx={iconSx} />
             </TBtn>
             <Sep />

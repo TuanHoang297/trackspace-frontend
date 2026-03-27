@@ -212,6 +212,12 @@
     position: relative;
     box-sizing: border-box;
 }
+.a4-pages-viewport .tiptap-editor .ProseMirror table th p,
+.a4-pages-viewport .tiptap-editor .ProseMirror table td p,
+.a4-pages-viewport .tiptap-editor .ProseMirror table th li,
+.a4-pages-viewport .tiptap-editor .ProseMirror table td li {
+    text-align: left;
+}
 .a4-pages-viewport .tiptap-editor .ProseMirror table th {
     background-color: #f5d5c8;
     font-weight: bold;

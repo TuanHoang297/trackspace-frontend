@@ -130,6 +130,7 @@ export function useSrsData() {
             if (activeSrs?.id) {
                 localStorage.removeItem(getDraftKey(activeSrs.id));
             }
+            editorRef.current?.lockUndoRedoUntilEdit();
             toast.success('Đã lưu SRS thành công!');
             queryClient.invalidateQueries({ queryKey: ['srs', 'latest', pid] });
             queryClient.invalidateQueries({ queryKey: ['srs', 'versions', pid] });
