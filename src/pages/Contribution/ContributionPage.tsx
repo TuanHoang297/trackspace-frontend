@@ -26,9 +26,10 @@ import useContribution from '../../hooks/useContribution';
 import { useRole } from '../../hooks/useRole';
 import { getUser } from '../../utils/auth';
 import projectService from '../../api/services/projectService';
-import axiosClient from '../../api/axiosClient';
+import groupService from '../../api/services/groupService';
 import { useQuery } from '@tanstack/react-query';
 import type { ContributionResponse } from '../../types/contribution.types';
+import type { GroupMemberResponse } from '../../types/group.types';
 
 import { GRADIENTS } from './components/constants';
 import MemberCard from './components/MemberCard';
@@ -87,20 +88,21 @@ const ContributionPage: React.FC = () => {
     const { isLecturer } = useRole();
     const currentUser = getUser();
 
-    // Fetch Project -> Group to check if current user is the Team Leader
-    const { data: groupInfo } = useQuery({
-        queryKey: ['groupInfo', pid],
+    // Resolve viewer permission inside this project group.
+    const { data: viewerMembership } = useQuery({
+        queryKey: ['contribution-viewer-membership', pid, currentUser?.userId],
         queryFn: async () => {
             const projRes = await projectService.getProjectById(pid);
-            const groupId = projRes.data.data.groupId;
-            const groupRes = await axiosClient.get(`/groups/${groupId}`);
-            return groupRes.data.data;
+            const project = projRes.data.data;
+            const membersRes = await groupService.getMembers(project.classId, project.groupId);
+            const members = membersRes.data.data as GroupMemberResponse[];
+            return members.find((m) => m.userId === currentUser?.userId) ?? null;
         },
-        enabled: !!pid,
+        enabled: !!pid && !!currentUser?.userId,
         staleTime: 60000,
     });
 
-    const isLeader = isLecturer() || (groupInfo?.teamLeaderId === currentUser?.userId);
+    const isLeader = isLecturer() || Boolean(viewerMembership?.isLeader);
 
     const [activeDomain, setActiveDomain] = useState<string>('ALL');
 

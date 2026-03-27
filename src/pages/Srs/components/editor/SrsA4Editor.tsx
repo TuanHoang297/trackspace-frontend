@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
+import FontSizeExtension from './FontSizeExtension';
 import FontFamily from '@tiptap/extension-font-family';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
@@ -56,6 +57,7 @@ interface SrsA4EditorProps {
 
 export interface SrsA4EditorHandle {
     getHTML: () => string;
+    lockUndoRedoUntilEdit: () => void;
     insertImageAfterPos: (pos: number, imageSrc: string) => void;
     fillNthTableAfterPos: (pos: number, n: number, tableHTML: string) => void;
     insertHTMLAfterPos: (pos: number, html: string) => void;
@@ -75,6 +77,7 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
     onAiActionRef.current = onAiAction;
     const skipRestoreRef = useRef(false);
     const [ctxMenu, setCtxMenu] = React.useState<{ x: number; y: number } | null>(null);
+    const [historyLocked, setHistoryLocked] = React.useState(false);
 
     // A key to detect real value changes (avoid re-setting same content)
     const contentKeyRef = useRef('');
@@ -90,6 +93,7 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
             Underline,
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             TextStyle,
+            FontSizeExtension,
             FontFamily,
             Color,
             Highlight.configure({ multicolor: true }),
@@ -104,6 +108,10 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
         content: '',
         editable: !readOnly,
         onUpdate: ({ editor: ed }) => {
+            if (historyLocked) {
+                setHistoryLocked(false);
+            }
+
             const html = ed.getHTML();
             // Update contentKeyRef so the content sync effect doesn't
             // re-run setContent() when parent state updates from this edit.
@@ -182,6 +190,13 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
     // ── Expose imperative methods ──────────────────────────────────────────────
     useImperativeHandle(ref, () => ({
         getHTML: () => editor?.getHTML() ?? '',
+
+        lockUndoRedoUntilEdit: () => {
+            if (!editor) return;
+            // Re-apply current document to reset history stacks after save.
+            editor.commands.setContent(editor.getHTML(), { emitUpdate: false });
+            setHistoryLocked(true);
+        },
 
         insertImageAfterPos: (pos: number, imageSrc: string) => {
             if (!editor) return;
@@ -390,6 +405,19 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
         setCtxMenu({ x: e.clientX, y: e.clientY });
     }, [readOnly]);
 
+    const handleKeyDownCapture = useCallback((e: React.KeyboardEvent) => {
+        if (!historyLocked) return;
+
+        const key = e.key.toLowerCase();
+        const isUndo = (e.ctrlKey || e.metaKey) && !e.shiftKey && key === 'z';
+        const isRedo = (e.ctrlKey || e.metaKey) && (key === 'y' || (e.shiftKey && key === 'z'));
+
+        if (isUndo || isRedo) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, [historyLocked]);
+
     const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !editor) return;
@@ -427,10 +455,11 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
     if (!editor) return null;
 
     return (
-        <div className="srs-editor-wrapper" onContextMenu={handleContextMenu}>
+        <div className="srs-editor-wrapper" onContextMenu={handleContextMenu} onKeyDownCapture={handleKeyDownCapture}>
             {!readOnly && (
                 <SrsEditorToolbar
                     editor={editor}
+                    historyLocked={historyLocked}
                     onImageInsert={() => imageInputRef.current?.click()}
                     onLinkInsert={handleSetLink}
                 />
@@ -452,6 +481,7 @@ const SrsA4Editor = forwardRef<SrsA4EditorHandle, SrsA4EditorProps>(({ value, on
                 <SrsEditorContextMenu
                     x={ctxMenu.x} y={ctxMenu.y}
                     editor={editor}
+                    historyLocked={historyLocked}
                     onClose={() => setCtxMenu(null)}
                     onImageInsert={() => { setCtxMenu(null); imageInputRef.current?.click(); }}
                     onLinkInsert={() => { setCtxMenu(null); handleSetLink(); }}

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Editor } from '@tiptap/core';
+import { useEditorState } from '@tiptap/react';
 
 // ── Context Menu Item ──────────────────────────────────────────────────────────
 
@@ -35,12 +36,22 @@ interface SrsEditorContextMenuProps {
     x: number;
     y: number;
     editor: Editor;
+    historyLocked?: boolean;
     onClose: () => void;
     onImageInsert: () => void;
     onLinkInsert: () => void;
 }
 
-const SrsEditorContextMenu: React.FC<SrsEditorContextMenuProps> = ({ x, y, editor, onClose, onImageInsert, onLinkInsert }) => {
+const SrsEditorContextMenu: React.FC<SrsEditorContextMenuProps> = ({ x, y, editor, historyLocked = false, onClose, onImageInsert, onLinkInsert }) => {
+    const editorState = useEditorState({
+        editor,
+        selector: ({ editor: ed }) => ({
+            canUndo: ed ? ed.can().undo() : false,
+            canRedo: ed ? ed.can().redo() : false,
+            hasSelection: ed ? !ed.state.selection.empty : false,
+        }),
+    });
+
     const style: React.CSSProperties = {
         position: 'fixed',
         top: y,
@@ -56,16 +67,15 @@ const SrsEditorContextMenu: React.FC<SrsEditorContextMenuProps> = ({ x, y, edito
         fontSize: 13,
     };
 
-    const hasSel = !editor.state.selection.empty;
     const canPaste = navigator.clipboard !== undefined;
 
     return (
         <div style={style} onMouseDown={(e) => e.stopPropagation()}>
-            <CtxItem disabled={!editor.can().undo()} onClick={() => { editor.chain().focus().undo().run(); onClose(); }}>↩ Hoàn tác</CtxItem>
-            <CtxItem disabled={!editor.can().redo()} onClick={() => { editor.chain().focus().redo().run(); onClose(); }}>↪ Làm lại</CtxItem>
+            <CtxItem disabled={historyLocked || !editorState.canUndo} onClick={() => { editor.chain().focus().undo().run(); onClose(); }}>↩ Hoàn tác</CtxItem>
+            <CtxItem disabled={historyLocked || !editorState.canRedo} onClick={() => { editor.chain().focus().redo().run(); onClose(); }}>↪ Làm lại</CtxItem>
             <CtxDiv />
-            <CtxItem disabled={!hasSel} onClick={() => { document.execCommand('cut'); onClose(); }}>✂ Cắt</CtxItem>
-            <CtxItem disabled={!hasSel} onClick={() => { document.execCommand('copy'); onClose(); }}>⎘ Sao chép</CtxItem>
+            <CtxItem disabled={!editorState.hasSelection} onClick={() => { document.execCommand('cut'); onClose(); }}>✂ Cắt</CtxItem>
+            <CtxItem disabled={!editorState.hasSelection} onClick={() => { document.execCommand('copy'); onClose(); }}>⎘ Sao chép</CtxItem>
             <CtxItem disabled={!canPaste} onClick={() => {
                 navigator.clipboard.readText().then(text => {
                     editor.chain().focus().insertContent(text).run();

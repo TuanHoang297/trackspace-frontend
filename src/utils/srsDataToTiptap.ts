@@ -78,7 +78,7 @@ export function srsDataToTiptapContent(data: SrsData): JSONContent {
     nodes.push({ type: 'heading', attrs: { level: 5, textAlign: 'center' }, content: [txt('Software Requirement Specification')] });
     // Push date to bottom of cover page with spacer lines
     for (let i = 0; i < 10; i++) nodes.push(p());
-    nodes.push(pCenter(data.locationDate || '– Hanoi, April 2021 –'));
+    nodes.push(pCenter(data.locationDate || '– Ho Chi Minh, April 2021 –'));
     nodes.push(hr()); // visual page break after cover
 
     // ─── I. OVERVIEW ────────────────────────────────────────────────────────────
