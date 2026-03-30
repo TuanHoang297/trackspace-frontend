@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box, Typography, Paper, Chip,
-    Button, Skeleton, Dialog, DialogContent, IconButton, Badge,
+    Button, Skeleton, Dialog, DialogContent, IconButton, Badge, Popover,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -119,7 +119,8 @@ const ContributionPage: React.FC = () => {
     }, [pid]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const [formulaOpen, setFormulaOpen] = useState(false);
-    const [showAlerts, setShowAlerts] = useState(false);
+    const [alertAnchor, setAlertAnchor] = useState<HTMLButtonElement | null>(null);
+    const showAlerts = Boolean(alertAnchor);
 
     // Drawer state
     const [selectedMember, setSelectedMember] = useState<ContributionResponse | null>(null);
@@ -273,7 +274,7 @@ const ContributionPage: React.FC = () => {
 
                 {anomalies.length > 0 && (
                     <Box sx={{ ml: 'auto' }}>
-                        <IconButton onClick={() => setShowAlerts(true)}
+                        <IconButton onClick={(e) => setAlertAnchor(e.currentTarget)}
                             sx={{ position: 'relative', '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' } }}>
                             <Badge badgeContent={anomalies.length}
                                 sx={{
@@ -430,9 +431,15 @@ const ContributionPage: React.FC = () => {
                 teamAverages={teamAverages}
             />
 
-            {/* ══════════ Issues Dialog ══════════ */}
-            <Dialog open={showAlerts} onClose={() => setShowAlerts(false)} maxWidth="sm" fullWidth
-                PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+            {/* ══════════ Issues Popover ══════════ */}
+            <Popover
+                open={showAlerts}
+                anchorEl={alertAnchor}
+                onClose={() => setAlertAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{ sx: { width: 460, maxWidth: '90vw', mt: 1, borderRadius: 3, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.05)' } }}
+            >
                 <Box sx={{
                     px: 3, py: 2,
                     background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
@@ -461,11 +468,11 @@ const ContributionPage: React.FC = () => {
                             Review team alerts and take action
                         </Typography>
                     </Box>
-                    <IconButton onClick={() => setShowAlerts(false)} sx={{ color: 'rgba(148,163,184,0.6)' }}>
+                    <IconButton onClick={() => setAlertAnchor(null)} sx={{ color: 'rgba(148,163,184,0.6)' }}>
                         <CloseIcon fontSize="small" />
                     </IconButton>
                 </Box>
-                <DialogContent sx={{ p: 0 }}>
+                <Box sx={{ p: 0, maxHeight: 400, overflowY: 'auto' }}>
                     {anomalies.map((a: string, i: number) => {
                         const isInactive = a.includes('INACTIVE');
                         const isLow = a.includes('LOW_CONTRIBUTION');
@@ -500,8 +507,8 @@ const ContributionPage: React.FC = () => {
                             </Box>
                         );
                     })}
-                </DialogContent>
-            </Dialog>
+                </Box>
+            </Popover>
 
             {/* ══════════ Formula Dialog ══════════ */}
             <Dialog open={formulaOpen} onClose={() => setFormulaOpen(false)}

@@ -35,6 +35,9 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
     const { isAdmin, isLecturer } = useRole();
     const readOnly = !isAdmin() && !isLecturer();
     const [creating, setCreating] = useState(false);
+    const [openCreateDialog, setOpenCreateDialog] = useState(false);
+    const [createCount, setCreateCount] = useState(1);
+    const [creatingProgress, setCreatingProgress] = useState({ current: 0, total: 0 });
 
     const [editTarget, setEditTarget] = useState<GroupResponse | null>(null);
     const [editName, setEditName] = useState('');
@@ -71,20 +74,41 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
 
 
 
-    const handleCreate = async () => {
-        const usedNums = new Set(groups.map(g => {
-            const match = g.groupName.match(/Nhóm\s*(\d+)/i);
-            return match ? parseInt(match[1], 10) : 0;
-        }).filter(n => n > 0));
-        let next = 1;
-        while (usedNums.has(next)) next++;
+    const handleCreateSubmit = async () => {
+        if (createCount < 1) return;
+        setCreating(true);
+        setCreatingProgress({ current: 0, total: createCount });
+        
         try {
-            setCreating(true);
-            await groupService.createGroup(classId, { groupName: `Nh\u00f3m ${next}`, description: '' });
-            toast.success(`T\u1ea1o Nh\u00f3m ${next} th\u00e0nh c\u00f4ng!`);
-            onRefresh();
-        } catch (err: any) { toast.error(err.response?.data?.message || 'T\u1ea1o nh\u00f3m th\u1ea5t b\u1ea1i'); }
-        finally { setCreating(false); }
+            const usedNums = new Set(groups.map(g => {
+                const match = g.groupName.match(/Nhóm\s*(\d+)/i);
+                return match ? parseInt(match[1], 10) : 0;
+            }).filter(n => n > 0));
+            
+            let next = 1;
+            let successCount = 0;
+            
+            for (let i = 0; i < createCount; i++) {
+                while (usedNums.has(next)) next++;
+                try {
+                    await groupService.createGroup(classId, { groupName: `Nhóm ${next}`, description: '' });
+                    usedNums.add(next);
+                    successCount++;
+                    setCreatingProgress({ current: i + 1, total: createCount });
+                } catch (err: any) {
+                    toast.error(`Lỗi khi tạo nhóm ${next}: ${err.response?.data?.message || 'Không xác định'}`);
+                }
+            }
+            if (successCount > 0) {
+                toast.success(`Đã tạo thành công ${successCount} nhóm!`);
+                onRefresh();
+            }
+        } finally {
+            setCreating(false);
+            setOpenCreateDialog(false);
+            setCreateCount(1);
+            setCreatingProgress({ current: 0, total: 0 });
+        }
     };
 
     const handleUpdate = async () => {
@@ -201,7 +225,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
         <>
             {!readOnly && (
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate} disabled={creating}
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenCreateDialog(true)} disabled={creating}
                         sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
                         {creating ? 'Đang tạo...' : 'Tạo nhóm'}
                     </Button>
@@ -769,6 +793,39 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
             </Dialog>
 
 
+            {/* Create Multi Group Dialog */}
+            <Dialog open={openCreateDialog} onClose={() => !creating && setOpenCreateDialog(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Tạo nhóm tự động</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 1 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            Nhập số lượng nhóm bạn muốn tạo. Tên nhóm sẽ được đặt tự động theo thứ tự tiếp theo (VD: Nhóm 1, Nhóm 2...).
+                        </Typography>
+                        <TextField
+                            label="Số lượng nhóm cần tạo"
+                            type="number"
+                            fullWidth
+                            value={createCount}
+                            onChange={(e) => setCreateCount(Math.max(1, parseInt(e.target.value) || 1))}
+                            disabled={creating}
+                            InputProps={{ inputProps: { min: 1, max: 20 } }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                        />
+                        {creating && creatingProgress.total > 0 && (
+                            <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 1, textAlign: 'center', fontWeight: 600 }}>
+                                Đang tạo {creatingProgress.current}/{creatingProgress.total} nhóm...
+                            </Typography>
+                        )}
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button onClick={() => setOpenCreateDialog(false)} disabled={creating} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
+                    <Button variant="contained" onClick={handleCreateSubmit} disabled={creating || createCount < 1}
+                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
+                        {creating ? 'Đang tạo...' : 'Tạo nhanh'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 };

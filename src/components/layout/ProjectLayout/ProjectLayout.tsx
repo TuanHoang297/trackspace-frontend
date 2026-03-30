@@ -135,8 +135,7 @@ const ProjectLayout: React.FC = () => {
                         slotProps={{ paper: { sx: { width: 220, mt: 1, borderRadius: 3, boxShadow: '0 10px 40px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' } } }}
                     >
                         <Box sx={{ px: 2, py: 1.5 }}>
-                            <Typography variant="body2" fontWeight={700}>{currentUser?.fullName}</Typography>
-                            <Typography variant="caption" color="text.secondary">{currentUser?.email}</Typography>
+                            <Typography variant="body2" color="text.secondary">{currentUser?.email}</Typography>
                         </Box>
                         <Divider sx={{ my: 0.5 }} />
                         <MenuItem onClick={() => { setAnchorEl(null); logout(); }} sx={{ borderRadius: 2, mx: 1 }}>
