@@ -130,11 +130,12 @@
 /* ========================================================
    HEADING STYLES
 ======================================================== */
-/* H1: Cover page project title — red, large */
+/* H1: Cover page project title — red, large, uppercase */
 .a4-pages-viewport .tiptap-editor .ProseMirror h1 {
     font-size: 28pt !important;
     font-weight: bold !important;
     text-align: center !important;
+    text-transform: uppercase !important;
     margin-top: 20px;
     margin-bottom: 8px;
     color: #c00000 !important;

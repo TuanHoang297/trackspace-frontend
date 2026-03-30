@@ -73,12 +73,13 @@ export function srsDataToTiptapContent(data: SrsData): JSONContent {
     // ─── COVER PAGE ─────────────────────────────────────────────────────────────
     nodes.push(p());
     nodes.push({ type: 'image', attrs: { src: fptLogo, alt: 'FPT University Logo', width: '200px', align: 'center' } });
-    nodes.push(p());
+    // Spacers between logo and title — push title to vertical center
+    for (let i = 0; i < 7; i++) nodes.push(p());
     nodes.push({ type: 'heading', attrs: { level: 1, textAlign: 'center' }, content: [txt(data.projectName || '<<PROJECT NAME>>')] });
     nodes.push({ type: 'heading', attrs: { level: 5, textAlign: 'center' }, content: [txt('Software Requirement Specification')] });
-    // Push date to bottom of cover page with spacer lines
-    for (let i = 0; i < 10; i++) nodes.push(p());
-    nodes.push(pCenter(data.locationDate || '– Ho Chi Minh, April 2021 –'));
+    // Spacers after subtitle — push date to bottom of page
+    for (let i = 0; i < 17; i++) nodes.push(p());
+    nodes.push({ type: 'paragraph', attrs: { textAlign: 'center' }, content: [{ type: 'text', text: safe(data.locationDate) || '– Ho Chi Minh, March 2026 –', marks: [{ type: 'textStyle', attrs: { fontSize: '14pt' } }] }] });
     nodes.push(hr()); // visual page break after cover
 
     // ─── I. OVERVIEW ────────────────────────────────────────────────────────────

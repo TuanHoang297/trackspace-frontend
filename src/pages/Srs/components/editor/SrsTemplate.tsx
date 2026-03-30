@@ -64,7 +64,10 @@ export const SrsTemplate: React.FC<SrsTemplateProps> = ({ srsData }) => {
             <h2 className="srs-subtitle">Software Requirement Specification</h2>
         </div>
 
-        <p style={{ marginTop: 'auto', textAlign: 'center', width: '100%' }}>{srsData.locationDate || '– Ho Chi Minh, Mar 2026 –'}</p>
+        <div style={{ height: '80px' }} /> {/* Extra 4 lines spacer (approx 20px per line) */}
+        <p style={{ marginTop: 'auto', textAlign: 'center', width: '100%', fontSize: '14pt' }}>
+            {srsData.locationDate || '– Ho Chi Minh, March 2026 –'}
+        </p>
       </header>
 
       {/* --- I. OVERVIEW --- */}

@@ -167,6 +167,23 @@ export function useSrsData() {
         toast.success('Đã reload dữ liệu SRS mới nhất');
     };
 
+    const deleteMutation = useMutation({
+        mutationFn: (srsId: number) => srsService.deleteSrsVersion(pid, srsId),
+        onSuccess: () => {
+            toast.success('Đã xóa phiên bản SRS');
+            setSelectedVersionId('');
+            queryClient.invalidateQueries({ queryKey: ['srs', 'versions', pid] });
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message || 'Lỗi khi xóa SRS version');
+        }
+    });
+
+    const handleDeleteVersion = (srsId: number) => {
+        if (!window.confirm('Bạn có chắc muốn xóa phiên bản SRS này?')) return;
+        deleteMutation.mutate(srsId);
+    };
+
     return {
         pid,
         editorRef,
@@ -185,6 +202,7 @@ export function useSrsData() {
         handleGenerate,
         handleSave,
         handleReload,
+        handleDeleteVersion,
         persistDraftNow,
         // Supplement form
         supplementInfo,

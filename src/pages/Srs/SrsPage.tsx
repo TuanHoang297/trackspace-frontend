@@ -452,6 +452,7 @@ const SrsPage: React.FC = () => {
                 isUpdating={srsData.updateMutation.isPending}
                 onGenerate={srsData.handleGenerate}
                 onSave={srsData.handleSave}
+                onDeleteVersion={srsData.handleDeleteVersion}
                 onExportDocx={() => handleExport()}
             />
 

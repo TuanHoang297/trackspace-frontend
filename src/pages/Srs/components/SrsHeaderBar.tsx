@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SaveIcon from '@mui/icons-material/Save';
-
+import CloseIcon from '@mui/icons-material/Close';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import type { SrsDocumentResponse } from '../../../types/srs.types';
@@ -24,14 +24,14 @@ interface SrsHeaderBarProps {
     isUpdating: boolean;
     onGenerate: () => void;
     onSave: () => void;
-
+    onDeleteVersion: (srsId: number) => void;
     onExportDocx: () => void;
 }
 
 const SrsHeaderBar: React.FC<SrsHeaderBarProps> = ({
     activeSrs, latestSrs, versions, selectedVersionId, setSelectedVersionId,
     isLatest, readOnly, showSupplement, setShowSupplement,
-    isGenerating, isUpdating, onGenerate, onSave, onExportDocx,
+    isGenerating, isUpdating, onGenerate, onSave, onDeleteVersion, onExportDocx,
 }) => {
 
 
@@ -66,7 +66,34 @@ const SrsHeaderBar: React.FC<SrsHeaderBarProps> = ({
                         >
                             <MenuItem value="">Mới nhất (v{latestSrs.versionNumber})</MenuItem>
                             {versions.filter(v => v.id !== latestSrs.id).map(v => (
-                                <MenuItem key={v.id} value={v.id}>Version {v.versionNumber}</MenuItem>
+                                <MenuItem
+                                    key={v.id}
+                                    value={v.id}
+                                    sx={{
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        '& .delete-btn': { visibility: 'hidden' },
+                                        '&:hover .delete-btn': { visibility: 'visible' },
+                                    }}
+                                >
+                                    <span>Version {v.versionNumber}</span>
+                                    <Tooltip title="Xóa version này" arrow>
+                                        <IconButton
+                                            className="delete-btn"
+                                            size="small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteVersion(v.id);
+                                            }}
+                                            sx={{
+                                                ml: 1, p: 0.3,
+                                                color: '#94A3B8',
+                                                '&:hover': { color: '#EF4444', bgcolor: '#FEF2F2' },
+                                            }}
+                                        >
+                                            <CloseIcon sx={{ fontSize: 14 }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                </MenuItem>
                             ))}
                         </Select>
                     </FormControl>

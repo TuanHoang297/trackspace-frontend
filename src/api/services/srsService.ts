@@ -56,6 +56,10 @@ const srsService = {
     // Export DOCX
     exportDocx: (srsId: number) =>
         axiosClient.get(`/srs/${srsId}/export?format=docx`, { responseType: 'blob' }),
+
+    // Delete SRS version
+    deleteSrsVersion: (projectId: number, srsId: number) =>
+        axiosClient.delete(`/projects/${projectId}/srs/${srsId}`),
 };
 
 export default srsService;
