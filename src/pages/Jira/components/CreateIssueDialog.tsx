@@ -9,7 +9,6 @@ import type { JiraSprintResponse } from '../../../types/jira.types';
 import jiraService from '../../../api/services/jiraService';
 import { toast } from 'react-toastify';
 
-const ISSUE_TYPES = ['TASK', 'STORY', 'BUG', 'EPIC', 'SUBTASK'];
 const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 
 interface Props {
