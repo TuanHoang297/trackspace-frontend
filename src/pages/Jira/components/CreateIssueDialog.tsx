@@ -9,7 +9,7 @@ import type { JiraSprintResponse } from '../../../types/jira.types';
 import jiraService from '../../../api/services/jiraService';
 import { toast } from 'react-toastify';
 
-const ISSUE_TYPES = ['TASK', 'STORY', 'BUG', 'EPIC', 'SUBTASK'];
+
 const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 
 interface Props {
@@ -87,23 +87,14 @@ const CreateIssueDialog: React.FC<Props> = ({
             </DialogTitle>
 
             <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-                {/* Issue Type + Priority */}
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <TextField
-                        select label="Loại Issue" fullWidth size="small"
-                        value={form.issueType || 'TASK'}
-                        onChange={e => handleChange('issueType', e.target.value)}
-                    >
-                        {ISSUE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-                    </TextField>
-                    <TextField
-                        select label="Mức ưu tiên" fullWidth size="small"
-                        value={form.priority || 'Medium'}
-                        onChange={e => handleChange('priority', e.target.value)}
-                    >
-                        {PRIORITIES.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
-                    </TextField>
-                </Box>
+                {/* Priority */}
+                <TextField
+                    select label="Mức ưu tiên" fullWidth size="small"
+                    value={form.priority || 'Medium'}
+                    onChange={e => handleChange('priority', e.target.value)}
+                >
+                    {PRIORITIES.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
+                </TextField>
 
                 {/* Summary */}
                 <TextField
