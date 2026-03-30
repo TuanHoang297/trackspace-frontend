@@ -27,6 +27,9 @@ const classService = {
     deleteClass: (classId: number) =>
         axiosClient.delete<ApiResponse<void>>(`/classes/${classId}`),
 
+    restoreClass: (classId: number) =>
+        axiosClient.put<ApiResponse<void>>(`/classes/${classId}/restore`),
+
     assignLecturer: (classId: number, lecturerId: number) =>
         axiosClient.put<ApiResponse<ClassResponse>>(`/classes/${classId}/lecturer`, { lecturerId }),
 

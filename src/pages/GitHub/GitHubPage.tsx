@@ -30,6 +30,8 @@ import type {
 } from '../../types/github.types';
 import { useRole } from '../../hooks/useRole';
 import { useSyncHeartbeat } from '../../hooks/useSyncHeartbeat';
+import { getUser } from '../../utils/auth';
+import studentService from '../../api/services/studentService';
 
 import AuthorCard from './components/AuthorCard';
 
@@ -46,9 +48,25 @@ const GitHubPage: React.FC = () => {
     const pid = Number(projectId);
     const queryClient = useQueryClient();
     const navigate = useNavigate();
-    const { isReadOnly } = useRole();
+    const { isReadOnly, role } = useRole();
     const readOnly = isReadOnly();
     useSyncHeartbeat(pid);
+
+    const currentUser = getUser();
+    const isStudent = currentUser?.role === 'STUDENT';
+
+    // Fetch workspaces to determine leader status
+    const { data: workspaces } = useQuery({
+        queryKey: ['student', 'workspaces'],
+        queryFn: async () => {
+            const res = await studentService.getMyWorkspaces();
+            return res.data.data;
+        },
+        enabled: isStudent,
+    });
+
+    const isLeader = isStudent && workspaces?.find(w => w.projectId === pid)?.isLeader === true;
+    const canManageConnection = isLeader || role === 'ADMIN';
 
     // Access guard — redirect on 403 / 404
     const { data: accessProject, error: projectError } = useQuery({
@@ -137,8 +155,8 @@ const GitHubPage: React.FC = () => {
         setSelectedRepo(t);
         const c = getConn(t);
         if (c) { setView('detail'); setSearchParams({ repo: t }, { replace: true }); fetchData(c.connectionId); }
-        else if (!readOnly) { setUrl(''); setToken(''); setView('connect'); }
-        else { toast.info('Sinh viên cần kết nối repo này để theo dõi commits.'); }
+        else if (canManageConnection) { setUrl(''); setToken(''); setView('connect'); }
+        else { toast.info('Chỉ Team Leader mới có thể kết nối GitHub.'); }
     };
     const handleBack = () => { authorFilterApplied.current = false; setView('overview'); setSelectedRepo(null); setTab(0); setBranchFilter('all'); setAuthorFilter('all'); setSearchParams({}, { replace: true }); };
     const handleConnect = async () => {
@@ -376,9 +394,11 @@ const GitHubPage: React.FC = () => {
                             <Box sx={{ display: 'flex', gap: 1 }}>
                                 <Button size="small" variant="contained" disabled={syncing} startIcon={syncing ? <CircularProgress size={14} color="inherit" /> : <SyncIcon />} onClick={handleSync}
                                     sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, bgcolor: '#238636', '&:hover': { bgcolor: '#2EA043' } }}>{syncing ? 'Syncing...' : 'Sync'}</Button>
-                                <Tooltip title="Ngắt kết nối GitHub">
-                                    <IconButton onClick={() => setDisconnectOpen(true)} color="error" size="small" sx={{ bgcolor: 'action.hover', borderRadius: 2 }}><LinkOffIcon fontSize="small" /></IconButton>
-                                </Tooltip>
+                                {canManageConnection && (
+                                    <Tooltip title="Ngắt kết nối GitHub">
+                                        <IconButton onClick={() => setDisconnectOpen(true)} color="error" size="small" sx={{ bgcolor: 'action.hover', borderRadius: 2 }}><LinkOffIcon fontSize="small" /></IconButton>
+                                    </Tooltip>
+                                )}
                             </Box>
                         )}
                     </Box>

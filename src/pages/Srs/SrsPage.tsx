@@ -6,6 +6,9 @@ import axiosClient from '../../api/axiosClient';
 import { useRole } from '../../hooks/useRole';
 import { useSrsData } from './hooks/useSrsData';
 import { useSrsAiProgress } from './hooks/useSrsAiProgress';
+import { getUser } from '../../utils/auth';
+import studentService from '../../api/services/studentService';
+import { useQuery } from '@tanstack/react-query';
 import {
     buildUseCaseTable, buildScreenDetailsTable, buildAuthorizationTable,
     buildDbSchemaTable, uploadFileAndGetUrl, buildFunctionalRequirementsHTML, normalizeFunctionalRequirements
@@ -175,12 +178,26 @@ const extractMockupFields = (raw: string): { trigger: string; description: strin
 
 const SrsPage: React.FC = () => {
     const { isLecturer } = useRole();
-    const readOnly = isLecturer();
     const [showSupplement, setShowSupplement] = useState(false);
-
 
     const srsData = useSrsData();
     const { aiProgress, aiStage, aiElapsed } = useSrsAiProgress(srsData.generateMutation.isPending);
+
+    const currentUser = getUser();
+    const isStudent = currentUser?.role === 'STUDENT';
+
+    const { data: workspaces } = useQuery({
+        queryKey: ['student', 'workspaces'],
+        queryFn: async () => {
+            const res = await studentService.getMyWorkspaces();
+            return res.data.data;
+        },
+        enabled: isStudent,
+    });
+
+    const isLeader = isStudent && workspaces?.find(w => w.projectId === srsData.pid)?.isLeader === true;
+    const isMember = isStudent && !isLeader;
+    const readOnly = isLecturer() || isMember;
 
     const uploadImageToCloudinary = async (file: File): Promise<string> => {
         const uploadRes = await srsService.uploadImage(file);

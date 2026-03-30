@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RestoreIcon from '@mui/icons-material/Restore';
 import SearchIcon from '@mui/icons-material/Search';
 import PeopleIcon from '@mui/icons-material/People';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -189,11 +190,19 @@ const ClassManagement: React.FC = () => {
                     <ListItemText primary="Chỉnh sửa lớp" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
                 </MenuItem>
                 <Divider sx={{ my: 0.5 }} />
-                <MenuItem onClick={() => { if (h.menuClass) h.setDeleteTarget(h.menuClass); h.handleMenuClose(); }}
-                    sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5, color: '#DC2626', '&:hover': { bgcolor: '#FEF2F2' } }}>
-                    <ListItemIcon><DeleteIcon fontSize="small" sx={{ color: '#DC2626' }} /></ListItemIcon>
-                    <ListItemText primary="Xóa lớp" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
-                </MenuItem>
+                {h.menuClass?.active ? (
+                    <MenuItem onClick={() => { if (h.menuClass) h.setDeleteTarget(h.menuClass); h.handleMenuClose(); }}
+                        sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5, color: '#DC2626', '&:hover': { bgcolor: '#FEF2F2' } }}>
+                        <ListItemIcon><DeleteIcon fontSize="small" sx={{ color: '#DC2626' }} /></ListItemIcon>
+                        <ListItemText primary="Xóa lớp" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
+                    </MenuItem>
+                ) : (
+                    <MenuItem onClick={() => { if (h.menuClass) h.setRestoreTarget(h.menuClass); h.handleMenuClose(); }}
+                        sx={{ py: 1.2, borderRadius: 1.5, mx: 0.5, color: '#10B981', '&:hover': { bgcolor: '#F0FDF4' } }}>
+                        <ListItemIcon><RestoreIcon fontSize="small" sx={{ color: '#10B981' }} /></ListItemIcon>
+                        <ListItemText primary="Khôi phục lớp" primaryTypographyProps={{ fontSize: '0.88rem', fontWeight: 500 }} />
+                    </MenuItem>
+                )}
             </Menu>
 
             {/* Dialogs */}
@@ -202,9 +211,14 @@ const ClassManagement: React.FC = () => {
             <ManageStudentsDialog target={h.studentTarget} allUsers={h.allUsers} onClose={() => h.setStudentTarget(null)} onRefresh={h.fetchData} />
 
             <ConfirmDialog open={!!h.deleteTarget} title="Xác nhận xóa"
-                message={<>Bạn có chắc chắn muốn xóa lớp <strong>{h.deleteTarget?.subjectName ?? h.deleteTarget?.classCode} ({h.deleteTarget?.classCode})</strong>?</>}
+                message={<>Bạn có chắc chắn muốn xóa lớp <strong>{h.deleteTarget?.subjectName ?? h.deleteTarget?.classCode} ({h.deleteTarget?.classCode})</strong>? <br /><br />Hành động này sẽ ẩn lớp và tất cả các mục liên quan khỏi hệ thống.</>}
                 severity="error" confirmLabel="Xóa lớp" loading={h.deleting}
                 onConfirm={h.handleDelete} onCancel={() => h.setDeleteTarget(null)} />
+
+            <ConfirmDialog open={!!h.restoreTarget} title="Xác nhận khôi phục"
+                message={<>Bạn có chắc chắn muốn khôi phục lớp <strong>{h.restoreTarget?.subjectName ?? h.restoreTarget?.classCode} ({h.restoreTarget?.classCode})</strong>? <br /><br />Hành động này sẽ hiển thị lại lớp và tất cả dự án, nhóm liên quan.</>}
+                severity="info" confirmLabel="Khôi phục" loading={h.restoring}
+                onConfirm={h.handleRestore} onCancel={() => h.setRestoreTarget(null)} />
         </Box>
     );
 };

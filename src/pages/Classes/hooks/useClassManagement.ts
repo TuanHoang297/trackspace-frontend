@@ -20,7 +20,9 @@ export function useClassManagement() {
     const [assignTarget, setAssignTarget] = useState<ClassResponse | null>(null);
     const [studentTarget, setStudentTarget] = useState<ClassResponse | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<ClassResponse | null>(null);
+    const [restoreTarget, setRestoreTarget] = useState<ClassResponse | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [restoring, setRestoring] = useState(false);
 
     // Actions Menu
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -112,6 +114,21 @@ export function useClassManagement() {
         } finally { setDeleting(false); }
     };
 
+    const handleRestore = async () => {
+        if (!restoreTarget) return;
+        try {
+            setRestoring(true);
+            await classService.restoreClass(restoreTarget.id);
+            toast.success(`Đã khôi phục lớp ${restoreTarget.classCode}`);
+            setRestoreTarget(null);
+            invalidate();
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { message?: string } } })
+                .response?.data?.message || 'Khôi phục lớp thất bại';
+            toast.error(message);
+        } finally { setRestoring(false); }
+    };
+
     const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, cls: ClassResponse) => {
         setMenuAnchor(e.currentTarget); setMenuClass(cls);
     };
@@ -127,6 +144,7 @@ export function useClassManagement() {
         assignTarget, setAssignTarget, handleAssign,
         studentTarget, setStudentTarget,
         deleteTarget, setDeleteTarget, deleting, handleDelete,
+        restoreTarget, setRestoreTarget, restoring, handleRestore,
         menuAnchor, menuClass, handleMenuOpen, handleMenuClose,
         fetchData: invalidate,
     };

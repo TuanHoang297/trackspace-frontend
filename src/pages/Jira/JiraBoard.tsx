@@ -146,6 +146,7 @@ const JiraBoard: React.FC = () => {
     const [createDefaultSprintId, setCreateDefaultSprintId] = useState<number | null>(null);
     const [detailIssue, setDetailIssue] = useState<JiraIssueResponse | null>(null);
     const [filterAssigneeId, setFilterAssigneeId] = useState<number | 'unassigned' | ''>('');
+    const [filterStatus, setFilterStatus] = useState<string>('');
     const [members, setMembers] = useState<Array<{ userId: number; fullName: string }>>([]);
 
     // Sprint CRUD state
@@ -275,10 +276,15 @@ const JiraBoard: React.FC = () => {
 
     // Filter issues by assignee
     const filteredIssues = useMemo(() => {
-        if (filterAssigneeId === '') return issues;
-        if (filterAssigneeId === 'unassigned') return issues.filter(i => !i.assigneeId);
-        return issues.filter(i => i.assigneeId === filterAssigneeId);
-    }, [issues, filterAssigneeId]);
+        let result = issues;
+        if (filterAssigneeId !== '') {
+            result = result.filter(i => filterAssigneeId === 'unassigned' ? !i.assigneeId : i.assigneeId === filterAssigneeId);
+        }
+        if (filterStatus !== '') {
+            result = result.filter(i => i.status === filterStatus);
+        }
+        return result;
+    }, [issues, filterAssigneeId, filterStatus]);
 
     // Sort: ACTIVE → CLOSED → FUTURE, then by sprintId ascending
     const sprintColumns = useMemo(() => {
@@ -413,6 +419,35 @@ const JiraBoard: React.FC = () => {
                         {members.map(m => (
                             <MenuItem key={m.userId} value={m.userId}>{m.fullName}</MenuItem>
                         ))}
+                    </TextField>
+
+                    {/* Status Filter */}
+                    <TextField
+                        select size="small"
+                        value={filterStatus}
+                        onChange={e => setFilterStatus(e.target.value)}
+                        sx={{ minWidth: 160, '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.85rem' } }}
+                        InputProps={{ startAdornment: <FilterListIcon sx={{ fontSize: 18, mr: 0.5, color: 'text.secondary' }} /> }}
+                    >
+                        <MenuItem value="">Tất cả trạng thái</MenuItem>
+                        <MenuItem value="To Do">
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#42526E' }} />
+                                To Do
+                            </Box>
+                        </MenuItem>
+                        <MenuItem value="In Progress">
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#0052CC' }} />
+                                In Progress
+                            </Box>
+                        </MenuItem>
+                        <MenuItem value="Done">
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#00875A' }} />
+                                Done
+                            </Box>
+                        </MenuItem>
                     </TextField>
 
                     {/* Create Actions */}
