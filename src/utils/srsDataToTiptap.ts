@@ -15,9 +15,7 @@ function p(text?: any): JSONContent {
 function pBlue(text: any): JSONContent {
     return { type: 'paragraph', content: [blueTxt(text)] };
 }
-function pCenter(text: any): JSONContent {
-    return { type: 'paragraph', attrs: { textAlign: 'center' }, content: [txt(text)] };
-}
+
 function h(level: 1 | 2 | 3 | 4 | 5 | 6, text: any): JSONContent {
     return { type: 'heading', attrs: { level }, content: [txt(text)] };
 }
