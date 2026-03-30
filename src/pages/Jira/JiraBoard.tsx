@@ -436,22 +436,26 @@ const JiraBoard: React.FC = () => {
 
                     {/* Sync */}
                     <Tooltip title="Đồng bộ dữ liệu từ Jira">
-                        <IconButton
-                            onClick={() => refresh()}
-                            disabled={syncing}
-                            sx={{ bgcolor: 'action.hover', borderRadius: 2 }}
-                        >
-                            <SyncIcon sx={{ fontSize: 20, animation: syncing ? 'spin 1s linear infinite' : 'none', '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } } }} />
-                        </IconButton>
+                        <span>
+                            <IconButton
+                                onClick={() => refresh()}
+                                disabled={syncing}
+                                sx={{ bgcolor: 'action.hover', borderRadius: 2 }}
+                            >
+                                <SyncIcon sx={{ fontSize: 20, animation: syncing ? 'spin 1s linear infinite' : 'none', '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } } }} />
+                            </IconButton>
+                        </span>
                     </Tooltip>
 
                     {/* Disconnect */}
                     {canManageConnection && (
                         <Tooltip title="Ngắt kết nối Jira">
-                            <IconButton onClick={() => setDisconnectOpen(true)} color="error"
-                                sx={{ bgcolor: 'action.hover', borderRadius: 2 }}>
-                                <LinkOffIcon />
-                            </IconButton>
+                            <span>
+                                <IconButton onClick={() => setDisconnectOpen(true)} color="error"
+                                    sx={{ bgcolor: 'action.hover', borderRadius: 2 }}>
+                                    <LinkOffIcon />
+                                </IconButton>
+                            </span>
                         </Tooltip>
                     )}
                 </Box>

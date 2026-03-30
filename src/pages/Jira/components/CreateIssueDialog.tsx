@@ -43,6 +43,8 @@ const CreateIssueDialog: React.FC<Props> = ({
     }, [open, defaultSprintId]);
 
     const handleChange = (field: keyof JiraIssueRequest, value: unknown) => {
+        // Không cho phép thay đổi issueType
+        if (field === 'issueType') return;
         setForm(prev => ({ ...prev, [field]: value }));
     };
 
@@ -55,7 +57,7 @@ const CreateIssueDialog: React.FC<Props> = ({
             setLoading(true);
             await jiraService.createIssue({
                 projectId,
-                issueType: form.issueType || 'TASK',
+                issueType: 'TASK', // Luôn là TASK
                 summary: form.summary!,
                 description: form.description,
                 priority: form.priority,
@@ -82,20 +84,21 @@ const CreateIssueDialog: React.FC<Props> = ({
     return (
         <Dialog open={open} onClose={handleReset} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-                <Typography variant="h6" fontWeight={700}>Tạo Issue Mới</Typography>
+                <Typography variant="h6" component="div" fontWeight={700}>Tạo Issue Mới</Typography>
                 <IconButton onClick={handleReset} size="small"><CloseIcon /></IconButton>
             </DialogTitle>
 
             <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-                {/* Issue Type + Priority */}
+                {/* Issue Type (TASK cố định) + Priority */}
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <TextField
-                        select label="Loại Issue" fullWidth size="small"
-                        value={form.issueType || 'TASK'}
-                        onChange={e => handleChange('issueType', e.target.value)}
-                    >
-                        {ISSUE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-                    </TextField>
+                        label="Loại Issue"
+                        fullWidth
+                        size="small"
+                        value="TASK"
+                        InputProps={{ readOnly: true }}
+                        helperText="Chỉ cho phép tạo TASK"
+                    />
                     <TextField
                         select label="Mức ưu tiên" fullWidth size="small"
                         value={form.priority || 'Medium'}

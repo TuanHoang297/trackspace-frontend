@@ -64,7 +64,6 @@ const IssueDetailDialog: React.FC<Props> = ({
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('');
     const [dueDate, setDueDate] = useState('');
-    const [editIssueType, setEditIssueType] = useState('');
     const [localStatus, setLocalStatus] = useState('');
 
     const [jiraUsers, setJiraUsers] = useState<JiraUser[]>([]);
@@ -86,7 +85,7 @@ const IssueDetailDialog: React.FC<Props> = ({
         try {
             await jiraService.updateIssue(issue.issueId, {
                 projectId: issue.projectId,
-                issueType: (fields.issueType as string) || editIssueType || issue.issueType,
+                issueType: issue.issueType, // Không cho đổi loại issue
                 summary: ((fields.summary as string) || summary).trim(),
                 description: (((fields.description as string) ?? description).trim()) || undefined,
                 priority: (fields.priority as string) || priority || undefined,
@@ -96,7 +95,7 @@ const IssueDetailDialog: React.FC<Props> = ({
             onRefreshOnly?.();
         } catch { toast.error('Không thể cập nhật issue'); }
         finally { setSaving(false); }
-    }, [issue, editIssueType, summary, description, priority, dueDate, canEdit, showSaved, onRefreshOnly]);
+    }, [issue, summary, description, priority, dueDate, canEdit, showSaved, onRefreshOnly]);
 
     useEffect(() => {
         if (issue) {
@@ -104,7 +103,6 @@ const IssueDetailDialog: React.FC<Props> = ({
             setDescription(issue.description || '');
             setPriority(issue.priority || 'Medium');
             setDueDate(issue.dueDate?.slice(0, 10) || '');
-            setEditIssueType(issue.issueType || 'TASK');
             setSelectedAccountId(issue.jiraAccountId || '');
             setLocalStatus(issue.status || 'To Do');
             setSaved(false);
@@ -190,31 +188,15 @@ const IssueDetailDialog: React.FC<Props> = ({
     const handleDescBlur = () => { if (description !== (issue.description || '')) autoSave({ description }); };
     const handlePriorityChange = (val: string) => { setPriority(val); autoSave({ priority: val }); };
     const handleDueDateChange = (val: string) => { setDueDate(val); autoSave({ dueDate: val }); };
-    const handleTypeChange = (val: string) => { setEditIssueType(val); autoSave({ issueType: val }); };
 
     return (
         <>
             <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
                 <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', pb: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {canEdit ? (
-                            <TextField select size="small" value={editIssueType}
-                                onChange={e => handleTypeChange(e.target.value)}
-                                sx={{ minWidth: 100, '& .MuiSelect-select': { fontWeight: 600, fontSize: '0.8rem' } }}>
-                                {['TASK', 'STORY', 'BUG', 'EPIC', 'SUBTASK'].map(t => (
-                                    <MenuItem key={t} value={t}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                            {TYPE_ICONS[t] || TYPE_ICONS.TASK}
-                                            <span>{t}</span>
-                                        </Box>
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        ) : (
-                            <>{typeIcon}</>
-                        )}
+                        <>{typeIcon}</>
                         <Typography variant="caption" fontWeight={700} color="text.secondary">{issue.issueKey}</Typography>
-                        {!canEdit && <Chip label={issue.issueType} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }} />}
+                        <Chip label={issue.issueType} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }} />
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {saving && <CircularProgress size={16} sx={{ color: '#3B82F6' }} />}
