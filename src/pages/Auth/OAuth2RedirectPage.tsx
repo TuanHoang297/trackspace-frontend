@@ -24,7 +24,13 @@ const OAuth2RedirectPage: React.FC = () => {
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            localStorage.setItem('user', JSON.stringify(data.data));
+            localStorage.setItem('user', JSON.stringify({
+              userId: data.data.id || data.data.userId,
+              email: data.data.email,
+              fullName: data.data.fullName,
+              role: data.data.role,
+              githubLogin: data.data.githubLogin,
+            }));
 
             // Redirect based on role
             switch (data.data.role) {

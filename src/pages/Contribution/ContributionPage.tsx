@@ -550,7 +550,7 @@ const ContributionPage: React.FC = () => {
                                 'Số dòng code × trọng số file',
                                 'Logic (.java, .ts) → ×1.0',
                                 'UI (.css, .html) → ×0.5',
-                                'Config (.json, .yml) → ×0.1',
+                                'Config (.json, .yml) → ×0.0',
                                 'Tính % dựa trên người code nhiều nhất',
                             ].map((item, i) => (
                                 <Box key={i} sx={{ display: 'flex', gap: 1, mb: 0.8, alignItems: 'flex-start' }}>
@@ -570,9 +570,8 @@ const ContributionPage: React.FC = () => {
                                 <Chip label="40%" size="small" sx={{ ml: 'auto', bgcolor: 'rgba(16,185,129,0.1)', color: '#059669', fontWeight: 800, fontSize: '0.75rem', height: 24, borderRadius: 2 }} />
                             </Box>
                             {[
-                                '% task hoàn thành (Done / Tổng giao)',
-                                'Task quá hạn (Overdue) bị trừ 50% giá trị',
-                                'Hoàn thành 100% đúng hạn → điểm tối đa',
+                                'Tính % dựa trên người hoàn thành nhiều task nhất',
+                                'Task quá hạn (Overdue) bị trừ điểm',
                             ].map((item, i) => (
                                 <Box key={i} sx={{ display: 'flex', gap: 1, mb: 0.8, alignItems: 'flex-start' }}>
                                     <Box sx={{ mt: '3px', width: 14, height: 14, borderRadius: '50%', bgcolor: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
