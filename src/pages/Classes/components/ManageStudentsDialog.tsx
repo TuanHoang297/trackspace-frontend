@@ -173,17 +173,27 @@ const ManageStudentsDialog: React.FC<Props> = ({ target, allUsers, onClose, onRe
         const ids = Array.from(selectedEnrolledIds);
         setProcessing(true); 
         setProgress(0);
-        let ok = 0, fail = 0;
+        let ok = 0;
+        const errors: string[] = [];
         for (let i = 0; i < ids.length; i++) {
             try { 
                 await classService.removeStudent(target.id, ids[i]); 
                 ok++; 
             }
-            catch { fail++; }
+            catch (err: unknown) {
+                const message = (err as { response?: { data?: { message?: string } } })
+                    .response?.data?.message;
+                if (message) {
+                    errors.push(message);
+                } else {
+                    const student = students.find(s => s.studentId === ids[i]);
+                    errors.push(`Xóa ${student?.fullName || 'sinh viên'} thất bại`);
+                }
+            }
             setProgress(Math.round(((i + 1) / ids.length) * 100));
         }
         if (ok > 0) toast.success(`Đã xóa ${ok} sinh viên khỏi lớp!`);
-        if (fail > 0) toast.error(`${fail} sinh viên xóa thất bại`);
+        errors.forEach(msg => toast.error(msg));
         
         setSelectedEnrolledIds(new Set());
         setConfirmBulkRemove(false);

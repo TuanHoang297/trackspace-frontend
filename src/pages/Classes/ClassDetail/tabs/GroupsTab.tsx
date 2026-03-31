@@ -59,6 +59,8 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
     const [newProjName, setNewProjName] = useState('');
     const [creatingProj, setCreatingProj] = useState(false);
     const [projStep, setProjStep] = useState(0);
+    const [confirmDeleteProj, setConfirmDeleteProj] = useState(false);
+    const [deletingProj, setDeletingProj] = useState(false);
 
     // Project Info fields
 
@@ -216,6 +218,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
             setCreateProjGroup(null);
             setNewProjName('');
             resetProjInfo();
+            setConfirmDeleteProj(false);
             onRefresh();
         } catch (err: any) { toast.error(err.response?.data?.message || 'Thao tác thất bại'); }
         finally { setCreatingProj(false); }
@@ -539,7 +542,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                                     size="small" variant="outlined"
                                                     onClick={() => { setCreateProjGroup(viewGroup); setNewProjName(proj.projectName); }}
                                                     sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}>
-                                                    Đổi tên
+                                                    Cập nhật
                                                 </Button>
                                             )}
                                             <Button
@@ -717,7 +720,7 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                     return (
                         <>
                             <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-                                {isRename ? `Đổi tên Project — ${createProjGroup?.groupName}` : `Tạo Project cho ${createProjGroup?.groupName}`}
+                                {isRename ? `Cập nhật Project — ${createProjGroup?.groupName}` : `Tạo Project cho ${createProjGroup?.groupName}`}
                             </DialogTitle>
                             <DialogContent>
                                 {!isRename && (
@@ -762,30 +765,73 @@ const GroupsTab: React.FC<Props> = ({ classId, groups, projects, students, onRef
                                     </Box>
                                 )}
                             </DialogContent>
-                            <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                                <Button onClick={() => { setCreateProjGroup(null); resetProjInfo(); }} sx={{ textTransform: 'none', borderRadius: 2 }}>Hủy</Button>
-                                {!isRename && projStep === 1 && (
-                                    <Button onClick={() => setProjStep(0)} sx={{ textTransform: 'none', borderRadius: 2 }}>Quay lại</Button>
-                                )}
-                                {isRename ? (
-                                    <Button variant="contained" onClick={handleCreateProject}
-                                        disabled={creatingProj || !newProjName.trim()}
-                                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
-                                        {creatingProj ? 'Đang lưu...' : 'Lưu'}
-                                    </Button>
-                                ) : projStep === 0 ? (
-                                    <Button variant="contained" onClick={() => setProjStep(1)}
-                                        disabled={!newProjName.trim()}
-                                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
-                                        Tiếp theo
-                                    </Button>
-                                ) : (
-                                    <Button variant="contained" onClick={handleCreateProject}
-                                        disabled={creatingProj}
-                                        sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
-                                        {creatingProj ? 'Đang tạo...' : 'Tạo Project'}
-                                    </Button>
-                                )}
+                            <DialogActions sx={{ px: 3, pb: 2.5, justifyContent: 'space-between' }}>
+                                <Box>
+                                    {isRename && !confirmDeleteProj && (
+                                        <Button
+                                            color="error" variant="outlined"
+                                            onClick={() => setConfirmDeleteProj(true)}
+                                            disabled={deletingProj}
+                                            sx={{ textTransform: 'none', borderRadius: 2 }}>
+                                            Xóa Project
+                                        </Button>
+                                    )}
+                                    {isRename && confirmDeleteProj && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Typography variant="body2" color="error" fontWeight={600}>Xác nhận xóa?</Typography>
+                                            <Button
+                                                color="error" variant="contained" size="small"
+                                                disabled={deletingProj}
+                                                onClick={async () => {
+                                                    try {
+                                                        setDeletingProj(true);
+                                                        await projectService.deleteProject(isRename.id);
+                                                        toast.success('Đã xóa project thành công!');
+                                                        setCreateProjGroup(null);
+                                                        resetProjInfo();
+                                                        setConfirmDeleteProj(false);
+                                                        onRefresh();
+                                                    } catch (err: any) {
+                                                        toast.error(err.response?.data?.message || 'Xóa project thất bại');
+                                                    } finally {
+                                                        setDeletingProj(false);
+                                                    }
+                                                }}
+                                                sx={{ textTransform: 'none', borderRadius: 2, minWidth: 60 }}>
+                                                {deletingProj ? 'Đang xóa...' : 'Xóa'}
+                                            </Button>
+                                            <Button size="small" onClick={() => setConfirmDeleteProj(false)}
+                                                sx={{ textTransform: 'none', borderRadius: 2, minWidth: 50 }}>
+                                                Hủy
+                                            </Button>
+                                        </Box>
+                                    )}
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Button onClick={() => { setCreateProjGroup(null); resetProjInfo(); setConfirmDeleteProj(false); }} sx={{ textTransform: 'none', borderRadius: 2 }}>Đóng</Button>
+                                    {!isRename && projStep === 1 && (
+                                        <Button onClick={() => setProjStep(0)} sx={{ textTransform: 'none', borderRadius: 2 }}>Quay lại</Button>
+                                    )}
+                                    {isRename ? (
+                                        <Button variant="contained" onClick={handleCreateProject}
+                                            disabled={creatingProj || !newProjName.trim() || confirmDeleteProj}
+                                            sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
+                                            {creatingProj ? 'Đang lưu...' : 'Lưu'}
+                                        </Button>
+                                    ) : projStep === 0 ? (
+                                        <Button variant="contained" onClick={() => setProjStep(1)}
+                                            disabled={!newProjName.trim()}
+                                            sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
+                                            Tiếp theo
+                                        </Button>
+                                    ) : (
+                                        <Button variant="contained" onClick={handleCreateProject}
+                                            disabled={creatingProj}
+                                            sx={{ textTransform: 'none', borderRadius: 2, px: 3 }}>
+                                            {creatingProj ? 'Đang tạo...' : 'Tạo Project'}
+                                        </Button>
+                                    )}
+                                </Box>
                             </DialogActions>
                         </>
                     );
