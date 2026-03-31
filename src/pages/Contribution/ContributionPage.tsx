@@ -21,12 +21,15 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import LayersIcon from '@mui/icons-material/Layers';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
+import BarChartIcon from '@mui/icons-material/BarChart';
 
 import useContribution from '../../hooks/useContribution';
 import { useRole } from '../../hooks/useRole';
 import { getUser } from '../../utils/auth';
 import projectService from '../../api/services/projectService';
 import groupService from '../../api/services/groupService';
+import githubService from '../../api/services/githubService';
+import jiraService from '../../api/services/jiraService';
 import { useQuery } from '@tanstack/react-query';
 import type { ContributionResponse } from '../../types/contribution.types';
 import type { GroupMemberResponse } from '../../types/group.types';
@@ -113,10 +116,33 @@ const ContributionPage: React.FC = () => {
         else if (status === 404) navigate('/forbidden', { replace: true, state: { type: 'not_found' } });
     }, [error, pid, navigate]);
 
+    // Check pre-requisites
+    const { data: githubConns = [], isLoading: loadingGithub } = useQuery({
+        queryKey: ['github', 'connections', pid],
+        queryFn: async () => {
+            try { const r = await githubService.getConnections(pid); return r.data.data || []; }
+            catch { return []; }
+        },
+        enabled: !!pid,
+    });
+
+    const { data: jiraConfig = null, isLoading: loadingJira } = useQuery({
+        queryKey: ['jira', 'config', pid],
+        queryFn: async () => {
+            try { const r = await jiraService.getStatus(pid); return r.data.data; }
+            catch { return null; }
+        },
+        enabled: !!pid,
+    });
+
+    const hasGithub = githubConns.filter((c: any) => c.connectionStatus === 'CONNECTED').length > 0;
+    const hasJira = !!jiraConfig && jiraConfig.connectionStatus === 'CONNECTED';
+    const isReady = hasGithub && hasJira;
+
     // Auto-recalculate on page load
     useEffect(() => {
-        if (pid && !recalculating) recalculate();
-    }, [pid]); // eslint-disable-line react-hooks/exhaustive-deps
+        if (pid && !recalculating && isReady) recalculate();
+    }, [pid, isReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const [formulaOpen, setFormulaOpen] = useState(false);
     const [alertAnchor, setAlertAnchor] = useState<HTMLButtonElement | null>(null);
@@ -176,7 +202,7 @@ const ContributionPage: React.FC = () => {
     };
 
     /* ─── Loading ─── */
-    if (loading && !dashboard) {
+    if ((loading || loadingGithub || loadingJira) && !dashboard) {
         return (
             <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
                 <Skeleton variant="rounded" height={100} sx={{ mb: 3, borderRadius: 3 }} />
@@ -190,13 +216,15 @@ const ContributionPage: React.FC = () => {
         );
     }
 
+
+
     if (!dashboard) {
         return (
             <Box sx={{ p: 6, textAlign: 'center' }}>
                 <Typography fontSize="3rem" sx={{ mb: 2 }}>📊</Typography>
                 <Typography fontWeight={700} fontSize="1.1rem" sx={{ mb: 0.5 }}>No contribution data yet</Typography>
                 <Typography fontSize="0.85rem" color="text.secondary">
-                    Connect GitHub & Jira to get started. Data will be calculated automatically.
+                    Hệ thống đang thu thập dữ liệu từ GitHub & Jira. Quá trình này có thể tốn vài phút...
                 </Typography>
             </Box>
         );
@@ -243,7 +271,40 @@ const ContributionPage: React.FC = () => {
                 </Box>
             </Paper>
 
+            {!isReady ? (
+                <Box sx={{ textAlign: 'center', maxWidth: 680, mx: 'auto', mt: { xs: 4, md: 8 } }}>
+                    <Box sx={{ 
+                        width: 72, height: 72, borderRadius: '50%', bgcolor: '#EFF6FF', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 
+                    }}>
+                        <BarChartIcon sx={{ fontSize: 36, color: '#3B82F6' }} />
+                    </Box>
+                    <Typography fontWeight={800} fontSize="1.45rem" sx={{ mb: 1, color: '#1E293B' }}>
+                        Chưa đủ điều kiện thống kê
+                    </Typography>
+                    <Typography fontSize="0.9rem" color="text.secondary" sx={{ mb: 5, lineHeight: 1.6, px: { xs: 2, md: 6 } }}>
+                        Hệ thống yêu cầu <strong>số liệu thực tế</strong> từ mã nguồn (GitHub) và quản lý tiến độ (Jira) để có thể thống kê chính xác mức độ đóng góp của các thành viên.
+                    </Typography>
 
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2.5 }}>
+                        <Paper elevation={0} sx={{ p: 3.5, borderRadius: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', border: hasGithub ? '1.5px solid #10B981' : '1.5px dashed #CBD5E1', bgcolor: hasGithub ? '#ECFDF5' : '#fff' }}>
+                            <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: hasGithub ? '#D1FAE5' : '#F8FAFC', color: hasGithub ? '#059669' : '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                                <GitHubIcon sx={{ fontSize: 24 }} />
+                            </Box>
+                            <Typography fontWeight={700} color={hasGithub ? '#059669' : '#1E293B'} sx={{ mb: 1.5 }}>GitHub Repository</Typography>
+                            <Chip label={hasGithub ? "Đã kết nối" : "Chưa kết nối"} size="small" sx={{ bgcolor: hasGithub ? '#10B981' : '#F1F5F9', color: hasGithub ? '#fff' : '#64748B', fontWeight: 700 }} />
+                        </Paper>
+                        <Paper elevation={0} sx={{ p: 3.5, borderRadius: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', border: hasJira ? '1.5px solid #10B981' : '1.5px dashed #CBD5E1', bgcolor: hasJira ? '#ECFDF5' : '#fff' }}>
+                            <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: hasJira ? '#D1FAE5' : '#F8FAFC', color: hasJira ? '#059669' : '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                                <TaskAltIcon sx={{ fontSize: 24 }} />
+                            </Box>
+                            <Typography fontWeight={700} color={hasJira ? '#059669' : '#1E293B'} sx={{ mb: 1.5 }}>Jira Project</Typography>
+                            <Chip label={hasJira ? "Đã kết nối" : "Chưa kết nối"} size="small" sx={{ bgcolor: hasJira ? '#10B981' : '#F1F5F9', color: hasJira ? '#fff' : '#64748B', fontWeight: 700 }} />
+                        </Paper>
+                    </Box>
+                </Box>
+            ) : (
+                <>
 
             {/* ══════════ Summary Stats (Animated) ══════════ */}
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
@@ -407,17 +468,7 @@ const ContributionPage: React.FC = () => {
                 </>
             )}
 
-            {members.length === 0 && (
-                <Paper elevation={0} sx={{
-                    p: 6, textAlign: 'center', borderRadius: 4,
-                    border: '2px dashed', borderColor: 'divider',
-                }}>
-                    <Typography fontSize="2.5rem" sx={{ mb: 1.5 }}>📊</Typography>
-                    <Typography fontWeight={700}>No contribution data yet</Typography>
-                    <Typography fontSize="0.85rem" color="text.secondary">
-                        Connect GitHub & Jira, then click Recalculate.
-                    </Typography>
-                </Paper>
+            </>
             )}
 
             {/* ══════════ Member Detail Drawer ══════════ */}

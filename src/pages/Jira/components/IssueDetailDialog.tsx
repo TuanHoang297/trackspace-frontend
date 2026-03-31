@@ -86,6 +86,7 @@ const IssueDetailDialog: React.FC<Props> = ({
         try {
             await jiraService.updateIssue(issue.issueId, {
                 projectId: issue.projectId,
+                sprintId: issue.sprintId ?? undefined,
                 issueType: (fields.issueType as string) || issue.issueType,
                 summary: ((fields.summary as string) || summary).trim(),
                 description: (((fields.description as string) ?? description).trim()) || undefined,

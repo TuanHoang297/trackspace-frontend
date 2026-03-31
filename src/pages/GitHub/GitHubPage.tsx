@@ -156,7 +156,6 @@ const GitHubPage: React.FC = () => {
         const c = getConn(t);
         if (c) { setView('detail'); setSearchParams({ repo: t }, { replace: true }); fetchData(c.connectionId); }
         else if (canManageConnection) { setUrl(''); setToken(''); setView('connect'); }
-        else { toast.info('Chỉ Team Leader mới có thể kết nối GitHub.'); }
     };
     const handleBack = () => { authorFilterApplied.current = false; setView('overview'); setSelectedRepo(null); setTab(0); setBranchFilter('all'); setAuthorFilter('all'); setSearchParams({}, { replace: true }); };
     const handleConnect = async () => {
@@ -278,13 +277,16 @@ const GitHubPage: React.FC = () => {
                         const c = getConn(type);
                         const connected = !!c;
                         const rcfg = REPO_CFG[type];
+                        const disabled = !connected && !canManageConnection;
                         return (
-                            <Box key={type} onClick={() => handleCardClick(type)} sx={{
-                                borderRadius: 4, cursor: 'pointer', bgcolor: '#fff',
+                            <Box key={type} onClick={() => { if (!disabled) handleCardClick(type); }} sx={{
+                                borderRadius: 4, cursor: disabled ? 'default' : 'pointer', bgcolor: '#fff',
                                 border: connected ? `1.5px solid ${rcfg.color}30` : '1.5px dashed #CBD5E1',
                                 boxShadow: connected ? `0 4px 20px ${rcfg.color}15` : '0 2px 8px rgba(0,0,0,0.05)',
                                 overflow: 'hidden', transition: 'all 0.22s ease',
-                                '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 12px 36px ${rcfg.color}22`, borderColor: rcfg.color },
+                                opacity: disabled ? 0.65 : 1,
+                                filter: disabled ? 'grayscale(80%)' : 'none',
+                                '&:hover': disabled ? {} : { transform: 'translateY(-4px)', boxShadow: `0 12px 36px ${rcfg.color}22`, borderColor: rcfg.color },
                             }}>
                                 <Box sx={{ height: 5, background: connected ? `linear-gradient(90deg, ${rcfg.color}, ${rcfg.color}80)` : '#E2E8F0' }} />
                                 <Box sx={{ p: 3 }}>
@@ -329,7 +331,11 @@ const GitHubPage: React.FC = () => {
                                     ) : (
                                         <Box sx={{ textAlign: 'center', py: 2.5, border: '1px dashed #E2E8F0', borderRadius: 2 }}>
                                             <Typography variant="body2" color="text.disabled" sx={{ mb: 0.5 }}>Chưa có repository nào được kết nối</Typography>
-                                            <Typography variant="caption" fontWeight={700} color={rcfg.color}>+ Kết nối ngay →</Typography>
+                                            {canManageConnection ? (
+                                                <Typography variant="caption" fontWeight={700} color={rcfg.color}>+ Kết nối ngay →</Typography>
+                                            ) : (
+                                                <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>Chỉ Team Leader mới có quyền kết nối</Typography>
+                                            )}
                                         </Box>
                                     )}
                                 </Box>

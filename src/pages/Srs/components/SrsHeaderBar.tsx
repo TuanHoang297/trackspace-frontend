@@ -76,23 +76,25 @@ const SrsHeaderBar: React.FC<SrsHeaderBarProps> = ({
                                     }}
                                 >
                                     <span>Version {v.versionNumber}</span>
-                                    <Tooltip title="Xóa version này" arrow>
-                                        <IconButton
-                                            className="delete-btn"
-                                            size="small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onDeleteVersion(v.id);
-                                            }}
-                                            sx={{
-                                                ml: 1, p: 0.3,
-                                                color: '#94A3B8',
-                                                '&:hover': { color: '#EF4444', bgcolor: '#FEF2F2' },
-                                            }}
-                                        >
-                                            <CloseIcon sx={{ fontSize: 14 }} />
-                                        </IconButton>
-                                    </Tooltip>
+                                    {!readOnly && (
+                                        <Tooltip title="Xóa version này" arrow>
+                                            <IconButton
+                                                className="delete-btn"
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDeleteVersion(v.id);
+                                                }}
+                                                sx={{
+                                                    ml: 1, p: 0.3,
+                                                    color: '#94A3B8',
+                                                    '&:hover': { color: '#EF4444', bgcolor: '#FEF2F2' },
+                                                }}
+                                            >
+                                                <CloseIcon sx={{ fontSize: 14 }} />
+                                            </IconButton>
+                                        </Tooltip>
+                                    )}
                                 </MenuItem>
                             ))}
                         </Select>
