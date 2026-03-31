@@ -252,9 +252,9 @@ const MemberDashboardView: React.FC<MemberDashboardViewProps> = ({
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2.5, xl: 3 }, flex: 1, position: 'relative' }}>
                                 <ScoreRing score={contributionPercent} size={76} thickness={6} />
                                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0, justifyContent: 'center' }}>
-                                    <MiniProgress label="Code Score" value={member.codeScore} color="#3B82F6" />
-                                    <MiniProgress label="Task Score" value={member.taskScore} color="#10B981" />
-                                    <MiniProgress label="Consistency" value={member.consistencyScore} color="#F59E0B" />
+                                    <MiniProgress label="40% Code" value={member.codeScore} color="#3B82F6" />
+                                    <MiniProgress label="40% Task" value={member.taskScore} color="#10B981" />
+                                    <MiniProgress label="20% Consistency" value={member.consistencyScore} color="#F59E0B" />
                                 </Box>
                             </Box>
                         </Paper>

@@ -593,7 +593,7 @@ const ContributionPage: React.FC = () => {
                 <DialogContent sx={{ p: 3.5, bgcolor: '#F8FAFC' }}>
                     <Typography fontSize="0.75rem" fontWeight={800} color="text.secondary"
                         sx={{ mb: 2, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                        3 tiêu chí đánh giá (V2)
+                        3 tiêu chí đánh giá
                     </Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5, mb: 3 }}>
                         {/* Code Score */}
@@ -605,11 +605,8 @@ const ContributionPage: React.FC = () => {
                                 <Chip label="40%" size="small" sx={{ ml: 'auto', bgcolor: 'rgba(59,130,246,0.1)', color: '#2563EB', fontWeight: 800, fontSize: '0.75rem', height: 24, borderRadius: 2 }} />
                             </Box>
                             {[
-                                'Số dòng code × trọng số file',
-                                'Logic (.java, .ts) → ×1.0',
-                                'UI (.css, .html) → ×0.5',
-                                'Config (.json, .yml) → ×0.0',
-                                'Tính % dựa trên người code nhiều nhất',
+                                'Tính dòng code logic (.java, .ts, .tsx, .js)',
+                                'Bỏ qua file UI (.css, .html), config (.json, .yml)',
                             ].map((item, i) => (
                                 <Box key={i} sx={{ display: 'flex', gap: 1, mb: 0.8, alignItems: 'flex-start' }}>
                                     <Box sx={{ mt: '3px', width: 14, height: 14, borderRadius: '50%', bgcolor: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -628,7 +625,7 @@ const ContributionPage: React.FC = () => {
                                 <Chip label="40%" size="small" sx={{ ml: 'auto', bgcolor: 'rgba(16,185,129,0.1)', color: '#059669', fontWeight: 800, fontSize: '0.75rem', height: 24, borderRadius: 2 }} />
                             </Box>
                             {[
-                                'Tính % dựa trên người hoàn thành nhiều task nhất',
+                                'Dựa trên số task hoàn thành (Done)',
                                 'Task quá hạn (Overdue) bị trừ điểm',
                             ].map((item, i) => (
                                 <Box key={i} sx={{ display: 'flex', gap: 1, mb: 0.8, alignItems: 'flex-start' }}>
@@ -648,8 +645,7 @@ const ContributionPage: React.FC = () => {
                                 <Chip label="20%" size="small" sx={{ ml: 'auto', bgcolor: 'rgba(245,158,11,0.1)', color: '#D97706', fontWeight: 800, fontSize: '0.75rem', height: 24, borderRadius: 2 }} />
                             </Box>
                             {[
-                                'Số ngày hoạt động (có commit hoặc update task)',
-                                'Kỳ vọng tối thiểu: 3 ngày/tuần',
+                                'Số ngày khác nhau có commit code',
                                 'Hoạt động đều đặn → điểm cao',
                             ].map((item, i) => (
                                 <Box key={i} sx={{ display: 'flex', gap: 1, mb: 0.8, alignItems: 'flex-start' }}>
@@ -667,7 +663,7 @@ const ContributionPage: React.FC = () => {
                             Quy trình tổng hợp điểm cuối cùng
                         </Typography>
                         {[
-                            { step: '1', text: 'Tính GitHub Score, Jira Score, Consistency Score cho từng thành viên', color: '#60A5FA' },
+                            { step: '1', text: 'Mỗi tiêu chí: người cao nhất trong nhóm = 100%, còn lại tính theo tỷ lệ', color: '#60A5FA' },
                             { step: '2', text: 'Điểm Cá Nhân = GitHub × 40% + Jira × 40% + Consistency × 20%', color: '#A78BFA' },
                             { step: '3', text: '% Đóng góp = (Điểm Cá Nhân ÷ Tổng điểm cả nhóm) × 100', color: '#34D399' },
                         ].map((s) => (

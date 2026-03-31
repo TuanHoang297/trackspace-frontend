@@ -119,9 +119,9 @@ const MemberCard: React.FC<MemberCardProps> = ({ m, rank, projectId, contributio
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
                     <ScoreRing score={contributionPercent} size={64} thickness={4} />
                     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <MiniProgress label="Code Score" value={m.codeScore} color="#3B82F6" />
-                        <MiniProgress label="Task Score" value={m.taskScore} color="#10B981" />
-                        <MiniProgress label="Consistency" value={m.consistencyScore} color="#F59E0B" />
+                        <MiniProgress label="40% Code" value={m.codeScore} color="#3B82F6" />
+                        <MiniProgress label="40% Task" value={m.taskScore} color="#10B981" />
+                        <MiniProgress label="20% Consistency" value={m.consistencyScore} color="#F59E0B" />
                     </Box>
                 </Box>
 

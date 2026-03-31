@@ -13,8 +13,8 @@ const MiniProgress: React.FC<MiniProgressProps> = ({ label, value, color }) => {
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography fontSize="0.85rem" color="text.secondary" fontWeight={600}>{label}</Typography>
-                <Typography fontSize="0.85rem" fontWeight={800} sx={{ color, fontFamily: "'Inter', sans-serif" }}>
+                <Typography fontSize="0.75rem" color="text.secondary" fontWeight={600} sx={{ whiteSpace: 'nowrap' }}>{label}</Typography>
+                <Typography fontSize="0.75rem" fontWeight={800} sx={{ color, fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', ml: 0.5 }}>
                     {Math.round(safeValue)}
                 </Typography>
             </Box>

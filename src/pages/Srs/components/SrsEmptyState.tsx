@@ -79,7 +79,7 @@ const SrsEmptyState: React.FC<SrsEmptyStateProps> = ({
                 )
             ) : (
                 <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
-                    Chỉ sinh viên trong nhóm mới có quyền tạo SRS.
+                    Chỉ Leader mới có quyền tạo SRS.
                 </Typography>
             )}
             {generateError && (
