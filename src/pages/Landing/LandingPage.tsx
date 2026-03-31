@@ -132,7 +132,7 @@ const LandingPage: React.FC = () => {
               background: CTA_GRAD,
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>
-              thông minh hơn
+              thông minh
             </Box>
           </Typography>
           <Typography variant="h6" sx={{
